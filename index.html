@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Espanha • Nosso próximo capítulo</title>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <aside>
+      <div class="brand">rumo<span> à </span>Espanha<span>·</span></div>
+      <small>Nosso próximo capítulo</small>
+      <nav>
+        <button data-page="overview" class="active">◫ &nbsp; Visão geral</button
+        ><button data-page="tasks">☑ &nbsp; Pendências e custos</button
+        ><button data-page="income">↗ &nbsp; Entradas de dinheiro</button
+        ><button data-page="settings">⚙ &nbsp; Ajustes e backup</button>
+      </nav>
+      <div class="sidefoot">
+        BRASIL &nbsp; → &nbsp; ESPANHA<br />Uma etapa de cada vez. 🌿<br /><small
+          >Planejamento da família Assunção</small
+        >
+      </div>
+    </aside>
+    <main>
+      <header>
+        <div>
+          <div class="eyebrow">PLANEJAR PARA VIVER</div>
+          <h1 id="title">Tudo pronto para o próximo passo.</h1>
+          <small id="subtitle">Seu dinheiro e suas pendências, no mesmo lugar.</small>
+        </div>
+        <div class="headerbuttons"><button class="btn" onclick="backup()">↓ Exportar backup</button></div>
+      </header>
+      <div id="app"></div>
+      <div class="foot"><span>🇪🇸 Nosso próximo capítulo começa no planejamento.</span></div>
+    </main>
+    <dialog id="modal"><form id="form"></form></dialog>
+    <div id="toast" role="status"></div>
+    <script src="js/state.js"></script>
+    <script src="js/views.js"></script>
+    <script src="js/forms.js"></script>
+    <script src="js/backup.js"></script>
+    <script src="js/exchange-rate.js"></script>
+    <script src="js/reorder.js"></script>
+    <script src="js/categories.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>
