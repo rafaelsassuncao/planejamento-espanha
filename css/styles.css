@@ -82,19 +82,6 @@ main {
   max-width: 1600px;
   padding: 36px 46px;
 }
-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-}
-.eyebrow {
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  font-size: 10px;
-  font-weight: 700;
-  color: #788b7c;
-}
 h1 {
   font:
     800 32px Manrope,
@@ -400,9 +387,6 @@ h2 {
     margin: 0;
     padding: 22px 16px;
   }
-  header {
-    align-items: flex-start;
-  }
   h1 {
     font-size: 25px;
   }
@@ -427,9 +411,6 @@ h2 {
   }
   .foot {
     display: block;
-  }
-  .headerbuttons {
-    display: none;
   }
 }
 .draghandle {

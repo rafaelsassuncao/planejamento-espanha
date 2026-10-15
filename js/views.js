@@ -6,18 +6,6 @@ function render() {
   document
     .querySelectorAll("nav button")
     .forEach((b) => b.classList.toggle("active", b.dataset.page === page));
-  $("#title").textContent = {
-    overview: "Tudo pronto para o próximo passo.",
-    tasks: "Pendências e custos",
-    income: "Entradas de dinheiro",
-    settings: "Do seu jeito, com segurança.",
-  }[page];
-  $("#subtitle").textContent = {
-    overview: "Seu dinheiro e suas pendências, no mesmo lugar.",
-    tasks: "Organize cada etapa e acompanhe o que falta resolver.",
-    income: "Registre o que entra. Seu saldo se atualiza automaticamente.",
-    settings: "Acompanhe o câmbio e mantenha uma cópia do planejamento.",
-  }[page];
   const done = data.tasks.filter((t) => t.status === "Concluído").length,
     pct = data.tasks.length ? Math.round((done / data.tasks.length) * 100) : 0;
   if (page === "overview")
