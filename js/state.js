@@ -41,6 +41,17 @@ function save() {
   } catch {
     alert("Não foi possível salvar. Exporte um backup antes de sair.");
   }
+  window.cloudSave?.(data);
+}
+// Substitui os dados atuais pelos recebidos da nuvem (sem reenviar)
+function setData(d) {
+  data = d;
+  categories = [...new Set([...(d.categories || defaultCategories), ...d.tasks.map((t) => t.category)])];
+  data.categories = categories;
+  if (cat !== "Todas" && !categories.includes(cat)) cat = "Todas";
+  try {
+    localStorage.setItem(KEY, JSON.stringify(data));
+  } catch {}
 }
 function toast(s) {
   $("#toast").textContent = s;

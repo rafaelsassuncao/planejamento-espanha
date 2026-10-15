@@ -18,7 +18,9 @@ js/backup.js          Exportar/importar backup JSON
 js/exchange-rate.js   Cotação EUR/BRL (AwesomeAPI)
 js/reorder.js         Reordenar pendências (setas e arrastar)
 js/categories.js      Gerenciar categorias
-js/main.js            Inicialização (carregado por último)
+js/main.js            Inicialização
+js/cloud.js           Login com Google e sincronização com o Firestore (módulo, carregado por último)
+firestore.rules       Regras de acesso ao banco (colar no console do Firebase)
 ```
 Os scripts são carregados em ordem no `index.html` e compartilham variáveis globais, então mantenha essa ordem.
 
@@ -31,8 +33,10 @@ Os scripts são carregados em ordem no `index.html` e compartilham variáveis gl
 - Exportação e importação de backup JSON.
 
 ## Dados
-Os dados são salvos no localStorage deste navegador, na chave espanha-assuncao-v1. O app começa vazio; os lançamentos ficam só no navegador de cada aparelho e nunca vão para o repositório. Para transferir seus lançamentos entre aparelhos, exporte o backup em um e importe no outro.
+Os dados ficam no Firebase (projeto `planejamento-espanha`), em um único documento do Firestore (`planos/familia`) compartilhado pela família. O acesso exige login com Google e só os e-mails listados em `firestore.rules` podem ler ou editar. Essas regras não são publicadas pelo git: depois de alterá-las, copie o conteúdo para Firebase → Firestore → Regras → Publicar.
 
-A publicação em Vercel, GitHub Pages ou outra hospedagem estática pode usar index.html diretamente, sem build. A publicação não sincroniza dados entre dispositivos. Para isso, será preciso adicionar banco de dados e autenticação.
+O app também guarda uma cópia no navegador, então funciona sem internet e sincroniza quando a conexão volta. No primeiro login, o que já estiver lançado no navegador é enviado para a nuvem. "Sair" (em Ajustes) apaga a cópia local do aparelho.
+
+Para o login funcionar no site publicado, `rafaelsassuncao.github.io` precisa estar em Firebase → Authentication → Configurações → Domínios autorizados.
 
 A cotação exige internet; em caso de falha, o app mantém o último valor salvo e mostra um aviso.

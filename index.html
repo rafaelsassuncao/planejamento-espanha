@@ -36,6 +36,14 @@
     </main>
     <dialog id="modal"><form id="form"></form></dialog>
     <div id="toast" role="status"></div>
+    <div id="login" class="login">
+      <div class="loginbox">
+        <div class="brand">rumo<span> à </span>Espanha<span>·</span></div>
+        <p class="muted" id="loginmsg">Carregando…</p>
+        <button class="btn primary" id="loginbtn" hidden onclick="signIn()">Entrar com Google</button>
+        <button class="link" id="switchbtn" hidden onclick="switchAccount()">Entrar com outra conta</button>
+      </div>
+    </div>
     <script src="js/state.js"></script>
     <script src="js/views.js"></script>
     <script src="js/forms.js"></script>
@@ -44,5 +52,6 @@
     <script src="js/reorder.js"></script>
     <script src="js/categories.js"></script>
     <script src="js/main.js"></script>
+    <script type="module" src="js/cloud.js"></script>
   </body>
 </html>
