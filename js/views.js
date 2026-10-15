@@ -36,14 +36,19 @@ function render() {
       `<div class="grid"><section class="panel"><h3>Cotação do euro</h3><p class="muted">Atualização automática ao abrir e a cada hora. Os custos em euros são recalculados automaticamente.</p><label>1 euro = R$ <b>${Number(data.rate).toLocaleString("pt-BR", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</b></label><p class="notice">${rateInfo()}</p></section><section class="panel"><h3 style="margin-bottom:20px">Backup</h3><button class="btn primary" onclick="backup()">↓ Exportar backup</button> <button class="btn" onclick="$('#import').click()">↑ Importar backup</button><input hidden id="import" type="file" accept="application/json" onchange="restore(this)"></section><section class="panel"><h3>Conta</h3><p class="muted">Conectado como <b>${esc(window.currentEmail)}</b>. Os dados ficam salvos na nuvem e sincronizados entre os aparelhos.</p><button class="btn" onclick="if(confirm('Sair desta conta?'))logout()">Sair</button></section></div>`;
 }
 function updateRows() {
-  $("#rows").innerHTML = taskTable(
-    data.tasks.filter(
-      (t) =>
-        (filter === "Todos" || t.status === filter) &&
-        (cat === "Todas" || t.category === cat) &&
-        (t.title + " " + t.notes).toLowerCase().includes(search.toLowerCase()),
-    ),
+  const list = data.tasks.filter(
+    (t) =>
+      (filter === "Todos" || t.status === filter) &&
+      (cat === "Todas" || t.category === cat) &&
+      (t.title + " " + t.notes).toLowerCase().includes(search.toLowerCase()),
   );
+  $("#rows").innerHTML = summary(list) + taskTable(list);
+}
+// Totais em reais das pendências exibidas (respeita busca e filtros)
+function summary(list) {
+  const paid = sum(list.filter((t) => t.paid).map(brl)),
+    open = sum(list.filter((t) => !t.paid).map(brl));
+  return `<div class="summary"><div><small>Total${cat === "Todas" ? "" : " em " + esc(cat)}</small><b>${money(paid + open)}</b></div><div><small>Já pago</small><b>${money(paid)}</b></div><div><small>Falta pagar</small><b>${money(open)}</b></div></div>`;
 }
 function taskTable(a) {
   return a.length

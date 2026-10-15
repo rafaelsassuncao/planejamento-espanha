@@ -459,3 +459,32 @@ h2 {
 .link.danger {
   color: #a45b4d;
 }
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 0 0 18px;
+}
+.summary div {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  background: #f8f9f5;
+  border-radius: 10px;
+}
+.summary b {
+  font:
+    800 18px Manrope,
+    sans-serif;
+}
+.summary div:last-child {
+  background: #fff2d9;
+}
+@media (max-width: 700px) {
+  .summary b {
+    font-size: 15px;
+  }
+  .summary div {
+    padding: 10px;
+  }
+}
