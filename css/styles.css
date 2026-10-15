@@ -475,3 +475,6 @@ h2 {
   border: 1px solid var(--line);
   border-radius: 16px;
 }
+.link.danger {
+  color: #a45b4d;
+}
