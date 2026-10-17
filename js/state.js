@@ -1,5 +1,6 @@
-// Constantes, dados iniciais, estado da aplicação e utilitários
+// Constantes, dados iniciais, estado da aplicação, migração e utilitários
 const KEY = "espanha-assuncao-v1";
+const SCHEMA = 2;
 const defaultCategories = [
   "Passagens e transporte",
   "Bagagens e acessórios",
@@ -9,21 +10,107 @@ const defaultCategories = [
   "Itens pessoais",
   "Outros",
 ];
+const defaultSources = ["Venda do apartamento", "Reserva pessoal", "Salário"];
+const FOLDER_CATEGORY = "Consulado";
+const FOLDER_DEADLINE = "2026-11-15";
+const STATUSES = ["Pendente", "Em andamento", "Concluído"];
 const seed = { rate: 6, income: [], tasks: [] };
+
+const uid = () => crypto.randomUUID(),
+  num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0),
+  round2 = (n) => Math.round(n * 100) / 100;
+
+// Atualiza dados de versões anteriores sem perder informações; pode rodar mais de uma vez
+function migrate(d) {
+  const old = d.schema;
+  // Guarda neste navegador uma cópia intacta dos dados anteriores à atualização
+  if (old !== SCHEMA && (d.tasks?.length || d.income?.length))
+    try {
+      localStorage.setItem(KEY + "-antes-v2", JSON.stringify(d));
+    } catch {}
+  d.rate = Number(d.rate) > 0 ? Number(d.rate) : 6;
+  d.tasks = Array.isArray(d.tasks) ? d.tasks : [];
+  d.income = Array.isArray(d.income) ? d.income : [];
+  d.sources = Array.isArray(d.sources) ? d.sources : [];
+  const sourceByName = (name) => {
+    let s = d.sources.find((x) => x.name.toLowerCase() === name.toLowerCase());
+    if (!s) d.sources.push((s = { id: uid(), name }));
+    return s;
+  };
+  // Cada "Origem" já cadastrada nas entradas vira uma fonte de dinheiro
+  d.income.forEach((i) => {
+    i.id ||= uid();
+    i.value = num(i.value);
+    i.received ??= true;
+    i.description ??= "";
+    i.notes ??= "";
+    i.date ??= "";
+    if (i.sourceId === undefined) i.sourceId = i.origin?.trim() ? sourceByName(i.origin.trim()).id : "";
+  });
+  if (old === undefined) defaultSources.forEach(sourceByName);
+  d.folder ??= { category: FOLDER_CATEGORY, deadline: FOLDER_DEADLINE };
+  d.categories = [
+    ...new Set([...(d.categories || defaultCategories), ...d.tasks.map((t) => t.category).filter(Boolean)]),
+  ];
+  if (old === undefined && !d.categories.includes(d.folder.category)) d.categories.push(d.folder.category);
+  d.tasks.forEach((t) => {
+    t.id ||= uid();
+    t.title ??= "";
+    t.category ||= "Outros";
+    t.notes ??= "";
+    t.date ??= "";
+    if (!STATUSES.includes(t.status)) t.status = "Pendente";
+    t.currency = t.currency === "EUR" ? "EUR" : "BRL";
+    t.value = num(t.value);
+    // Itens antigos sempre tinham valor; valor 0 era exibido como "A definir", não como "Sem custo"
+    t.kind ??= "cost";
+    t.priceKnown ??= t.value > 0;
+    t.multi ??= false;
+    t.qty = Math.max(1, num(t.qty) || 1);
+    t.unit ??= "";
+    t.unitPrice = t.unitPrice === undefined || t.unitPrice === "" ? null : t.unitPrice;
+    t.plan ??= [];
+    t.purchases ??= [];
+    t.payments ??= [];
+    t.alloc ??= [];
+    t.required ??= t.category === d.folder.category;
+    // "Já foi pago" antigo vira um pagamento registrado, com a cotação vigente na migração
+    if (t.paid !== undefined) {
+      if (t.paid && !t.payments.length) {
+        const rate = t.currency === "EUR" ? d.rate : 1;
+        if (t.value > 0)
+          t.payments.push({
+            id: uid(),
+            date: "",
+            amount: t.value,
+            rate,
+            brl: round2(t.value * rate),
+            split: [],
+            notes: "Registrado automaticamente a partir do antigo “Já foi pago”.",
+          });
+        else t.legacyPaid = true;
+      }
+      delete t.paid;
+    }
+  });
+  d.schema = SCHEMA;
+  return old !== SCHEMA;
+}
+
 let data;
 try {
   data = JSON.parse(localStorage.getItem(KEY)) || structuredClone(seed);
 } catch {
   data = structuredClone(seed);
 }
-let categories = [
-  ...new Set([...(data.categories || defaultCategories), ...data.tasks.map((t) => t.category)]),
-];
-data.categories = categories;
+migrate(data);
+let categories = data.categories;
 let page = "overview",
   search = "",
   filter = "Todos",
-  cat = "Todas";
+  cat = "Todas",
+  due = "Todos",
+  sort = "manual";
 const $ = (s) => document.querySelector(s),
   esc = (s) =>
     String(s ?? "").replace(
@@ -31,10 +118,20 @@ const $ = (s) => document.querySelector(s),
       (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
     );
 const money = (v, c = "BRL") => new Intl.NumberFormat("pt-BR", { style: "currency", currency: c }).format(v),
-  brl = (t) => Number(t.value) * (t.currency === "EUR" ? data.rate : 1),
-  sum = (a) => a.reduce((s, n) => s + n, 0),
-  total = () => sum(data.income.map((i) => Number(i.value))),
-  cost = () => sum(data.tasks.map(brl));
+  sum = (a) => a.reduce((s, n) => s + n, 0);
+
+// Datas "AAAA-MM-DD" são lidas no fuso local, para o prazo não aparecer no dia anterior
+const parseDate = (s) => {
+    const [y, m, d] = s.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  },
+  todayStr = () => {
+    const n = new Date();
+    return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
+  },
+  daysUntil = (s) => Math.round((parseDate(s) - parseDate(todayStr())) / 864e5),
+  fmtDate = (s) => (s ? s.split("-").reverse().join("/") : "");
+
 function save() {
   try {
     localStorage.setItem(KEY, JSON.stringify(data));
@@ -43,18 +140,20 @@ function save() {
   }
   window.cloudSave?.(data);
 }
-// Substitui os dados atuais pelos recebidos da nuvem (sem reenviar)
+// Substitui os dados atuais pelos recebidos da nuvem ou de um backup; indica se houve migração
 function setData(d) {
+  const migrated = migrate(d);
   data = d;
-  categories = [...new Set([...(d.categories || defaultCategories), ...d.tasks.map((t) => t.category)])];
-  data.categories = categories;
+  categories = d.categories;
   if (cat !== "Todas" && !categories.includes(cat)) cat = "Todas";
   try {
     localStorage.setItem(KEY, JSON.stringify(data));
   } catch {}
+  return migrated;
 }
 function toast(s) {
   $("#toast").textContent = s;
   $("#toast").style.display = "block";
-  setTimeout(() => ($("#toast").style.display = "none"), 2500);
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => ($("#toast").style.display = "none"), 2500);
 }

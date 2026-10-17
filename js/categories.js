@@ -53,6 +53,7 @@ function renameCategory(i) {
     if (t.category === old) t.category = v;
   });
   if (cat === old) cat = v;
+  if (data.folder?.category === old) data.folder.category = v;
   data.categories = categories;
   save();
   categoryList();

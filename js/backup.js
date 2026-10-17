@@ -9,35 +9,17 @@ function backup() {
 async function restore(input) {
   try {
     const d = JSON.parse(await input.files[0].text());
+    // Aceita backups antigos e novos; a migração completa os campos que faltarem
     if (
-      !Number.isFinite(d.rate) ||
-      d.rate <= 0 ||
+      !d ||
       !Array.isArray(d.tasks) ||
       !Array.isArray(d.income) ||
-      !d.tasks.every(
-        (t) =>
-          typeof t.id === "string" &&
-          typeof t.title === "string" &&
-          typeof t.category === "string" &&
-          t.category.length > 0 &&
-          ["BRL", "EUR"].includes(t.currency) &&
-          ["Pendente", "Em andamento", "Concluído"].includes(t.status) &&
-          Number.isFinite(t.value) &&
-          t.value >= 0,
-      ) ||
-      !d.income.every(
-        (i) =>
-          typeof i.id === "string" &&
-          typeof i.origin === "string" &&
-          Number.isFinite(i.value) &&
-          i.value >= 0,
-      )
+      !d.tasks.every((t) => t && typeof t.title === "string") ||
+      !d.income.every((i) => i && Number.isFinite(Number(i.value)))
     )
       throw Error();
     if (confirm("Importar este backup e substituir os dados atuais?")) {
-      data = d;
-      categories = [...new Set([...(d.categories || defaultCategories), ...d.tasks.map((t) => t.category)])];
-      data.categories = categories;
+      setData(d);
       save();
       render();
       refreshRate();

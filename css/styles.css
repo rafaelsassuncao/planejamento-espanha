@@ -488,3 +488,300 @@ h2 {
     padding: 10px;
   }
 }
+/* Situações de prazo, tarefa e pagamento */
+.badge {
+  display: inline-block;
+  white-space: nowrap;
+}
+.badge.prog {
+  background: #e4eef0;
+  color: #2f6470;
+}
+.badge.warn {
+  background: #fff2d9;
+  color: #8a6420;
+}
+.badge.late {
+  background: #f8e1dc;
+  color: #a1402f;
+}
+.badge.muted {
+  background: #eef0ea;
+  color: var(--muted);
+}
+.eur {
+  display: block;
+  color: var(--muted);
+}
+.flag {
+  display: inline-block;
+  margin: 4px 0;
+  color: #8a6420;
+  font-size: 12px;
+}
+.flag:empty {
+  display: none;
+}
+.ratenote {
+  margin: -10px 0 0;
+}
+.right {
+  text-align: right;
+}
+.nowrap {
+  white-space: nowrap;
+}
+.neg,
+.neg b {
+  color: #a1402f;
+}
+.grid.even {
+  grid-template-columns: 1fr 1fr;
+}
+.meta {
+  color: var(--muted);
+}
+
+/* Quantidade e etapas */
+.qty {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+  max-width: 280px;
+}
+.bar.mini {
+  height: 6px;
+  margin: 2px 0;
+}
+.plan {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+/* Pasta do Consulado */
+.folder {
+  border-left: 5px solid var(--line);
+}
+.folder.warn {
+  border-left-color: #e2b65c;
+  background: #fffaf0;
+}
+.folder.done {
+  border-left-color: #719064;
+  background: #f3f8ef;
+}
+.folder.late {
+  border-left-color: #c8634f;
+  background: #fdf3f1;
+}
+.folder.late .bar span {
+  background: #c8634f;
+}
+.foldermsg {
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+.pendlist {
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+  margin: 10px 0;
+}
+.pendlist .link {
+  text-align: left;
+}
+.folderactions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 4px;
+}
+#rows > .folder {
+  margin-bottom: 18px;
+}
+
+/* Formulários em seções */
+dialog {
+  max-height: 92vh;
+  overflow: auto;
+}
+.sec {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 14px 16px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.sec legend {
+  padding: 0 6px;
+  font:
+    800 13px Manrope,
+    sans-serif;
+}
+.sec[hidden],
+[data-show][hidden] {
+  display: none;
+}
+form label.inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+form label.choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.choice:has(input:checked) {
+  border-color: var(--green);
+  background: #eaf1e9;
+}
+.choice:has(input:disabled) {
+  opacity: 0.5;
+}
+.choice span {
+  display: grid;
+  gap: 2px;
+}
+.steprow {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 8px;
+  align-items: center;
+  margin: 6px 0;
+}
+.steprow input,
+.steprow select {
+  min-width: 0;
+}
+.summary small {
+  color: var(--muted);
+}
+
+@media (max-width: 1000px) {
+  .grid.even {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* No celular, as tabelas viram cards */
+@media (max-width: 700px) {
+  .summary {
+    grid-template-columns: 1fr;
+  }
+  .summary div {
+    grid-template-columns: 1fr auto;
+    align-items: baseline;
+  }
+  .summary div small:first-child {
+    grid-column: 1 / -1;
+  }
+  .choices {
+    grid-template-columns: 1fr;
+  }
+  dialog {
+    padding: 20px 16px;
+  }
+  .cardtable thead {
+    display: none;
+  }
+  .cardtable,
+  .cardtable tbody,
+  .cardtable tr,
+  .cardtable td {
+    display: block;
+    width: 100%;
+  }
+  .cardtable {
+    white-space: normal;
+  }
+  .cardtable tr {
+    margin-bottom: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #fff;
+  }
+  .cardtable td {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 7px 0;
+    border-bottom: 1px solid #f0f1ec;
+    text-align: right;
+  }
+  .cardtable td::before {
+    content: attr(data-label);
+    flex: none;
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: left;
+  }
+  .cardtable td:first-child {
+    display: block;
+    min-width: 0;
+    text-align: left;
+  }
+  .cardtable td:first-child::before {
+    content: none;
+  }
+  .cardtable td.rowactions {
+    justify-content: flex-end;
+    border-bottom: 0;
+  }
+  .cardtable td.rowactions::before {
+    content: none;
+  }
+  .qty {
+    max-width: none;
+  }
+}
+#form > h3 {
+  margin: 0;
+}
+.cardtable.tasks td {
+  white-space: normal;
+}
+.cardtable.tasks td[data-label="Financeiro"] {
+  min-width: 170px;
+}
+.cardtable.tasks td[data-label="Origem"] {
+  max-width: 170px;
+}
+.cardtable td.rowactions {
+  white-space: nowrap;
+}
+@media (max-width: 700px) {
+  .paneltop {
+    flex-wrap: wrap;
+  }
+  .tools > * {
+    flex: 1 1 40%;
+    min-width: 0;
+  }
+  .tools input {
+    flex-basis: 100%;
+  }
+  .cardtable.tasks td[data-label] {
+    max-width: none;
+    min-width: 0;
+  }
+  .cardtable td > div {
+    min-width: 0;
+  }
+}

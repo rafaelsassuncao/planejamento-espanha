@@ -11,9 +11,12 @@ Não é necessário instalar dependências ou executar um build. O projeto usa H
 ```
 index.html            Estrutura da página (menu, cabeçalho, modal)
 css/styles.css        Todos os estilos
-js/state.js           Constantes, dados iniciais, estado e utilitários (salvar, formatar, toast)
-js/views.js           Renderização das páginas e tabelas
+js/state.js           Constantes, estado, migração de dados antigos e utilitários (salvar, datas, toast)
+js/finance.js         Cálculos: previsão, pagamentos, reservas e saldos por fonte, prazos, pasta do Consulado
+js/views.js           Renderização das páginas, listas e resumos
 js/forms.js           Navegação e formulários de pendências e entradas
+js/records.js         Detalhes da pendência: compras em etapas e pagamentos
+js/sources.js         Fontes de dinheiro e configuração da pasta do Consulado
 js/backup.js          Exportar/importar backup JSON
 js/exchange-rate.js   Cotação EUR/BRL (AwesomeAPI)
 js/reorder.js         Reordenar pendências (setas e arrastar)

@@ -104,7 +104,7 @@ onAuthStateChanged(auth, (user) => {
       $("#login").hidden = true;
       if (snap.metadata.hasPendingWrites && !first) return;
       const { updatedAt, updatedBy, ...d } = snap.data();
-      setData(d);
+      if (setData(d)) window.cloudSave(data);
       if (!$("#modal").open) render();
       if (first) refreshRate();
       first = false;
