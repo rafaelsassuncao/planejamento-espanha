@@ -1,6 +1,6 @@
 // Constantes, dados iniciais, estado da aplicação, migração e utilitários
 const KEY = "espanha-assuncao-v1";
-const SCHEMA = 2;
+const SCHEMA = 3;
 const defaultCategories = [
   "Passagens e transporte",
   "Bagagens e acessórios",
@@ -14,6 +14,14 @@ const defaultSources = ["Venda do apartamento", "Reserva pessoal", "Salário"];
 const FOLDER_CATEGORY = "Consulado";
 const FOLDER_DEADLINE = "2026-11-15";
 const STATUSES = ["Pendente", "Em andamento", "Concluído"];
+const METHODS = [
+  ["pix", "Pix"],
+  ["debito", "Cartão de débito"],
+  ["credito", "Cartão de crédito"],
+  ["transferencia", "Transferência bancária"],
+  ["boleto", "Boleto"],
+  ["dinheiro", "Dinheiro"],
+];
 const seed = { rate: 6, income: [], tasks: [] };
 
 const uid = () => crypto.randomUUID(),
@@ -26,12 +34,14 @@ function migrate(d) {
   // Guarda neste navegador uma cópia intacta dos dados anteriores à atualização
   if (old !== SCHEMA && (d.tasks?.length || d.income?.length))
     try {
-      localStorage.setItem(KEY + "-antes-v2", JSON.stringify(d));
+      localStorage.setItem(`${KEY}-antes-v${SCHEMA}`, JSON.stringify(d));
     } catch {}
   d.rate = Number(d.rate) > 0 ? Number(d.rate) : 6;
   d.tasks = Array.isArray(d.tasks) ? d.tasks : [];
   d.income = Array.isArray(d.income) ? d.income : [];
   d.sources = Array.isArray(d.sources) ? d.sources : [];
+  // Cartões e contas cadastrados por apelido (sem número, validade ou código)
+  d.accounts = Array.isArray(d.accounts) ? d.accounts : [];
   const sourceByName = (name) => {
     let s = d.sources.find((x) => x.name.toLowerCase() === name.toLowerCase());
     if (!s) d.sources.push((s = { id: uid(), name }));
@@ -73,6 +83,10 @@ function migrate(d) {
     t.purchases ??= [];
     t.payments ??= [];
     t.alloc ??= [];
+    t.credits ??= [];
+    t.method ??= "";
+    t.accountId ??= "";
+    t.acquired ??= false;
     t.required ??= t.category === d.folder.category;
     // "Já foi pago" antigo vira um pagamento registrado, com a cotação vigente na migração
     if (t.paid !== undefined) {
@@ -92,6 +106,11 @@ function migrate(d) {
       }
       delete t.paid;
     }
+    t.payments.forEach((p) => {
+      p.method ??= "";
+      p.accountId ??= "";
+      p.confirmed ??= true;
+    });
   });
   d.schema = SCHEMA;
   return old !== SCHEMA;
@@ -125,9 +144,13 @@ const parseDate = (s) => {
     const [y, m, d] = s.split("-").map(Number);
     return new Date(y, m - 1, d);
   },
-  todayStr = () => {
-    const n = new Date();
-    return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
+  isoDate = (n) =>
+    `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`,
+  todayStr = () => isoDate(new Date()),
+  // Soma meses mantendo o dia (ou o último dia do mês, se ele não existir)
+  addMonths = (s, k) => {
+    const [y, m, d] = s.split("-").map(Number);
+    return isoDate(new Date(y, m - 1 + k, Math.min(d, new Date(y, m + k, 0).getDate())));
   },
   daysUntil = (s) => Math.round((parseDate(s) - parseDate(todayStr())) / 864e5),
   fmtDate = (s) => (s ? s.split("-").reverse().join("/") : "");

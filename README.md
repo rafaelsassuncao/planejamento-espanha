@@ -12,14 +12,14 @@ Não é necessário instalar dependências ou executar um build. O projeto usa H
 index.html            Estrutura da página (menu, cabeçalho, modal)
 css/styles.css        Todos os estilos
 js/state.js           Constantes, estado, migração de dados antigos e utilitários (salvar, datas, toast)
-js/finance.js         Cálculos: previsão, pagamentos, reservas e saldos por fonte, prazos, pasta do Consulado
+js/finance.js         Cálculos: previsão, pagamentos, crédito parcelado, faturas, reservas e saldos, prazos, pasta
 js/views.js           Renderização das páginas, listas e resumos
 js/forms.js           Navegação e formulários de pendências e entradas
-js/records.js         Detalhes da pendência: compras em etapas e pagamentos
-js/sources.js         Fontes de dinheiro e configuração da pasta do Consulado
+js/records.js         Detalhes da pendência: compras em etapas, pagamentos à vista e no crédito, parcelas
+js/sources.js         Fontes de dinheiro, cartões e contas (apelidos), faturas e pasta do Consulado
 js/backup.js          Exportar/importar backup JSON
 js/exchange-rate.js   Cotação EUR/BRL (AwesomeAPI)
-js/reorder.js         Reordenar pendências (setas e arrastar)
+js/reorder.js         Reordenar pendências (setas e arrastar como bloco flutuante)
 js/categories.js      Gerenciar categorias
 js/main.js            Inicialização
 js/cloud.js           Login com Google e sincronização com o Firestore (módulo, carregado por último)

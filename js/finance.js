@@ -1,14 +1,14 @@
-// Cálculos: previsão de custos, pagamentos, reservas por fonte, prazos e pasta do Consulado
+// Cálculos: previsão de custos, pagamentos, crédito parcelado, reservas por fonte, prazos e pasta do Consulado
 const NEAR_DAYS = 7;
 const isCost = (t) => t.kind === "cost",
   toBRL = (amount, currency) => amount * (currency === "EUR" ? data.rate : 1),
   bought = (t) => sum(t.purchases.map((p) => num(p.qty))),
-  paidCur = (t) => sum(t.payments.map((p) => num(p.amount))),
-  // Valor real desembolsado em reais, com a cotação registrada em cada pagamento
-  paidBRL = (t) => sum(t.payments.map((p) => num(p.brl))),
   paySplit = (p) => (p.split?.length ? p.split : [{ sourceId: "", brl: num(p.brl) }]),
   validSource = (id) => (data.sources.some((s) => s.id === id) ? id : ""),
   sourceName = (id) => data.sources.find((s) => s.id === id)?.name || "Fonte não definida",
+  accountName = (id) => data.accounts.find((a) => a.id === id)?.name || "",
+  methodName = (m) => METHODS.find((x) => x[0] === m)?.[1] || "Forma não informada",
+  isConfirmed = (p) => p.confirmed !== false,
   eur = (brlValue) => money(brlValue / data.rate, "EUR");
 
 // Previsão na moeda original: parte já conhecida e se ainda há valor a definir
@@ -25,19 +25,75 @@ function forecast(t) {
   }
   return t.priceKnown ? { known: t.value, unknown: false } : { known: 0, unknown: true };
 }
-// O que ainda falta pagar da parte orçada, convertido pela cotação atual
-const outstandingCur = (t) => Math.max(0, forecast(t).known - paidCur(t)),
-  outstandingBRL = (t) => toBRL(outstandingCur(t), t.currency);
+
+const installments = (t) => t.credits.flatMap((c) => c.installments.map((i) => ({ c, i }))),
+  plannedSource = (c, i) => i.sourceId ?? c.sourceId ?? "";
+// Dinheiro que já saiu: pagamentos confirmados e parcelas pagas, pelo valor em reais registrado
+const outflows = (t) => [
+    ...t.payments.filter(isConfirmed).map((p) => ({
+      ref: p.id,
+      date: p.date,
+      label: methodName(p.method),
+      brl: num(p.brl),
+      split: paySplit(p),
+    })),
+    ...installments(t)
+      .filter(({ i }) => i.payment)
+      .map(({ c, i }) => ({
+        ref: i.id,
+        date: i.payment.date,
+        label: `Parcela ${i.n}/${c.installments.length} · ${accountName(c.accountId)}`,
+        brl: num(i.payment.brl),
+        split: paySplit(i.payment),
+      })),
+  ],
+  // Já combinado, mas o dinheiro ainda não saiu: pagamentos agendados e parcelas em aberto
+  commitments = (t) => [
+    ...t.payments
+      .filter((p) => !isConfirmed(p))
+      .map((p) => ({ ref: p.id, brl: num(p.brl), split: paySplit(p) })),
+    ...installments(t)
+      .filter(({ i }) => !i.payment)
+      .map(({ c, i }) => ({
+        ref: i.id,
+        brl: num(i.brl),
+        split: [{ sourceId: plannedSource(c, i), brl: num(i.brl) }],
+      })),
+  ],
+  paidBRL = (t) => sum(outflows(t).map((o) => o.brl)),
+  committedBRL = (t) => sum(commitments(t).map((o) => o.brl)),
+  // Parte da despesa já acertada com o fornecedor (à vista ou no crédito), na moeda original
+  coveredCur = (t) => sum(t.payments.map((p) => num(p.amount))) + sum(t.credits.map((c) => num(c.amount))),
+  uncoveredCur = (t) => Math.max(0, forecast(t).known - coveredCur(t)),
+  // Ainda a pagar: compromissos em aberto + o que falta acertar, este pela cotação atual
+  outstandingBRL = (t) => committedBRL(t) + toBRL(uncoveredCur(t), t.currency);
 
 function payStatus(t) {
   if (!isCost(t)) return { label: "Sem custo", cls: "muted" };
   const f = forecast(t),
-    p = paidCur(t);
-  if (t.legacyPaid && !p) return { label: "Pago (valor não registrado)", cls: "done" };
-  if (!f.unknown && f.known > 0 && p >= f.known - 0.005) return { label: "Pago", cls: "done" };
-  if (p > 0) return { label: "Parcialmente pago", cls: "warn" };
+    cov = coveredCur(t);
+  if (t.legacyPaid && !cov) return { label: "Pago (valor não registrado)", cls: "done" };
+  const settled = !f.unknown && f.known > 0 && cov >= f.known - 0.005;
+  if (settled && committedBRL(t) < 0.005) return { label: "Pago", cls: "done" };
+  if (settled)
+    return installments(t).some(({ i }) => !i.payment)
+      ? { label: "Parcelas em aberto", cls: "prog" }
+      : { label: "Pagamento agendado", cls: "prog" };
+  if (cov > 0) return { label: "Parcialmente pago", cls: "warn" };
   if (f.unknown) return { label: "Valor a definir", cls: "muted" };
   return { label: "A pagar", cls: "" };
+}
+// Aquisição/entrega é independente da conclusão da tarefa e do pagamento
+function acqStatus(t) {
+  if (!isCost(t)) return null;
+  if (t.multi) {
+    const b = bought(t);
+    if (b >= t.qty) return { label: "Aquisição concluída", cls: "done" };
+    return b > 0 ? { label: "Comprando em etapas", cls: "prog" } : { label: "Não adquirido", cls: "muted" };
+  }
+  return t.acquired
+    ? { label: "Adquirido / entregue", cls: "done" }
+    : { label: "Aguardando aquisição", cls: "muted" };
 }
 
 // Itens da pasta sem prazo próprio seguem o prazo geral da pasta
@@ -54,40 +110,46 @@ function dueStatus(t) {
   return { key: "ok", label: "Dentro do prazo", cls: "" };
 }
 
-// Reserva por fonte para o que falta pagar desta despesa; o que já foi pago não é reservado de novo
+// Reserva por fonte: compromissos em aberto ficam na fonte escolhida; o restante segue a origem planejada
 function reserves(t) {
-  const out = {};
-  let rest = isCost(t) ? outstandingBRL(t) : 0;
+  const out = {},
+    add = (id, v) => v > 0.005 && (out[id] = (out[id] || 0) + v);
+  if (!isCost(t)) return out;
+  const open = commitments(t);
+  open.forEach((x) => x.split.forEach((s) => add(s.sourceId, num(s.brl))));
+  let rest = toBRL(uncoveredCur(t), t.currency);
+  // O que já saiu ou já está comprometido de uma fonte não é reservado de novo
+  const fromSource = (id) =>
+    sum(
+      [...outflows(t), ...open]
+        .flatMap((o) => o.split)
+        .filter((s) => s.sourceId === id)
+        .map((s) => num(s.brl)),
+    );
   for (const a of t.alloc) {
     if (rest <= 0.005) break;
-    let r = rest;
-    if (a.brl !== null && a.brl !== "") {
-      const paidFrom = sum(
-        t.payments
-          .flatMap(paySplit)
-          .filter((s) => s.sourceId === a.sourceId)
-          .map((s) => num(s.brl)),
-      );
-      r = Math.min(rest, Math.max(0, num(a.brl) - paidFrom));
-    }
-    out[a.sourceId] = (out[a.sourceId] || 0) + r;
+    const r =
+      a.brl !== null && a.brl !== ""
+        ? Math.min(rest, Math.max(0, num(a.brl) - fromSource(a.sourceId)))
+        : rest;
+    add(a.sourceId, r);
     rest -= r;
   }
-  if (rest > 0.005) out[""] = (out[""] || 0) + rest;
+  add("", rest);
   return out;
 }
 
-// Saldos por fonte; skipTask/skipPayment ignoram um registro em edição para validar a alteração
-function sourceStats(skipTask, skipPayment) {
+// Saldos por fonte; skipTask/skipRef ignoram um registro em edição para validar a alteração
+function sourceStats(skipTask, skipRef) {
   const st = {},
     get = (id) => (st[validSource(id)] ??= { received: 0, expected: 0, used: 0, reserved: 0 });
   data.sources.forEach((s) => get(s.id));
   get("");
   data.income.forEach((i) => (get(i.sourceId)[i.received ? "received" : "expected"] += num(i.value)));
   data.tasks.forEach((t) => {
-    t.payments
-      .filter((p) => p.id !== skipPayment)
-      .flatMap(paySplit)
+    outflows(t)
+      .filter((o) => o.ref !== skipRef)
+      .flatMap((o) => o.split)
       .forEach((s) => (get(s.sourceId).used += num(s.brl)));
     if (t.id !== skipTask) Object.entries(reserves(t)).forEach(([id, v]) => (get(id).reserved += v));
   });
@@ -111,6 +173,47 @@ function overall() {
   return { ...t, received, expected, current: received - t.paid, projected: received - t.paid - t.open };
 }
 
+// Parcelas iguais (a última ajusta os centavos); mantém pagamentos das parcelas que continuam iguais
+function buildInstallments(brl, n, firstDue, keep = []) {
+  const base = Math.floor((brl / n) * 100) / 100;
+  return Array.from({ length: n }, (_, k) => {
+    const old = keep[k];
+    return {
+      id: old?.id || uid(),
+      n: k + 1,
+      due: addMonths(firstDue, k),
+      brl: k < n - 1 ? base : round2(brl - base * (n - 1)),
+      ...(old?.sourceId !== undefined ? { sourceId: old.sourceId } : {}),
+      ...(old?.payment ? { payment: old.payment } : {}),
+    };
+  });
+}
+// Faturas em aberto por cartão e mês de vencimento
+function openBills() {
+  const bills = {};
+  data.tasks.forEach((t) =>
+    t.credits.forEach((c) =>
+      c.installments
+        .filter((i) => !i.payment)
+        .forEach((i) => {
+          const key = c.accountId + "|" + i.due.slice(0, 7);
+          (bills[key] ??= { accountId: c.accountId, month: i.due.slice(0, 7), items: [] }).items.push({
+            t,
+            c,
+            i,
+          });
+        }),
+    ),
+  );
+  return Object.values(bills)
+    .map((b) => ({
+      ...b,
+      total: sum(b.items.map((x) => num(x.i.brl))),
+      due: b.items.map((x) => x.i.due).sort()[0],
+    }))
+    .sort((a, b) => a.due.localeCompare(b.due));
+}
+
 // Etapas planejadas cobertas pelas compras feitas, na ordem das datas
 function planSteps(t) {
   let covered = bought(t);
@@ -121,20 +224,6 @@ function planSteps(t) {
       covered -= num(s.qty);
       return { ...s, done };
     });
-}
-
-// Ao comprar tudo, a pendência é concluída; se uma compra for removida, ela é reaberta
-function syncAcquisition(t) {
-  if (!t.multi) return;
-  const b = bought(t);
-  if (b >= t.qty && t.status !== "Concluído") {
-    t.status = "Concluído";
-    t.autoDone = true;
-    toast("Quantidade completa: aquisição concluída");
-  } else if (b < t.qty && t.status === "Concluído" && t.autoDone) {
-    t.status = b > 0 ? "Em andamento" : "Pendente";
-    t.autoDone = false;
-  } else if (b > 0 && b < t.qty && t.status === "Pendente") t.status = "Em andamento";
 }
 
 function folderInfo() {

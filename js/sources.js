@@ -3,7 +3,9 @@ const sourceInUse = (id) =>
   data.income.some((i) => i.sourceId === id) ||
   data.tasks.some(
     (t) =>
-      t.alloc.some((a) => a.sourceId === id) || t.payments.flatMap(paySplit).some((s) => s.sourceId === id),
+      t.alloc.some((a) => a.sourceId === id) ||
+      t.credits.some((c) => c.sourceId === id || c.installments.some((i) => i.sourceId === id)) ||
+      [...outflows(t), ...commitments(t)].flatMap((o) => o.split).some((s) => s.sourceId === id),
   );
 function addSource(name) {
   const v = name?.trim();
@@ -81,6 +83,161 @@ function deleteSource(id) {
   sourceList();
 }
 
+// Cartões e contas por apelido; nunca guardamos número, validade ou código de segurança
+const accountOptions = (v, type) =>
+  `<option value="">${type === "cartao" ? "Escolha o cartão" : "Não informado"}</option>` +
+  data.accounts
+    .filter((a) => !type || a.type === type)
+    .map(
+      (a) =>
+        `<option value="${a.id}" ${a.id === v ? "selected" : ""}>${esc(a.name)}${type ? "" : a.type === "cartao" ? " (cartão)" : " (conta)"}</option>`,
+    )
+    .join("") +
+  `<option value="${NEW_CATEGORY}">+ ${type === "cartao" ? "Novo cartão" : "Novo cartão ou conta"}…</option>`;
+const accountInUse = (id) =>
+  data.tasks.some(
+    (t) =>
+      t.accountId === id ||
+      t.payments.some((p) => p.accountId === id) ||
+      t.credits.some((c) => c.accountId === id),
+  );
+function addAccount(name, type) {
+  const v = name?.trim();
+  if (!v || v.length > 40) return null;
+  const existing = data.accounts.find((a) => a.type === type && a.name.toLowerCase() === v.toLowerCase());
+  if (existing) return existing;
+  const a = { id: uid(), name: v, type };
+  data.accounts.push(a);
+  save();
+  toast(type === "cartao" ? "Cartão cadastrado" : "Conta cadastrada");
+  return a;
+}
+// Cadastra um cartão ou conta direto do formulário de pagamento
+function pickAccount(select) {
+  if (select.value !== NEW_CATEGORY) {
+    select.dataset.prev = select.value;
+    formSync();
+    return;
+  }
+  const method = $("#form").elements.namedItem("method")?.value,
+    type = select.dataset.type || (["debito", "credito"].includes(method) ? "cartao" : "conta"),
+    a = addAccount(
+      prompt(
+        `Apelido do ${type === "cartao" ? "cartão" : "banco ou conta"} (ex.: C6, XP, Inter).\nNão informe número, validade ou código de segurança.`,
+      ),
+      type,
+    );
+  if (!a) {
+    select.value = select.dataset.prev || "";
+    return;
+  }
+  document.querySelectorAll('#form select[name="accountId"], #form select[name="cardId"]').forEach((el) => {
+    if ((!el.dataset.type || el.dataset.type === type) && ![...el.options].some((o) => o.value === a.id))
+      el.querySelector(`option[value="${NEW_CATEGORY}"]`).insertAdjacentHTML(
+        "beforebegin",
+        `<option value="${a.id}">${esc(a.name)}${el.dataset.type ? "" : type === "cartao" ? " (cartão)" : " (conta)"}</option>`,
+      );
+  });
+  select.value = a.id;
+  select.dataset.prev = a.id;
+  formSync();
+}
+function manageAccounts() {
+  showForm(
+    `<h3>Cartões e contas</h3><p class="sub">Cadastre só um apelido, como “C6”, “XP” ou “Inter”. Não informe número do cartão, validade nem código de segurança.</p><div id="accountlist"></div><div class="twocol"><label>Apelido<input name="newaccount" required maxlength="40" placeholder="Ex.: C6"></label><label>Tipo<select name="type"><option value="cartao">Cartão</option><option value="conta">Conta bancária</option></select></label></div><div class="actions"><button type="button" class="btn" onclick="$('#modal').close()">Fechar</button><button class="btn primary">Adicionar</button></div>`,
+    (f) => {
+      if (addAccount(f.get("newaccount"), f.get("type"))) {
+        $("#form").elements.newaccount.value = "";
+        accountList();
+      }
+    },
+  );
+  accountList();
+}
+function accountList() {
+  $("#accountlist").innerHTML =
+    data.accounts
+      .map(
+        (a) =>
+          `<div class="statrow"><span>${esc(a.name)} <small>${a.type === "cartao" ? "cartão" : "conta"}</small></span><span class="nowrap"><button type="button" class="link" onclick="renameAccount('${a.id}')">Renomear</button><button type="button" class="link danger" onclick="deleteAccount('${a.id}')">Excluir</button></span></div>`,
+      )
+      .join("") || '<p class="sub">Nenhum cartão ou conta cadastrado.</p>';
+}
+function renameAccount(id) {
+  const a = data.accounts.find((x) => x.id === id),
+    v = prompt("Apelido:", a.name)?.trim();
+  if (!v || v.length > 40) return;
+  a.name = v;
+  save();
+  accountList();
+}
+function deleteAccount(id) {
+  if (accountInUse(id)) return toast("Este cartão ou conta tem pagamentos vinculados");
+  if (!confirm("Excluir este cartão ou conta?")) return;
+  data.accounts = data.accounts.filter((a) => a.id !== id);
+  save();
+  accountList();
+}
+
+const monthName = (ym) => {
+  const [y, m] = ym.split("-").map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+};
+// Divide a parte de cada parcela proporcionalmente entre as fontes usadas na fatura
+function scaleSplit(split, part, total) {
+  if (!split.length) return [];
+  const out = split.map((s) => ({ sourceId: s.sourceId, brl: round2((s.brl * part) / total) }));
+  out[out.length - 1].brl = round2(part - sum(out.slice(0, -1).map((s) => s.brl)));
+  return out.filter((s) => s.brl > 0);
+}
+// Pagar a fatura quita as parcelas daquele mês; elas não são contadas como nova despesa
+function payBill(accountId, month) {
+  const bill = openBills().find((b) => b.accountId === accountId && b.month === month);
+  if (!bill) return;
+  const planned = [...new Set(bill.items.map(({ c, i }) => validSource(plannedSource(c, i))))],
+    total = round2(bill.total);
+  showForm(
+    `<h3>Pagar fatura · ${esc(accountName(accountId) || "cartão")}</h3><p class="sub">Fatura de ${monthName(month)} · vence ${fmtDate(bill.due)}</p>${bill.items
+      .map(
+        ({ t, c, i }) =>
+          `<div class="statrow"><span>${esc(t.title)} <small>parcela ${i.n}/${c.installments.length}</small></span><b>${money(num(i.brl))}</b></div>`,
+      )
+      .join(
+        "",
+      )}<div class="statrow"><span><b>Total da fatura</b></span><b>${money(total)}</b></div>${field("Data do pagamento", "payDate", todayStr(), "date", "required")}<small>Origem do dinheiro</small><div id="splitrows">${splitRow(planned.length === 1 ? planned[0] : "", null, true)}</div><button type="button" class="link" onclick="addSplitRow(true)">+ Dividir entre fontes</button><p class="sub">O pagamento quita as parcelas desta fatura; elas não são contadas de novo.</p><p id="paywarn" class="flag"></p><div class="actions"><button type="button" class="btn" onclick="$('#modal').close()">Cancelar</button><button class="btn primary">Pagar fatura</button></div>`,
+    (f) => {
+      const r = resolveSplit(readSplitRows(), total);
+      if (r.error) return toast(r.error);
+      bill.items.forEach(({ t, c, i }) => {
+        const inst = findTask(t.id)
+          ?.credits.find((x) => x.id === c.id)
+          ?.installments.find((x) => x.id === i.id);
+        if (inst && !inst.payment)
+          inst.payment = {
+            date: f.get("payDate"),
+            brl: num(i.brl),
+            split: scaleSplit(r.split, num(i.brl), total),
+            bill: month,
+          };
+      });
+      finish("Fatura paga");
+    },
+    () => {
+      const r = resolveSplit(readSplitRows(), total),
+        st = sourceStats();
+      $("#paywarn").innerHTML = r.error
+        ? r.error
+        : r.split
+            .filter((s) => s.sourceId && s.brl > st[s.sourceId].current + 0.005)
+            .map(
+              (s) =>
+                `Passa do saldo atual de “${sourceName(s.sourceId)}” (${money(st[s.sourceId].current)}).`,
+            )
+            .join("<br>");
+    },
+  );
+}
+
 // Lista o que está ligado a uma fonte: entradas, reservas e pagamentos
 function sourceLinks(id) {
   const name = id ? sourceName(id) : "Fonte não definida",
@@ -89,10 +246,8 @@ function sourceLinks(id) {
       .map((t) => [t, reserves(t)[id] || 0])
       .filter(([t, v]) => v > 0.005 || (id && t.alloc.some((a) => a.sourceId === id))),
     paid = data.tasks.flatMap((t) =>
-      t.payments.flatMap((p) =>
-        paySplit(p)
-          .filter((s) => validSource(s.sourceId) === id)
-          .map((s) => ({ t, p, brl: num(s.brl) })),
+      outflows(t).flatMap((o) =>
+        o.split.filter((s) => validSource(s.sourceId) === id).map((s) => ({ t, o, brl: num(s.brl) })),
       ),
     ),
     list = (title, items) =>
@@ -111,8 +266,8 @@ function sourceLinks(id) {
     )}${list(
       "Pagamentos realizados",
       paid.map(
-        ({ t, p, brl }) =>
-          `<div class="statrow"><span>${open(t)} <small>${fmtDate(p.date) || "sem data"}</small></span><b>${money(brl)}</b></div>`,
+        ({ t, o, brl }) =>
+          `<div class="statrow"><span>${open(t)} <small>${fmtDate(o.date) || "sem data"} · ${esc(o.label)}</small></span><b>${money(brl)}</b></div>`,
       ),
     )}<div class="actions"><button type="button" class="btn" onclick="$('#modal').close()">Fechar</button></div>`,
     () => {},

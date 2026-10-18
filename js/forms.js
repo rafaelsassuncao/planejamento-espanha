@@ -6,8 +6,7 @@ function go(p) {
 document.querySelectorAll("nav button").forEach((b) => (b.onclick = () => go(b.dataset.page)));
 function toggle(id, v) {
   const t = data.tasks.find((t) => t.id === id);
-  t.status = v ? "Concluído" : t.multi && bought(t) > 0 ? "Em andamento" : "Pendente";
-  t.autoDone = false;
+  t.status = v ? "Concluído" : "Pendente";
   save();
   render();
 }
@@ -106,10 +105,14 @@ function editTask(id) {
       plan: [],
       purchases: [],
       payments: [],
+      credits: [],
       alloc: [],
+      method: "",
+      accountId: "",
+      acquired: false,
       required: true,
     },
-    locked = t.payments.length > 0 || t.purchases.length > 0,
+    locked = t.payments.length > 0 || t.purchases.length > 0 || t.credits.length > 0,
     radio = (val, label, sub) =>
       `<label class="choice"><input type="radio" name="kind" value="${val}" ${t.kind === val ? "checked" : ""} ${locked && val === "checklist" ? "disabled" : ""}><span><b>${label}</b><small>${sub}</small></span></label>`,
     planRow = (s = {}) =>
@@ -134,6 +137,9 @@ function editTask(id) {
       value: multi ? 0 : price,
       unitPrice: multi && known ? price : null,
       qty: multi ? Math.max(0.01, Number(f.get("qty")) || 1) : 1,
+      method: f.get("method") || "",
+      accountId: [NEW_CATEGORY, null].includes(f.get("accountId")) ? "" : f.get("accountId"),
+      acquired: f.has("acquired"),
       alloc: readSplitRows()
         .filter((r) => r.sourceId)
         .map((r) => ({ sourceId: r.sourceId, brl: r.brl })),
@@ -147,6 +153,7 @@ function editTask(id) {
       flags = {
         cost,
         multi: cost && d.multi,
+        single: cost && !d.multi,
         known: cost && d.priceKnown,
         folder: data.folder && d.category === data.folder.category,
       };
@@ -184,7 +191,7 @@ function editTask(id) {
     $("#allocwarn").innerHTML = warn.join("<br>");
   };
   showForm(
-    `<h3>${id ? "Editar" : "Nova"} pendência</h3><fieldset class="sec"><legend>Dados da pendência</legend>${field("O que precisa ser feito?", "title", t.title, "text", 'required maxlength="250"')}<label>Categoria<select name="category" data-prev="${esc(t.category)}" onchange="pickCategory(this)">${categoryOptions(t.category)}</select></label><div class="choices">${radio("checklist", "Somente checklist", "Tarefa ou documento sem custo")}${radio("cost", "Com custo", "Compra, serviço ou taxa")}</div>${locked ? '<p class="sub">Tem compras ou pagamentos registrados, por isso continua “Com custo”.</p>' : ""}<label>Situação da tarefa<select name="status">${opts(STATUSES, t.status)}</select></label><label class="inline" data-show="folder"><input type="checkbox" name="required" ${t.required ? "checked" : ""}> Obrigatório para concluir a pasta do ${esc(data.folder?.category || "")}</label><label>Observações<textarea name="notes">${esc(t.notes)}</textarea></label></fieldset><fieldset class="sec" data-show="cost"><legend>Quantidade e etapas</legend><label class="inline"><input type="checkbox" name="multi" ${t.multi ? "checked" : ""} ${t.purchases.length ? "disabled" : ""}> Comprar em quantidade ou em etapas</label>${t.purchases.length ? `<input type="hidden" name="multi" value="on">` : ""}<div data-show="multi"><div class="twocol">${field("Quantidade necessária", "qty", t.multi ? t.qty : "", "number", 'min="0.01" step="any"')}${field("Unidade", "unit", t.unit, "text", 'maxlength="30" placeholder="un., pares, caixas…"')}</div><small>Planejamento das compras (quantidade e data prevista)</small><div id="planrows">${t.plan.map(planRow).join("")}</div><button type="button" class="link" onclick="addPlanRow()">+ Adicionar etapa</button></div></fieldset><fieldset class="sec"><legend>Prazo</legend>${field("Prazo (opcional)", "date", t.date, "date")}<small id="foldernote"></small></fieldset><fieldset class="sec" data-show="cost"><legend>Custo e origem do dinheiro</legend><div class="twocol"><label>Moeda<select name="currency" ${locked ? "disabled" : ""}>${opts(["BRL", "EUR"], t.currency)}</select></label><label>Valor<select name="priceKnown"><option value="1" ${t.priceKnown ? "selected" : ""}>Conhecido</option><option value="0" ${t.priceKnown ? "" : "selected"}>A definir</option></select></label></div>${locked ? `<input type="hidden" name="currency" value="${t.currency}">` : ""}<label id="valuelabel" data-show="known">Valor estimado<input name="value" type="number" min="0.01" step="0.01" value="${t.priceKnown ? (t.multi ? (t.unitPrice ?? "") : t.value || "") : ""}"></label><p id="estimate" class="sub"></p><small>Origem do dinheiro (reserva para esta despesa)</small><div id="splitrows">${allocRows}</div><button type="button" class="link" onclick="addSplitRow()">+ ${t.alloc.length ? "Dividir com outra fonte" : "Escolher fonte"}</button><p class="sub">Com uma fonte, deixe o valor em branco para reservar tudo o que falta pagar. Sem fonte, aparece como “Fonte não definida”.</p><p id="allocwarn" class="flag"></p></fieldset>${actions(id, "task")}`,
+    `<h3>${id ? "Editar" : "Nova"} pendência</h3><fieldset class="sec"><legend>Dados da pendência</legend>${field("O que precisa ser feito?", "title", t.title, "text", 'required maxlength="250"')}<label>Categoria<select name="category" data-prev="${esc(t.category)}" onchange="pickCategory(this)">${categoryOptions(t.category)}</select></label><div class="choices">${radio("checklist", "Somente checklist", "Tarefa ou documento sem custo")}${radio("cost", "Com custo", "Compra, serviço ou taxa")}</div>${locked ? '<p class="sub">Tem compras ou pagamentos registrados, por isso continua “Com custo”.</p>' : ""}<label>Situação da tarefa<select name="status">${opts(STATUSES, t.status)}</select></label><label class="inline" data-show="folder"><input type="checkbox" name="required" ${t.required ? "checked" : ""}> Obrigatório para concluir a pasta do ${esc(data.folder?.category || "")}</label><label>Observações<textarea name="notes">${esc(t.notes)}</textarea></label></fieldset><fieldset class="sec" data-show="cost"><legend>Quantidade e etapas</legend><label class="inline"><input type="checkbox" name="multi" ${t.multi ? "checked" : ""} ${t.purchases.length ? "disabled" : ""}> Comprar em quantidade ou em etapas</label>${t.purchases.length ? `<input type="hidden" name="multi" value="on">` : ""}<label class="inline" data-show="single"><input type="checkbox" name="acquired" ${t.acquired ? "checked" : ""}> Item já adquirido / entregue</label><p class="sub" data-show="single">A aquisição ou entrega é independente do pagamento e da conclusão da tarefa.</p><div data-show="multi"><div class="twocol">${field("Quantidade necessária", "qty", t.multi ? t.qty : "", "number", 'min="0.01" step="any"')}${field("Unidade", "unit", t.unit, "text", 'maxlength="30" placeholder="un., pares, caixas…"')}</div><small>Planejamento das compras (quantidade e data prevista)</small><div id="planrows">${t.plan.map(planRow).join("")}</div><button type="button" class="link" onclick="addPlanRow()">+ Adicionar etapa</button></div></fieldset><fieldset class="sec"><legend>Prazo</legend>${field("Prazo (opcional)", "date", t.date, "date")}<small id="foldernote"></small></fieldset><fieldset class="sec" data-show="cost"><legend>Custo e origem do dinheiro</legend><div class="twocol"><label>Moeda<select name="currency" ${locked ? "disabled" : ""}>${opts(["BRL", "EUR"], t.currency)}</select></label><label>Valor<select name="priceKnown"><option value="1" ${t.priceKnown ? "selected" : ""}>Conhecido</option><option value="0" ${t.priceKnown ? "" : "selected"}>A definir</option></select></label></div>${locked ? `<input type="hidden" name="currency" value="${t.currency}">` : ""}<label id="valuelabel" data-show="known">Valor estimado<input name="value" type="number" min="0.01" step="0.01" value="${t.priceKnown ? (t.multi ? (t.unitPrice ?? "") : t.value || "") : ""}"></label><p id="estimate" class="sub"></p><small>Origem do dinheiro (reserva para esta despesa)</small><div id="splitrows">${allocRows}</div><button type="button" class="link" onclick="addSplitRow()">+ ${t.alloc.length ? "Dividir com outra fonte" : "Escolher fonte"}</button><p class="sub">Com uma fonte, deixe o valor em branco para reservar tudo o que falta pagar. Sem fonte, aparece como “Fonte não definida”.</p><p id="allocwarn" class="flag"></p><div class="twocol"><label>Forma de pagamento prevista<select name="method">${methodOptions(t.method, () => true, "A definir")}</select></label><label>Conta ou cartão previsto<select name="accountId" onchange="pickAccount(this)">${accountOptions(t.accountId)}</select></label></div><p class="sub">A forma de pagamento pode ficar para depois; ela é sugerida ao registrar o pagamento.</p></fieldset>${actions(id, "task")}`,
     (f) => {
       const d = draft(f),
         title = f.get("title").trim();
@@ -211,8 +218,6 @@ function editTask(id) {
       };
       if (item.kind === "checklist") Object.assign(item, { priceKnown: false, value: 0, multi: false });
       if (!item.multi) Object.assign(item, { qty: 1, plan: [], unitPrice: null });
-      if (item.status !== t.status) item.autoDone = false;
-      syncAcquisition(item);
       id ? (data.tasks[data.tasks.findIndex((x) => x.id === id)] = item) : data.tasks.push(item);
       finish();
     },
