@@ -71,14 +71,14 @@ function folderCard() {
   return `<section class="panel folder ${f.tone}"><div class="folderhead"><span class="iconcircle">${icon("file")}</span><div class="grow"><h3>Pasta do ${esc(f.category)}</h3><small>${f.done} de ${f.items.length} itens obrigatórios concluídos · ${f.pending} ${f.pending === 1 ? "falta" : "faltam"}</small><div class="barrow"><div class="bar"><span style="width:${pct}%"></span></div><b>${pct}%</b></div></div><div class="deadline">${icon("calendar")}<span><small>Entregar à consultoria até</small><b>${f.deadline ? fmtDate(f.deadline) : "—"}</b><small>${days}</small></span></div></div><div class="alert ${tone}">${icon(f.tone === "done" ? "check" : f.tone ? "alert" : "info")}<span>${esc(f.message)}</span></div>${
     open.length
       ? `<div class="checklist">${open
-          .slice(0, 6)
+          .slice(0, expanded.has(f.category) ? open.length : 6)
           .map(
             (t) =>
               `<div class="checkrow"><input class="check" type="checkbox" aria-label="Concluir ${esc(t.title)}" onchange="toggle('${t.id}',this.checked)"><button type="button" class="link" onclick="editTask('${t.id}')">${esc(t.title)}</button>${dueStatus(t)?.key === "late" ? badge("Atrasado", "late") : ""}<span class="date">${icon("calendar")} ${fmtDate(dueDate(t)) || "sem prazo"}</span></div>`,
           )
-          .join("")}${open.length > 6 ? `<small>+ ${open.length - 6} itens</small>` : ""}</div>`
+          .join("")}${moreButton(f.category, open.length, 6)}</div>`
       : ""
-  }<div class="folderactions"><button class="btn" onclick="showFolderItems()">Ver itens pendentes</button><button class="link" onclick="editFolder()">Configurar pasta</button></div><p class="sub">O progresso considera apenas o seu checklist. Não representa validação oficial dos documentos nem aprovação do visto.</p></section>`;
+  }<div class="folderactions">${open.length > 6 ? `<button class="btn" onclick="toggleExpand('${esc(f.category)}')">${expanded.has(f.category) ? "Mostrar menos" : `Ver todos os pendentes (${open.length})`}</button>` : ""}<button class="link" onclick="editFolder()">Configurar pasta</button></div><p class="sub">O progresso considera apenas o seu checklist. Não representa validação oficial dos documentos nem aprovação do visto.</p></section>`;
 }
 // Ao filtrar uma categoria, mostra um card de "pasta" com o progresso e o que falta
 function categoryCard(c) {
@@ -97,24 +97,23 @@ function categoryCard(c) {
   return `<section class="panel folder ${tone === "info" ? "" : tone}"><div class="folderhead"><span class="iconcircle">${icon("folder")}</span><div class="grow"><h3>${esc(c)}</h3><small>${done} de ${items.length} concluídas</small><div class="barrow"><div class="bar"><span style="width:${pct}%"></span></div><b>${pct}%</b></div></div></div><div class="alert ${tone}">${icon(tone === "done" ? "check" : tone === "late" ? "alert" : "info")}<span>${message}</span></div>${
     open.length
       ? `<div class="checklist">${open
-          .slice(0, 8)
+          .slice(0, expanded.has(c) ? open.length : 8)
           .map(
             (t) =>
               `<div class="checkrow"><input class="check" type="checkbox" aria-label="Concluir ${esc(t.title)}" onchange="toggle('${t.id}',this.checked)"><button type="button" class="link" onclick="editTask('${t.id}')">${esc(t.title)}</button>${dueStatus(t)?.key === "late" ? badge("Atrasado", "late") : ""}${dueDate(t) ? `<span class="date">${icon("calendar")} ${fmtDate(dueDate(t))}</span>` : ""}</div>`,
           )
-          .join(
-            "",
-          )}${open.length > 8 ? `<small>+ ${open.length - 8} pendências na lista abaixo</small>` : ""}</div>`
+          .join("")}${moreButton(c, open.length, 8)}</div>`
       : ""
   }</section>`;
 }
-function showFolderItems() {
-  page = "tasks";
-  cat = data.folder.category;
-  filter = "Não concluídos";
-  due = "Todos";
-  search = "";
-  if ($("#modal").open) $("#modal").close();
+// Cards de pasta mostram os primeiros pendentes; "Ver todos" abre a lista completa no próprio card
+const expanded = new Set(),
+  moreButton = (c, n, limit) =>
+    n > limit
+      ? `<button type="button" class="link" onclick="toggleExpand('${esc(c)}')">${expanded.has(c) ? "Mostrar menos" : `+ ${n - limit} ${n - limit === 1 ? "item" : "itens"} · ver todos`}</button>`
+      : "";
+function toggleExpand(c) {
+  expanded.has(c) ? expanded.delete(c) : expanded.add(c);
   render();
 }
 
