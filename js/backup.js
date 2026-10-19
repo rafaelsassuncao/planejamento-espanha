@@ -19,6 +19,8 @@ async function restore(input) {
     )
       throw Error();
     if (confirm("Importar este backup e substituir os dados atuais?")) {
+      // Mantém a versão atual para o backup poder substituir os dados da nuvem
+      d.rev = data.rev;
       setData(d);
       save();
       render();

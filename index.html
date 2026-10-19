@@ -60,7 +60,14 @@
     <div id="toast" role="status" popover="manual"></div>
     <div id="login" class="login">
       <div class="loginbox">
-        <div class="brand">rumo<span> à </span>Espanha<span>·</span></div>
+        <div class="brand">
+          <svg class="ic logo" viewBox="0 0 48 48" aria-hidden="true">
+            <path d="M8 44V20a16 16 0 0 1 32 0v24" />
+            <path d="M16 44V22a8 8 0 0 1 16 0v22" />
+            <path d="M4 44h40" />
+          </svg>
+          <span>rumo à<br />Espanha</span>
+        </div>
         <p class="muted" id="loginmsg">Carregando…</p>
         <button class="btn primary" id="loginbtn" hidden onclick="signIn()">Entrar com Google</button>
         <button class="link" id="switchbtn" hidden onclick="switchAccount()">Entrar com outra conta</button>

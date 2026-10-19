@@ -36,7 +36,8 @@ async function refreshRate(manual = false) {
     data.rate = value;
     data.rateAt = new Date(time).toISOString();
     data.rateFetchedAt = new Date().toISOString();
-    save();
+    // A cotação fica só neste aparelho: não regrava o planejamento na nuvem
+    saveLocal();
     if (manual) toast("Cotação atualizada");
   } catch {
     rateError =

@@ -1560,3 +1560,9 @@ textarea {
     display: none;
   }
 }
+/* Tela de entrada: marca em verde escuro sobre o fundo claro */
+.loginbox .brand {
+  justify-content: center;
+  color: #133d32;
+  text-align: left;
+}

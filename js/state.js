@@ -167,6 +167,11 @@ const parseDate = (s) => {
   daysUntil = (s) => Math.round((parseDate(s) - parseDate(todayStr())) / 864e5),
   fmtDate = (s) => (s ? s.split("-").reverse().join("/") : "");
 
+function saveLocal() {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(data));
+  } catch {}
+}
 function save() {
   try {
     localStorage.setItem(KEY, JSON.stringify(data));
