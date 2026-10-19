@@ -1294,44 +1294,79 @@ details.more > :not(summary) + * {
   margin-right: 10px;
   vertical-align: middle;
 }
-tr.selected > td {
-  background: #eef5f6;
+/* Concluir (botão redondo) separado da caixa que escolhe o que entra na soma */
+.donebtn {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin-right: 10px;
+  padding: 0;
+  vertical-align: middle;
+  border: 2px solid #b9c4b8;
+  border-radius: 50%;
+  background: #fff;
+  color: transparent;
 }
-.selbar {
-  position: sticky;
-  bottom: 12px;
-  z-index: 5;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px 24px;
-  margin-top: 14px;
-  padding: 14px 18px;
-  border-radius: 14px;
-  background: #133d32;
+.donebtn .ic {
+  width: 14px;
+  height: 14px;
+  stroke-width: 3;
+}
+.donebtn:hover {
+  border-color: var(--green);
+  color: #b9c4b8;
+}
+.donebtn.on {
+  border-color: var(--green);
+  background: var(--green);
   color: #fff;
-  box-shadow: 0 14px 34px #14372d40;
 }
-.selbar > div:first-child {
-  display: flex;
-  align-items: center;
-  gap: 14px;
+tr.unsel > td {
+  opacity: 0.5;
 }
-.selbar .link {
-  color: #cfe6d8;
+.hfilter {
+  max-width: 100%;
+  padding: 6px 8px;
+  border-color: transparent;
+  background: transparent;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
 }
-.seltotals {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 24px;
+.hfilter:hover,
+.hfilter:focus {
+  border-color: var(--line);
+  background: #fff;
 }
-.seltotals span {
-  display: grid;
+th .sel {
+  margin-right: 12px;
 }
-.selbar small {
-  color: #b9d0c3;
+.sumnote {
+  margin: -8px 0 10px;
+  font-size: 12px;
+  color: var(--muted);
 }
-.selbar .flag {
-  color: #f3d58c;
+.mobilefilters {
+  display: none;
+}
+@media (max-width: 700px) {
+  .mobilefilters {
+    display: contents;
+  }
+}
+.cardtable.tasks td.rowactions {
+  white-space: normal;
+  width: 1%;
+}
+.cardtable.tasks td.rowactions .link {
+  display: inline-block;
+  padding: 4px 6px;
+}
+.checkrow .donebtn {
+  margin-right: 0;
+  flex: none;
 }

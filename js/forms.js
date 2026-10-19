@@ -2,8 +2,7 @@
 function go(p) {
   page = p;
   costF = "Todos";
-  selecting = false;
-  selected.clear();
+  unselected.clear();
   render();
 }
 document.querySelectorAll("nav button").forEach((b) => (b.onclick = () => go(b.dataset.page)));
