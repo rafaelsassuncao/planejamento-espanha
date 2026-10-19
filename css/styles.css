@@ -1322,8 +1322,8 @@ details.more > :not(summary) + * {
   background: var(--green);
   color: #fff;
 }
-tr.unsel > td {
-  opacity: 0.5;
+tr.picked > td {
+  background: #eef5f6;
 }
 .hfilter {
   max-width: 100%;

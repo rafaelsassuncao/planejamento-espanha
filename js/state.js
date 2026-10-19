@@ -131,8 +131,8 @@ let page = "overview",
   due = "Todos",
   sort = "manual",
   costF = "Todos";
-// Pendências visíveis entram na soma por padrão; aqui ficam as que o usuário desmarcou
-const unselected = new Set();
+// Pendências marcadas pelo usuário para somar (vazio = soma tudo o que está na lista)
+const selected = new Set();
 const $ = (s) => document.querySelector(s),
   esc = (s) =>
     String(s ?? "").replace(
