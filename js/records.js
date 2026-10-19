@@ -83,7 +83,7 @@ function openTask(id) {
     }<fieldset class="sec"><legend>Pagamentos</legend>${
       [...cash, ...credits].join("") ||
       `<p class="sub">${t.legacyPaid ? "Marcado como pago antes desta versão, sem valor registrado." : "Nenhum pagamento registrado."}</p>`
-    }<button type="button" class="btn" onclick="editPayment('${t.id}')">+ Registrar pagamento</button></fieldset><p class="sub">Origem planejada: ${esc(originText(t))}${t.method ? ` · Forma prevista: ${methodName(t.method)}${t.accountId ? " (" + esc(accountName(t.accountId)) + ")" : ""}` : ""}</p><div class="actions"><button type="button" class="btn" onclick="$('#modal').close()">Fechar</button><button type="button" class="btn primary" onclick="editTask('${t.id}')">Editar pendência</button></div>`,
+    }<button type="button" class="btn" onclick="editPayment('${t.id}')">+ Registrar pagamento</button></fieldset><p class="sub">Origem planejada: ${esc(originText(t))}${t.method ? ` · Forma prevista: ${methodName(t.method)}${t.accountId ? " (" + esc(accountName(t.accountId)) + ")" : ""}` : ""}</p><div class="actions"><button type="button" class="link danger" style="margin-right:auto" onclick="deleteTask('${t.id}')">Excluir</button><button type="button" class="btn" onclick="$('#modal').close()">Fechar</button><button type="button" class="btn primary" onclick="editTask('${t.id}')">Editar pendência</button></div>`,
     () => {},
   );
 }

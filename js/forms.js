@@ -283,7 +283,20 @@ function finish(message = "Salvo com sucesso") {
   render();
   toast(message);
 }
+// Exclui a pendência inteira; avisa quando há pagamentos ou compras que também serão apagados
+function deleteTask(id) {
+  const t = data.tasks.find((x) => x.id === id);
+  if (!t) return;
+  const extra =
+    t.payments.length || t.credits.length || t.purchases.length
+      ? "\nOs pagamentos e compras registrados nela também serão apagados e os saldos recalculados."
+      : "";
+  if (!confirm(`Excluir a pendência “${t.title}”?${extra}`)) return;
+  data.tasks = data.tasks.filter((x) => x.id !== id);
+  finish("Pendência excluída");
+}
 function removeItem(type, id) {
+  if (type === "task") return deleteTask(id);
   if (!confirm("Excluir este registro?")) return;
   const k = type === "task" ? "tasks" : "income";
   data[k] = data[k].filter((x) => x.id !== id);
