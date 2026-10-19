@@ -143,7 +143,7 @@ function render() {
   }
   if (page === "tasks") {
     $("#app").innerHTML =
-      `<section class="panel"><div class="paneltop"><h3>Seu checklist da mudança</h3><button class="btn" onclick="manageCategories()">Categorias</button><button class="btn primary" onclick="editTask()">+ Nova pendência</button></div><div class="tools"><input id="search" aria-label="Buscar pendência" placeholder="Buscar uma pendência…" value="${esc(search)}"><select id="filter" aria-label="Filtrar por situação">${selectOpts(
+      `<section class="panel"><div class="paneltop"><h3>Seu checklist da mudança</h3><div class="panelactions"><button class="btn" onclick="manageCategories()">Categorias</button><button class="btn primary" onclick="editTask()">+ Nova pendência</button></div></div><div class="tools"><input id="search" aria-label="Buscar pendência" placeholder="Buscar uma pendência…" value="${esc(search)}"><select id="filter" aria-label="Filtrar por situação">${selectOpts(
         [
           ["Todos", "Todas as situações"],
           ["Não concluídos", "Não concluídos"],
@@ -270,7 +270,7 @@ function sourcesPanel() {
     rows = [...data.sources.map((s) => [s.id, s.name]), ["", "Fonte não definida"]].filter(
       ([id]) => id || Object.values(st[""]).some((v) => Math.abs(v) > 0.005),
     );
-  return `<section class="panel"><div class="paneltop"><h3>Fontes de dinheiro</h3><button class="btn" onclick="manageSources()">Fontes</button><button class="btn primary" onclick="editIncome()">+ Nova entrada</button></div><p class="sub">Saldo atual = recebido − utilizado. Reservado = o que já está separado para pagar despesas.</p><div class="tablewrap"><table class="cardtable"><thead><tr><th>Fonte</th><th>Recebido</th><th>Utilizado</th><th>Saldo atual</th><th>Reservado</th><th>Saldo livre</th><th></th></tr></thead><tbody>${rows
+  return `<section class="panel"><div class="paneltop"><h3>Fontes de dinheiro</h3><div class="panelactions"><button class="btn" onclick="manageSources()">Fontes</button><button class="btn primary" onclick="editIncome()">+ Nova entrada</button></div></div><p class="sub">Saldo atual = recebido − utilizado. Reservado = o que já está separado para pagar despesas.</p><div class="tablewrap"><table class="cardtable"><thead><tr><th>Fonte</th><th>Recebido</th><th>Utilizado</th><th>Saldo atual</th><th>Reservado</th><th>Saldo livre</th><th></th></tr></thead><tbody>${rows
     .map(([id, name]) => {
       const s = st[id],
         noBalance = !id && !s.received && !s.expected,

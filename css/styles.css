@@ -1263,3 +1263,8 @@ details.more > :not(summary) + * {
 .eurtotal {
   color: var(--ink);
 }
+.panelactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
