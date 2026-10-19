@@ -167,7 +167,7 @@ function render() {
           ["prazo", "Por vencimento"],
         ],
         sort,
-      )}</select></div><p class="sub">${sort === "manual" ? "Segure o símbolo ⠿ e arraste a pendência até a nova posição, ou use as setas. " : "Ordenado por vencimento; volte para “Minha ordem” para reorganizar. "}Toque em Abrir para ver detalhes, compras e pagamentos.</p><div id="rows"></div></section>`;
+      )}</select></div><p class="sub">${sort === "manual" ? "Segure o símbolo ⠿ e arraste a pendência até a nova posição. " : "Ordenado por vencimento; volte para “Minha ordem” para reorganizar. "}Toque em Abrir para ver detalhes, compras e pagamentos.</p><div id="rows"></div></section>`;
     updateRows();
     $("#search").oninput = (e) => {
       search = e.target.value;
@@ -259,7 +259,7 @@ function taskTable(a, manual = true) {
   return `<div class="tablewrap"><table class="cardtable tasks"><thead><tr><th>Pendência</th><th>Prazo</th><th>Situação</th><th>Valor</th><th></th></tr></thead><tbody>${a
     .map((t) => {
       const d = dueStatus(t);
-      return `<tr data-id="${t.id}"><td data-label="Pendência"><div>${manual ? '<span class="draghandle" tabindex="0" role="button" aria-label="Arrastar pendência" title="Segure e arraste para reordenar">⠿</span>' : ""}<input class="check" aria-label="Concluir ${esc(t.title)}" type="checkbox" ${t.status === "Concluído" ? "checked" : ""} onchange="toggle('${t.id}',this.checked)"><b>${esc(t.title)}</b><br><small class="meta">${esc(t.category)}${t.notes ? " · " + esc(t.notes) : ""}</small></div></td><td data-label="Prazo"><div>${d && d.key !== "done" ? `${badge(d.label, d.cls)}<br><small>${fmtDate(dueDate(t))}</small>` : `<small>${dueDate(t) ? fmtDate(dueDate(t)) : "Sem prazo"}</small>`}</div></td><td data-label="Situação"><div>${badge(t.status, statusCls(t.status))}</div></td><td data-label="Valor"><div>${valueCell(t)}</div></td><td class="rowactions">${manual ? `<button class="link" aria-label="Mover para cima" onclick="moveTask('${t.id}',-1)">↑</button><button class="link" aria-label="Mover para baixo" onclick="moveTask('${t.id}',1)">↓</button>` : ""}<button class="link" onclick="openTask('${t.id}')">Abrir</button><button class="link danger" aria-label="Excluir ${esc(t.title)}" title="Excluir pendência" onclick="deleteTask('${t.id}')">🗑</button></td></tr>`;
+      return `<tr data-id="${t.id}"><td data-label="Pendência"><div>${manual ? '<span class="draghandle" tabindex="0" role="button" aria-label="Arrastar pendência" title="Segure e arraste para reordenar">⠿</span>' : ""}<input class="check" aria-label="Concluir ${esc(t.title)}" type="checkbox" ${t.status === "Concluído" ? "checked" : ""} onchange="toggle('${t.id}',this.checked)"><b>${esc(t.title)}</b><br><small class="meta">${esc(t.category)}${t.notes ? " · " + esc(t.notes) : ""}</small></div></td><td data-label="Prazo"><div>${d && d.key !== "done" ? `${badge(d.label, d.cls)}<br><small>${fmtDate(dueDate(t))}</small>` : `<small>${dueDate(t) ? fmtDate(dueDate(t)) : "Sem prazo"}</small>`}</div></td><td data-label="Situação"><div>${badge(t.status, statusCls(t.status))}</div></td><td data-label="Valor"><div>${valueCell(t)}</div></td><td class="rowactions"><button class="link" onclick="openTask('${t.id}')">Abrir</button><button class="link danger" aria-label="Excluir ${esc(t.title)}" title="Excluir pendência" onclick="deleteTask('${t.id}')">🗑</button></td></tr>`;
     })
     .join("")}</tbody></table></div>`;
 }

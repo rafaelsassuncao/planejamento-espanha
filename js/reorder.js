@@ -1,12 +1,4 @@
-// Reordenação de pendências (setas e arrastar)
-function moveTask(id, step) {
-  const i = data.tasks.findIndex((t) => t.id === id),
-    j = i + step;
-  if (i < 0 || j < 0 || j >= data.tasks.length) return;
-  [data.tasks[i], data.tasks[j]] = [data.tasks[j], data.tasks[i]];
-  save();
-  render();
-}
+// Reordenação de pendências (arrastar)
 // Aplica a nova ordem das pendências visíveis; as que estão escondidas pelos filtros não mudam de lugar
 function applyOrder(ids) {
   const set = new Set(ids),

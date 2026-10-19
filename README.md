@@ -19,7 +19,7 @@ js/records.js         Detalhes da pendência: compras em etapas, pagamentos à v
 js/sources.js         Fontes de dinheiro, cartões e contas (apelidos), faturas e pasta do Consulado
 js/backup.js          Exportar/importar backup JSON
 js/exchange-rate.js   Cotação EUR/BRL (AwesomeAPI)
-js/reorder.js         Reordenar pendências (setas e arrastar como bloco flutuante)
+js/reorder.js         Reordenar pendências (arrastar como bloco flutuante)
 js/categories.js      Gerenciar categorias
 js/main.js            Inicialização
 js/cloud.js           Login com Google e sincronização com o Firestore (módulo, carregado por último)
