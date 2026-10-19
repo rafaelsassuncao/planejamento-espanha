@@ -1454,3 +1454,109 @@ textarea {
 .folderactions:empty {
   display: none;
 }
+/* Linha da pendência: concluir sempre visível; arrastar e somar discretos */
+.taskcell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+}
+.tinfo {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.taskcell .donebtn {
+  margin: 0;
+  flex: none;
+}
+.taskcell .sel {
+  margin: 0;
+  flex: none;
+}
+.taskcell .draghandle {
+  flex: none;
+  width: 14px;
+  padding: 4px 0;
+  margin: 0 -4px 0 -2px;
+  font-size: 18px;
+  line-height: 1;
+  color: #a9b5ad;
+}
+@media (hover: hover) {
+  .taskcell .sel,
+  .taskcell .draghandle {
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  tr:hover .taskcell .sel,
+  tr:hover .taskcell .draghandle,
+  .taskcell .sel:checked,
+  .taskcell .sel:focus-visible,
+  .taskcell .draghandle:focus-visible,
+  .has-sel .taskcell .sel {
+    opacity: 1;
+  }
+}
+@media (max-width: 700px) {
+  .taskcell {
+    padding-right: 30px;
+  }
+  .taskcell .sel {
+    position: absolute;
+    top: 2px;
+    right: 0;
+  }
+}
+/* Ações da linha: ícones lado a lado no computador, ícone + texto no celular */
+.cardtable.tasks td.rowactions {
+  white-space: nowrap;
+  width: 1%;
+}
+.link.act {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 8px;
+  color: #5d7a6e;
+}
+.link.act:hover {
+  background: #eef3ec;
+  color: var(--green);
+}
+.link.act.danger:hover {
+  background: #fbe9e5;
+  color: #a1402f;
+}
+.link.act .lbl {
+  display: none;
+}
+@media (max-width: 700px) {
+  .taskcell .sel,
+  .taskcell .draghandle {
+    opacity: 1;
+  }
+  .cardtable.tasks td.rowactions {
+    width: auto;
+  }
+  .link.act {
+    display: inline-flex;
+    width: auto;
+    gap: 6px;
+    padding: 6px 8px;
+  }
+  .link.act .lbl {
+    display: inline;
+  }
+}
+.actgap {
+  display: inline-block;
+  width: 32px;
+}
+@media (max-width: 700px) {
+  .actgap {
+    display: none;
+  }
+}
