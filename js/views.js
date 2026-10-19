@@ -31,7 +31,7 @@ const icon = (n) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${IC
       .join(""),
   incomplete = (n) =>
     n
-      ? `<span class="flag">Previsão incompleta: ${n} ${n === 1 ? "item" : "itens"} com custo a definir</span>`
+      ? `<button type="button" class="link flag" onclick="showUnknown()">Previsão incompleta: ${n} ${n === 1 ? "item" : "itens"} com custo a definir →</button>`
       : "";
 const statusCls = (s) => (s === "Concluído" ? "done" : s === "Em andamento" ? "prog" : "");
 
@@ -171,7 +171,7 @@ function render() {
   }
   if (page === "tasks") {
     $("#app").innerHTML =
-      `<section class="panel"><div class="paneltop"><h3>Seu checklist da mudança</h3><div class="panelactions"><button class="btn" onclick="manageCategories()">Categorias</button><button class="btn primary" onclick="editTask()">+ Nova pendência</button></div></div><div class="tools"><input id="search" aria-label="Buscar pendência" placeholder="Buscar uma pendência…" value="${esc(search)}"><select id="filter" aria-label="Filtrar por situação">${selectOpts(
+      `<section class="panel"><div class="paneltop"><h3>Seu checklist da mudança</h3><div class="panelactions"><button class="btn ${selecting ? "soft" : ""}" onclick="toggleSelecting()">${selecting ? "Concluir seleção" : "Selecionar e somar"}</button><button class="btn" onclick="manageCategories()">Categorias</button><button class="btn primary" onclick="editTask()">+ Nova pendência</button></div></div><div class="tools"><input id="search" aria-label="Buscar pendência" placeholder="Buscar uma pendência…" value="${esc(search)}"><select id="filter" aria-label="Filtrar por situação">${selectOpts(
         [
           ["Todos", "Todas as situações"],
           ["Não concluídos", "Não concluídos"],
@@ -228,9 +228,48 @@ function matchDue(t) {
   if (due === "Sem prazo") return !dueDate(t);
   return true;
 }
+// Abre a lista só com as pendências que ainda precisam de valor
+function showUnknown() {
+  page = "tasks";
+  cat = "Todas";
+  filter = "Todos";
+  due = "Todos";
+  search = "";
+  onlyUnknown = true;
+  if ($("#modal").open) $("#modal").close();
+  render();
+  scrollTo(0, 0);
+}
+function clearUnknown() {
+  onlyUnknown = false;
+  updateRows();
+}
+// Seleção de pendências para somar valores
+function toggleSelecting() {
+  selecting = !selecting;
+  selected.clear();
+  render();
+}
+function toggleSelect(id) {
+  selected.has(id) ? selected.delete(id) : selected.add(id);
+  updateRows();
+}
+function selectionBar(list) {
+  const items = data.tasks.filter((t) => selected.has(t.id)),
+    s = totals(items),
+    allVisible = list.length && list.every((t) => selected.has(t.id));
+  return `<div class="selbar"><div><b>${items.length} ${items.length === 1 ? "selecionada" : "selecionadas"}</b><button type="button" class="link" onclick="selectAll(${!allVisible})">${allVisible ? "Desmarcar todas" : "Selecionar todas da lista"}</button></div><div class="seltotals"><span><small>Custo total</small><b>${money(s.total)}</b></span><span><small>Já pago</small><b>${money(s.paid)}</b></span><span><small>Falta pagar</small><b>${money(s.open)}</b></span></div>${s.unknown ? `<small class="flag">${s.unknown} sem valor definido</small>` : ""}</div>`;
+}
+function selectAll(on) {
+  document
+    .querySelectorAll("#rows tr[data-id]")
+    .forEach((r) => (on ? selected.add(r.dataset.id) : selected.delete(r.dataset.id)));
+  updateRows();
+}
 function updateRows() {
   let list = data.tasks.filter(
     (t) =>
+      (!onlyUnknown || (isCost(t) && forecast(t).unknown)) &&
       (filter === "Todos" ||
         (filter === "Não concluídos" ? t.status !== "Concluído" : t.status === filter)) &&
       (cat === "Todas" || t.category === cat) &&
@@ -239,14 +278,20 @@ function updateRows() {
   );
   if (sort === "prazo") list = [...list].sort(byDue);
   $("#rows").innerHTML =
-    (cat !== "Todas" ? categoryCard(cat) : "") + summary(list) + taskTable(list, sort === "manual");
+    (onlyUnknown
+      ? `<div class="alert warn">${icon("alert")}<span>Mostrando só as pendências sem valor (${list.length}). Toque em Editar para preencher.</span><button type="button" class="link" onclick="clearUnknown()">Limpar filtro</button></div>`
+      : "") +
+    (cat !== "Todas" && !onlyUnknown ? categoryCard(cat) : "") +
+    (selecting ? "" : summary(list)) +
+    taskTable(list, sort === "manual" && !selecting, selecting) +
+    (selecting ? selectionBar(list) : "");
 }
 // Totais das pendências exibidas (respeita busca e filtros)
 function summary(list) {
   const s = totals(list),
     e = eurLaunched(list),
     box = (label, v, extra = "") => `<div><small>${label}</small><b>${money(v)}</b>${extra}</div>`;
-  return `<div class="summary">${box(`Custo total${cat === "Todas" ? "" : " em " + esc(cat)}`, s.total, e ? `<small>Lançado em euro: ${money(e, "EUR")}</small>` : "")}${box("Já pago", s.paid)}${box("Falta pagar", s.open)}</div>${s.unknown ? `<p class="flag">${s.unknown} ${s.unknown === 1 ? "item ainda sem valor" : "itens ainda sem valor"} (não contados como zero).</p>` : ""}`;
+  return `<div class="summary">${box(`Custo total${cat === "Todas" ? "" : " em " + esc(cat)}`, s.total, e ? `<small>Lançado em euro: ${money(e, "EUR")}</small>` : "")}${box("Já pago", s.paid)}${box("Falta pagar", s.open)}</div>${s.unknown && !onlyUnknown ? `<button type="button" class="link flag" onclick="showUnknown()">${s.unknown} ${s.unknown === 1 ? "item ainda sem valor" : "itens ainda sem valor"} (não contados como zero) · ver quais →</button>` : ""}`;
 }
 
 function qtyBlock(t) {
@@ -280,12 +325,12 @@ function originText(t) {
     .map((a) => sourceName(a.sourceId) + (a.brl !== null && a.brl !== "" ? ` (${money(num(a.brl))})` : ""))
     .join(" + ");
 }
-function taskTable(a, manual = true) {
+function taskTable(a, manual = true, sel = false) {
   if (!a.length) return '<div class="empty">Nenhuma pendência por aqui.</div>';
   return `<div class="tablewrap"><table class="cardtable tasks"><thead><tr><th>Pendência</th><th>Prazo</th><th>Situação</th><th>Valor</th><th></th></tr></thead><tbody>${a
     .map((t) => {
       const d = dueStatus(t);
-      return `<tr data-id="${t.id}"><td data-label="Pendência"><div>${manual ? '<span class="draghandle" tabindex="0" role="button" aria-label="Arrastar pendência" title="Segure e arraste para reordenar">⠿</span>' : ""}<input class="check" aria-label="Concluir ${esc(t.title)}" type="checkbox" ${t.status === "Concluído" ? "checked" : ""} onchange="toggle('${t.id}',this.checked)"><button type="button" class="link title" onclick="editTask('${t.id}')">${esc(t.title)}</button><br><small class="meta">${esc(t.category)}${t.notes ? " · " + esc(t.notes) : ""}</small></div></td><td data-label="Prazo"><div>${d && d.key !== "done" ? `${badge(d.label, d.cls)}<br><small>${fmtDate(dueDate(t))}</small>` : `<small>${dueDate(t) ? fmtDate(dueDate(t)) : "Sem prazo"}</small>`}</div></td><td data-label="Situação"><div>${badge(t.status, statusCls(t.status))}</div></td><td data-label="Valor"><div>${valueCell(t)}</div></td><td class="rowactions"><button class="link" onclick="editTask('${t.id}')">Editar</button>${isCost(t) ? `<button class="link" onclick="openTask('${t.id}')">Pagamentos</button>` : ""}<button class="link danger" aria-label="Excluir ${esc(t.title)}" title="Excluir pendência" onclick="deleteTask('${t.id}')">🗑</button></td></tr>`;
+      return `<tr data-id="${t.id}"${sel && selected.has(t.id) ? ' class="selected"' : ""}><td data-label="Pendência"><div>${sel ? `<input class="sel" type="checkbox" aria-label="Selecionar ${esc(t.title)}" ${selected.has(t.id) ? "checked" : ""} onchange="toggleSelect('${t.id}')">` : ""}${manual ? '<span class="draghandle" tabindex="0" role="button" aria-label="Arrastar pendência" title="Segure e arraste para reordenar">⠿</span>' : ""}<input class="check" aria-label="Concluir ${esc(t.title)}" type="checkbox" ${t.status === "Concluído" ? "checked" : ""} onchange="toggle('${t.id}',this.checked)"><button type="button" class="link title" onclick="editTask('${t.id}')">${esc(t.title)}</button><br><small class="meta">${esc(t.category)}${t.notes ? " · " + esc(t.notes) : ""}</small></div></td><td data-label="Prazo"><div>${d && d.key !== "done" ? `${badge(d.label, d.cls)}<br><small>${fmtDate(dueDate(t))}</small>` : `<small>${dueDate(t) ? fmtDate(dueDate(t)) : "Sem prazo"}</small>`}</div></td><td data-label="Situação"><div>${badge(t.status, statusCls(t.status))}</div></td><td data-label="Valor"><div>${valueCell(t)}</div></td><td class="rowactions"><button class="link" onclick="editTask('${t.id}')">Editar</button>${isCost(t) ? `<button class="link" onclick="openTask('${t.id}')">Pagamentos</button>` : ""}<button class="link danger" aria-label="Excluir ${esc(t.title)}" title="Excluir pendência" onclick="deleteTask('${t.id}')">🗑</button></td></tr>`;
     })
     .join("")}</tbody></table></div>`;
 }

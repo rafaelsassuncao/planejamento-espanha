@@ -1277,3 +1277,61 @@ details.more > :not(summary) + * {
 .cardtable .link.title:hover {
   text-decoration: underline;
 }
+.link.flag {
+  padding: 0;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.alert .link {
+  margin-left: auto;
+  white-space: nowrap;
+}
+.sel {
+  accent-color: #2f6470;
+  width: 18px;
+  height: 18px;
+  margin-right: 10px;
+  vertical-align: middle;
+}
+tr.selected > td {
+  background: #eef5f6;
+}
+.selbar {
+  position: sticky;
+  bottom: 12px;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin-top: 14px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: #133d32;
+  color: #fff;
+  box-shadow: 0 14px 34px #14372d40;
+}
+.selbar > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.selbar .link {
+  color: #cfe6d8;
+}
+.seltotals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+.seltotals span {
+  display: grid;
+}
+.selbar small {
+  color: #b9d0c3;
+}
+.selbar .flag {
+  color: #f3d58c;
+}

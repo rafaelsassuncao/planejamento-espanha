@@ -1,6 +1,9 @@
 // Navegação e formulários de pendências e entradas
 function go(p) {
   page = p;
+  onlyUnknown = false;
+  selecting = false;
+  selected.clear();
   render();
 }
 document.querySelectorAll("nav button").forEach((b) => (b.onclick = () => go(b.dataset.page)));

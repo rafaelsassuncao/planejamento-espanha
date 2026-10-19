@@ -129,7 +129,10 @@ let page = "overview",
   filter = "Todos",
   cat = "Todas",
   due = "Todos",
-  sort = "manual";
+  sort = "manual",
+  onlyUnknown = false,
+  selecting = false;
+const selected = new Set();
 const $ = (s) => document.querySelector(s),
   esc = (s) =>
     String(s ?? "").replace(
