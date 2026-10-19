@@ -1,7 +1,7 @@
 // Navegação e formulários de pendências e entradas
 function go(p) {
   page = p;
-  onlyUnknown = false;
+  costF = "Todos";
   selecting = false;
   selected.clear();
   render();

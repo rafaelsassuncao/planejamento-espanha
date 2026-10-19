@@ -189,6 +189,15 @@ function render() {
           ["Sem prazo", "Sem prazo"],
         ],
         due,
+      )}</select><select id="costf" aria-label="Filtrar por custo">${selectOpts(
+        [
+          ["Todos", "Todos os custos"],
+          ["Sem custo", "Sem custo (checklist)"],
+          ["Sem valor", "Sem valor definido"],
+          ["A pagar", "A pagar"],
+          ["Pago", "Pago"],
+        ],
+        costF,
       )}</select><select id="sort" aria-label="Ordenar">${selectOpts(
         [
           ["manual", "Minha ordem"],
@@ -205,6 +214,7 @@ function render() {
       ["filter", (v) => (filter = v)],
       ["cat", (v) => (cat = v)],
       ["due", (v) => (due = v)],
+      ["costf", (v) => (costF = v)],
       ["sort", (v) => (sort = v)],
     ])
       $("#" + idName).onchange = (e) => {
@@ -221,6 +231,14 @@ function render() {
 const byDue = (a, b) =>
   (a.status === "Concluído") - (b.status === "Concluído") ||
   (dueDate(a) || "9999").localeCompare(dueDate(b) || "9999");
+// Filtro por custo: sem custo (checklist), sem valor definido, a pagar ou pago
+function matchCost(t) {
+  if (costF === "Sem custo") return !isCost(t);
+  if (costF === "Sem valor") return isCost(t) && forecast(t).unknown;
+  if (costF === "A pagar") return isCost(t) && outstandingBRL(t) > 0.005;
+  if (costF === "Pago") return isCost(t) && payStatus(t).label.startsWith("Pago");
+  return true;
+}
 function matchDue(t) {
   const k = dueStatus(t)?.key;
   if (due === "Atrasados") return k === "late";
@@ -235,13 +253,13 @@ function showUnknown() {
   filter = "Todos";
   due = "Todos";
   search = "";
-  onlyUnknown = true;
+  costF = "Sem valor";
   if ($("#modal").open) $("#modal").close();
   render();
   scrollTo(0, 0);
 }
 function clearUnknown() {
-  onlyUnknown = false;
+  costF = "Todos";
   updateRows();
 }
 // Seleção de pendências para somar valores
@@ -269,7 +287,7 @@ function selectAll(on) {
 function updateRows() {
   let list = data.tasks.filter(
     (t) =>
-      (!onlyUnknown || (isCost(t) && forecast(t).unknown)) &&
+      matchCost(t) &&
       (filter === "Todos" ||
         (filter === "Não concluídos" ? t.status !== "Concluído" : t.status === filter)) &&
       (cat === "Todas" || t.category === cat) &&
@@ -278,10 +296,10 @@ function updateRows() {
   );
   if (sort === "prazo") list = [...list].sort(byDue);
   $("#rows").innerHTML =
-    (onlyUnknown
+    (costF === "Sem valor"
       ? `<div class="alert warn">${icon("alert")}<span>Mostrando só as pendências sem valor (${list.length}). Toque em Editar para preencher.</span><button type="button" class="link" onclick="clearUnknown()">Limpar filtro</button></div>`
       : "") +
-    (cat !== "Todas" && !onlyUnknown ? categoryCard(cat) : "") +
+    (cat !== "Todas" && costF === "Todos" ? categoryCard(cat) : "") +
     (selecting ? "" : summary(list)) +
     taskTable(list, sort === "manual" && !selecting, selecting) +
     (selecting ? selectionBar(list) : "");
@@ -291,7 +309,7 @@ function summary(list) {
   const s = totals(list),
     e = eurLaunched(list),
     box = (label, v, extra = "") => `<div><small>${label}</small><b>${money(v)}</b>${extra}</div>`;
-  return `<div class="summary">${box(`Custo total${cat === "Todas" ? "" : " em " + esc(cat)}`, s.total, e ? `<small>Lançado em euro: ${money(e, "EUR")}</small>` : "")}${box("Já pago", s.paid)}${box("Falta pagar", s.open)}</div>${s.unknown && !onlyUnknown ? `<button type="button" class="link flag" onclick="showUnknown()">${s.unknown} ${s.unknown === 1 ? "item ainda sem valor" : "itens ainda sem valor"} (não contados como zero) · ver quais →</button>` : ""}`;
+  return `<div class="summary">${box(`Custo total${cat === "Todas" ? "" : " em " + esc(cat)}`, s.total, e ? `<small>Lançado em euro: ${money(e, "EUR")}</small>` : "")}${box("Já pago", s.paid)}${box("Falta pagar", s.open)}</div>${s.unknown && costF !== "Sem valor" ? `<button type="button" class="link flag" onclick="showUnknown()">${s.unknown} ${s.unknown === 1 ? "item ainda sem valor" : "itens ainda sem valor"} (não contados como zero) · ver quais →</button>` : ""}`;
 }
 
 function qtyBlock(t) {

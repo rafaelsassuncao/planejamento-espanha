@@ -130,7 +130,7 @@ let page = "overview",
   cat = "Todas",
   due = "Todos",
   sort = "manual",
-  onlyUnknown = false,
+  costF = "Todos",
   selecting = false;
 const selected = new Set();
 const $ = (s) => document.querySelector(s),
