@@ -7,10 +7,21 @@ function go(p) {
 }
 document.querySelectorAll("nav button").forEach((b) => (b.onclick = () => go(b.dataset.page)));
 function toggle(id, v) {
-  const t = data.tasks.find((t) => t.id === id);
+  const t = data.tasks.find((t) => t.id === id),
+    prev = t.status;
   t.status = v ? "Concluído" : "Pendente";
   save();
   render();
+  if (v)
+    toast(page === "tasks" && filter === "Não concluídos" ? "Concluída e ocultada da lista" : "Concluída", {
+      label: "Desfazer",
+      fn: () => {
+        const again = data.tasks.find((x) => x.id === id);
+        if (again) again.status = prev;
+        save();
+        render();
+      },
+    });
 }
 const field = (label, name, val = "", type = "text", extra = "") =>
   `<label>${label}<input name="${name}" type="${type}" value="${esc(val)}" ${extra}></label>`;

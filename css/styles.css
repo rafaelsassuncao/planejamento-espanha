@@ -1442,3 +1442,15 @@ textarea {
     font-size: 14px;
   }
 }
+.toastbtn {
+  margin-left: 12px;
+  padding: 4px 10px;
+  border: 1px solid #ffffff80;
+  border-radius: 6px;
+  background: transparent;
+  color: #fff;
+  font-weight: 700;
+}
+.folderactions:empty {
+  display: none;
+}

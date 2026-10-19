@@ -84,6 +84,14 @@ function migrate(d) {
     t.payments ??= [];
     t.alloc ??= [];
     t.credits ??= [];
+    for (const k of ["plan", "purchases", "payments", "alloc", "credits"])
+      t[k] = Array.isArray(t[k]) ? t[k].filter((x) => x && typeof x === "object") : [];
+    t.credits.forEach(
+      (c) => (c.installments = Array.isArray(c.installments) ? c.installments.filter(Boolean) : []),
+    );
+    t.title = String(t.title ?? "");
+    t.notes = String(t.notes ?? "");
+    t.category = String(t.category);
     t.method ??= "";
     t.accountId ??= "";
     t.acquired ??= false;
@@ -110,6 +118,7 @@ function migrate(d) {
       p.method ??= "";
       p.accountId ??= "";
       p.confirmed ??= true;
+      p.split = Array.isArray(p.split) ? p.split.filter(Boolean) : [];
     });
   });
   d.schema = SCHEMA;
@@ -126,7 +135,7 @@ migrate(data);
 let categories = data.categories;
 let page = "overview",
   search = "",
-  filter = "Todos",
+  filter = "Não concluídos",
   cat = "Todas",
   due = "Todos",
   sort = "manual",
@@ -178,13 +187,23 @@ function setData(d) {
   return migrated;
 }
 // Aviso rápido; como "popover", aparece por cima até de um painel aberto
-function toast(s) {
+function toast(s, action) {
   const el = $("#toast");
   el.textContent = s;
+  if (action) {
+    const b = document.createElement("button");
+    b.className = "toastbtn";
+    b.textContent = action.label;
+    b.onclick = () => {
+      el.hidePopover?.();
+      action.fn();
+    };
+    el.append(" ", b);
+  }
   try {
     el.hidePopover();
     el.showPopover();
   } catch {}
   clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => el.hidePopover?.(), 3500);
+  toast.timer = setTimeout(() => el.hidePopover?.(), action ? 6000 : 3500);
 }
