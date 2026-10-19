@@ -13,6 +13,7 @@ const ICONS = {
   coins:
     '<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/>',
   card: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
+  folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
 };
 const icon = (n) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}</svg>`,
   badge = (label, cls = "") => `<span class="badge ${cls}">${esc(label)}</span>`,
@@ -73,11 +74,39 @@ function folderCard() {
           .slice(0, 6)
           .map(
             (t) =>
-              `<div class="checkrow"><input class="check" type="checkbox" aria-label="Concluir ${esc(t.title)}" onchange="toggle('${t.id}',this.checked)"><button type="button" class="link" onclick="openTask('${t.id}')">${esc(t.title)}</button>${dueStatus(t)?.key === "late" ? badge("Atrasado", "late") : ""}<span class="date">${icon("calendar")} ${fmtDate(dueDate(t)) || "sem prazo"}</span></div>`,
+              `<div class="checkrow"><input class="check" type="checkbox" aria-label="Concluir ${esc(t.title)}" onchange="toggle('${t.id}',this.checked)"><button type="button" class="link" onclick="editTask('${t.id}')">${esc(t.title)}</button>${dueStatus(t)?.key === "late" ? badge("Atrasado", "late") : ""}<span class="date">${icon("calendar")} ${fmtDate(dueDate(t)) || "sem prazo"}</span></div>`,
           )
           .join("")}${open.length > 6 ? `<small>+ ${open.length - 6} itens</small>` : ""}</div>`
       : ""
   }<div class="folderactions"><button class="btn" onclick="showFolderItems()">Ver itens pendentes</button><button class="link" onclick="editFolder()">Configurar pasta</button></div><p class="sub">O progresso considera apenas o seu checklist. Não representa validação oficial dos documentos nem aprovação do visto.</p></section>`;
+}
+// Ao filtrar uma categoria, mostra um card de "pasta" com o progresso e o que falta
+function categoryCard(c) {
+  if (data.folder && c === data.folder.category) return folderCard();
+  const items = data.tasks.filter((t) => t.category === c);
+  if (!items.length) return "";
+  const done = items.filter((t) => t.status === "Concluído").length,
+    pending = items.length - done,
+    pct = Math.round((done / items.length) * 100),
+    open = items.filter((t) => t.status !== "Concluído").sort(byDue),
+    late = open.filter((t) => dueStatus(t)?.key === "late").length,
+    tone = !pending ? "done" : late ? "late" : "info",
+    message = !pending
+      ? "Tudo concluído nesta categoria!"
+      : `${pending === 1 ? "Falta 1 pendência" : `Faltam ${pending} pendências`}${late ? ` · ${late} atrasada${late === 1 ? "" : "s"}` : ""}.`;
+  return `<section class="panel folder ${tone === "info" ? "" : tone}"><div class="folderhead"><span class="iconcircle">${icon("folder")}</span><div class="grow"><h3>${esc(c)}</h3><small>${done} de ${items.length} concluídas</small><div class="barrow"><div class="bar"><span style="width:${pct}%"></span></div><b>${pct}%</b></div></div></div><div class="alert ${tone}">${icon(tone === "done" ? "check" : tone === "late" ? "alert" : "info")}<span>${message}</span></div>${
+    open.length
+      ? `<div class="checklist">${open
+          .slice(0, 8)
+          .map(
+            (t) =>
+              `<div class="checkrow"><input class="check" type="checkbox" aria-label="Concluir ${esc(t.title)}" onchange="toggle('${t.id}',this.checked)"><button type="button" class="link" onclick="editTask('${t.id}')">${esc(t.title)}</button>${dueStatus(t)?.key === "late" ? badge("Atrasado", "late") : ""}${dueDate(t) ? `<span class="date">${icon("calendar")} ${fmtDate(dueDate(t))}</span>` : ""}</div>`,
+          )
+          .join(
+            "",
+          )}${open.length > 8 ? `<small>+ ${open.length - 8} pendências na lista abaixo</small>` : ""}</div>`
+      : ""
+  }</section>`;
 }
 function showFolderItems() {
   page = "tasks";
@@ -167,7 +196,7 @@ function render() {
           ["prazo", "Por vencimento"],
         ],
         sort,
-      )}</select></div><p class="sub">${sort === "manual" ? "Segure o símbolo ⠿ e arraste a pendência até a nova posição. " : "Ordenado por vencimento; volte para “Minha ordem” para reorganizar. "}Toque em Abrir para ver detalhes, compras e pagamentos.</p><div id="rows"></div></section>`;
+      )}</select></div><p class="sub">${sort === "manual" ? "Segure o símbolo ⠿ e arraste a pendência até a nova posição. " : "Ordenado por vencimento; volte para “Minha ordem” para reorganizar. "}Toque no nome ou em Editar para alterar; em Pagamentos, registre o que já pagou.</p><div id="rows"></div></section>`;
     updateRows();
     $("#search").oninput = (e) => {
       search = e.target.value;
@@ -211,9 +240,7 @@ function updateRows() {
   );
   if (sort === "prazo") list = [...list].sort(byDue);
   $("#rows").innerHTML =
-    (data.folder && cat === data.folder.category ? folderCard() : "") +
-    summary(list) +
-    taskTable(list, sort === "manual");
+    (cat !== "Todas" ? categoryCard(cat) : "") + summary(list) + taskTable(list, sort === "manual");
 }
 // Totais das pendências exibidas (respeita busca e filtros)
 function summary(list) {
@@ -259,7 +286,7 @@ function taskTable(a, manual = true) {
   return `<div class="tablewrap"><table class="cardtable tasks"><thead><tr><th>Pendência</th><th>Prazo</th><th>Situação</th><th>Valor</th><th></th></tr></thead><tbody>${a
     .map((t) => {
       const d = dueStatus(t);
-      return `<tr data-id="${t.id}"><td data-label="Pendência"><div>${manual ? '<span class="draghandle" tabindex="0" role="button" aria-label="Arrastar pendência" title="Segure e arraste para reordenar">⠿</span>' : ""}<input class="check" aria-label="Concluir ${esc(t.title)}" type="checkbox" ${t.status === "Concluído" ? "checked" : ""} onchange="toggle('${t.id}',this.checked)"><b>${esc(t.title)}</b><br><small class="meta">${esc(t.category)}${t.notes ? " · " + esc(t.notes) : ""}</small></div></td><td data-label="Prazo"><div>${d && d.key !== "done" ? `${badge(d.label, d.cls)}<br><small>${fmtDate(dueDate(t))}</small>` : `<small>${dueDate(t) ? fmtDate(dueDate(t)) : "Sem prazo"}</small>`}</div></td><td data-label="Situação"><div>${badge(t.status, statusCls(t.status))}</div></td><td data-label="Valor"><div>${valueCell(t)}</div></td><td class="rowactions"><button class="link" onclick="openTask('${t.id}')">Abrir</button><button class="link danger" aria-label="Excluir ${esc(t.title)}" title="Excluir pendência" onclick="deleteTask('${t.id}')">🗑</button></td></tr>`;
+      return `<tr data-id="${t.id}"><td data-label="Pendência"><div>${manual ? '<span class="draghandle" tabindex="0" role="button" aria-label="Arrastar pendência" title="Segure e arraste para reordenar">⠿</span>' : ""}<input class="check" aria-label="Concluir ${esc(t.title)}" type="checkbox" ${t.status === "Concluído" ? "checked" : ""} onchange="toggle('${t.id}',this.checked)"><button type="button" class="link title" onclick="editTask('${t.id}')">${esc(t.title)}</button><br><small class="meta">${esc(t.category)}${t.notes ? " · " + esc(t.notes) : ""}</small></div></td><td data-label="Prazo"><div>${d && d.key !== "done" ? `${badge(d.label, d.cls)}<br><small>${fmtDate(dueDate(t))}</small>` : `<small>${dueDate(t) ? fmtDate(dueDate(t)) : "Sem prazo"}</small>`}</div></td><td data-label="Situação"><div>${badge(t.status, statusCls(t.status))}</div></td><td data-label="Valor"><div>${valueCell(t)}</div></td><td class="rowactions"><button class="link" onclick="editTask('${t.id}')">Editar</button>${isCost(t) ? `<button class="link" onclick="openTask('${t.id}')">Pagamentos</button>` : ""}<button class="link danger" aria-label="Excluir ${esc(t.title)}" title="Excluir pendência" onclick="deleteTask('${t.id}')">🗑</button></td></tr>`;
     })
     .join("")}</tbody></table></div>`;
 }

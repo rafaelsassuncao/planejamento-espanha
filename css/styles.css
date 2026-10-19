@@ -319,13 +319,15 @@ form label {
 }
 #toast {
   position: fixed;
-  bottom: 25px;
-  right: 25px;
+  inset: auto 25px 25px auto;
+  margin: 0;
+  border: 0;
+  max-width: min(420px, calc(100vw - 50px));
   background: var(--green);
   color: #fff;
   padding: 14px 24px;
   border-radius: 9px;
-  display: none;
+  box-shadow: 0 10px 30px #14372d40;
 }
 .check {
   accent-color: var(--green);
@@ -1267,4 +1269,11 @@ details.more > :not(summary) + * {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+.cardtable .link.title {
+  font-weight: 700;
+  color: var(--ink);
+}
+.cardtable .link.title:hover {
+  text-decoration: underline;
 }

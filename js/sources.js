@@ -78,8 +78,28 @@ function renameSource(id) {
   sourceList();
 }
 function deleteSource(id) {
-  if (sourceInUse(id)) return toast("Esta fonte tem entradas, reservas ou pagamentos vinculados");
-  if (!confirm("Excluir esta fonte?")) return;
+  const name = sourceName(id);
+  if (sourceInUse(id)) {
+    if (
+      !confirm(
+        `“${name}” tem entradas, reservas ou pagamentos ligados a ela.\n\nExcluir mesmo assim? Esses registros continuam no app, mas passam a aparecer como “Fonte não definida”.`,
+      )
+    )
+      return;
+    const unlink = (list) => list.forEach((s) => s.sourceId === id && (s.sourceId = ""));
+    data.income.forEach((i) => i.sourceId === id && Object.assign(i, { sourceId: "", origin: "" }));
+    data.tasks.forEach((t) => {
+      t.alloc = t.alloc.filter((a) => a.sourceId !== id);
+      t.payments.forEach((p) => unlink(p.split || []));
+      t.credits.forEach((c) => {
+        if (c.sourceId === id) c.sourceId = "";
+        c.installments.forEach((i) => {
+          if (i.sourceId === id) i.sourceId = "";
+          unlink(i.payment?.split || []);
+        });
+      });
+    });
+  } else if (!confirm(`Excluir a fonte “${name}”?`)) return;
   data.sources = data.sources.filter((s) => s.id !== id);
   save();
   sourceList();

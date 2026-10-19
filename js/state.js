@@ -174,9 +174,14 @@ function setData(d) {
   } catch {}
   return migrated;
 }
+// Aviso rápido; como "popover", aparece por cima até de um painel aberto
 function toast(s) {
-  $("#toast").textContent = s;
-  $("#toast").style.display = "block";
+  const el = $("#toast");
+  el.textContent = s;
+  try {
+    el.hidePopover();
+    el.showPopover();
+  } catch {}
   clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => ($("#toast").style.display = "none"), 2500);
+  toast.timer = setTimeout(() => el.hidePopover?.(), 3500);
 }
