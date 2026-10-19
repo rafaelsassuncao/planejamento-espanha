@@ -31,7 +31,9 @@ function pickSource(select) {
     return;
   }
   document
-    .querySelectorAll('#form select[name="splitSource"], #form select[name="sourceId"]')
+    .querySelectorAll(
+      '#form select[name="splitSource"], #form select[name="sourceId"], #form select[name="plannedSource"]',
+    )
     .forEach((el) => {
       if (![...el.options].some((o) => o.value === s.id))
         el.querySelector(`option[value="${NEW_CATEGORY}"]`).insertAdjacentHTML(
@@ -274,6 +276,47 @@ function sourceLinks(id) {
   );
 }
 
+// Cria pendências "só checklist" a partir de uma lista colada (um item por linha), sem repetir nomes
+function addChecklistItems(category, text) {
+  const existing = new Set(data.tasks.map((t) => t.title.trim().toLowerCase()));
+  let added = 0;
+  (text || "")
+    .split(/\r?\n/)
+    .map((l) => l.replace(/^\s*(?:[-•*☐□▢✓✔]|\d+[.)])\s*/, "").trim())
+    .filter((l) => l && l.length <= 250)
+    .forEach((title) => {
+      if (existing.has(title.toLowerCase())) return;
+      existing.add(title.toLowerCase());
+      data.tasks.push({
+        id: uid(),
+        title,
+        category,
+        kind: "checklist",
+        status: "Pendente",
+        notes: "",
+        date: "",
+        currency: "BRL",
+        priceKnown: false,
+        value: 0,
+        multi: false,
+        qty: 1,
+        unit: "",
+        unitPrice: null,
+        plan: [],
+        purchases: [],
+        payments: [],
+        credits: [],
+        alloc: [],
+        method: "",
+        accountId: "",
+        acquired: false,
+        required: true,
+      });
+      added++;
+    });
+  if (added && !categories.includes(category)) categories.push(category);
+  return added;
+}
 function editFolder() {
   const f = data.folder,
     items = (category) =>
@@ -285,13 +328,18 @@ function editFolder() {
         )
         .join("") || '<p class="sub">Nenhuma pendência nesta categoria ainda.</p>';
   showForm(
-    `<h3>Configurar pasta</h3><label>Categoria da pasta<select name="category" onchange="document.querySelector('#reqlist').innerHTML=folderItems(this.value)">${opts(categories, f.category)}</select></label>${field("Data limite geral (entrega à consultoria)", "deadline", f.deadline, "date")}<p class="sub">Itens sem prazo próprio seguem esta data. Prazos definidos em cada item são mantidos.</p><fieldset class="sec"><legend>Itens obrigatórios para concluir a pasta</legend><div id="reqlist">${items(f.category)}</div></fieldset><div class="actions"><button type="button" class="btn" onclick="$('#modal').close()">Cancelar</button><button class="btn primary">Salvar</button></div>`,
+    `<h3>Configurar pasta</h3><label>Categoria da pasta<select name="category" onchange="document.querySelector('#reqlist').innerHTML=folderItems(this.value)">${opts(categories, f.category)}</select></label>${field("Data limite geral (entrega à consultoria)", "deadline", f.deadline, "date")}<p class="sub">Itens sem prazo próprio seguem esta data. Prazos definidos em cada item são mantidos.</p><fieldset class="sec"><legend>Itens obrigatórios para concluir a pasta</legend><div id="reqlist">${items(f.category)}</div></fieldset><fieldset class="sec"><legend>Adicionar vários itens</legend><label>Cole a lista do checklist, um item por linha<textarea name="bulk" rows="8" placeholder="Passaporte válido&#10;Formulário de solicitação do visto&#10;Comprovante de matrícula"></textarea></label><p class="sub">Entram na ordem da lista, como “Só checklist” e obrigatórios. Itens com o mesmo nome não são repetidos.</p></fieldset><div class="actions"><button type="button" class="btn" onclick="$('#modal').close()">Cancelar</button><button class="btn primary">Salvar</button></div>`,
     (fd) => {
       const category = fd.get("category"),
         req = new Set(fd.getAll("req"));
       data.folder = { category, deadline: fd.get("deadline") };
       data.tasks.filter((t) => t.category === category).forEach((t) => (t.required = req.has(t.id)));
-      finish("Pasta atualizada");
+      const added = addChecklistItems(category, fd.get("bulk"));
+      finish(
+        added
+          ? `${added} ${added === 1 ? "item adicionado" : "itens adicionados"} à pasta`
+          : "Pasta atualizada",
+      );
     },
   );
   window.folderItems = items;

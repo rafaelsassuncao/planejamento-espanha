@@ -16,7 +16,6 @@ const ICONS = {
 };
 const icon = (n) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}</svg>`,
   badge = (label, cls = "") => `<span class="badge ${cls}">${esc(label)}</span>`,
-  eurLine = (v) => `<small class="eur">≈ ${eur(v)}</small>`,
   fmtQty = (n) => Number(n).toLocaleString("pt-BR", { maximumFractionDigits: 2 }),
   fmtRate = (r) => Number(r).toLocaleString("pt-BR", { minimumFractionDigits: 4, maximumFractionDigits: 4 }),
   monthOnly = (s) => {
@@ -34,25 +33,23 @@ const icon = (n) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${IC
       ? `<span class="flag">Previsão incompleta: ${n} ${n === 1 ? "item" : "itens"} com custo a definir</span>`
       : "";
 const statusCls = (s) => (s === "Concluído" ? "done" : s === "Em andamento" ? "prog" : "");
-function rateNote() {
-  const when = data.rateAt
-    ? new Date(data.rateAt).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })
-    : "referência inicial";
-  return `Valores em euro (≈) são estimativas pela cotação de ${when}: 1 € = R$ ${fmtRate(data.rate)}.`;
-}
 
+// Total em euro só do que foi lançado em euro (valor original, sem conversão)
+const eurLaunched = (list = data.tasks) =>
+  sum(list.filter((t) => isCost(t) && t.currency === "EUR").map((t) => forecast(t).known));
 function cards() {
   const o = overall(),
+    e = eurLaunched(),
     card = (cls, ic, label, v, sub) =>
-      `<div class="card kpi ${cls}"><span class="iconcircle">${icon(ic)}</span><div><label>${label}</label><div class="amount">${money(v)}</div>${eurLine(v)}<span class="sub">${sub}</span></div></div>`;
-  return `<div class="cards">${card("green", "wallet", "Saldo atual", o.current, `Recebido ${money(o.received)} − pago ${money(o.paid)}${o.expected ? `<br>+ ${money(o.expected)} em entradas futuras` : ""}`)}${card("amber", "file", "Ainda a pagar", o.open, `Total previsto ${money(o.total)}${o.unknown ? "<br>" + incomplete(o.unknown) : ""}`)}${card("mint", "chart", "Saldo previsto", o.projected, "Depois de quitar os custos restantes")}</div><p class="sub ratenote">${icon("info")} ${rateNote()}</p>`;
+      `<div class="card kpi ${cls}"><span class="iconcircle">${icon(ic)}</span><div><label>${label}</label><div class="amount">${money(v)}</div><span class="sub">${sub}</span></div></div>`;
+  return `<div class="cards">${card("green", "wallet", "Saldo atual", o.current, `Recebido ${money(o.received)} − pago ${money(o.paid)}`)}${card("amber", "file", "Custo total", o.total, `${e ? `<b class="eurtotal">Lançado em euro: ${money(e, "EUR")}</b><br>` : ""}Já pago ${money(o.paid)} · falta ${money(o.open)}${o.unknown ? "<br>" + incomplete(o.unknown) : ""}`)}${card("mint", "chart", "Saldo previsto", o.projected, `Depois de pagar tudo${o.expected ? `<br>+ ${money(o.expected)} a receber` : ""}`)}</div>`;
 }
 
 function financePanel() {
   const o = overall(),
     row = (label, v, hint = "") =>
-      `<div class="statrow"><span>${label}${hint ? `<br><small>${hint}</small>` : ""}</span><span class="right"><b>${money(v)}</b><br>${eurLine(v)}</span></div>`;
-  return `<section class="panel"><div class="paneltop"><h3>Resumo financeiro</h3><button class="link" onclick="go('income')">Ver por fonte →</button></div>${row("Total recebido", o.received)}${row("Já pago", o.paid, "Valores reais desembolsados")}${row("Saldo atual", o.current, "Recebido − pagamentos realizados")}${row("Ainda a pagar", o.open, o.unknown ? `+ ${o.unknown} ${o.unknown === 1 ? "item" : "itens"} com custo a definir` : "Inclui parcelas e pagamentos agendados")}${row("Total previsto", o.total, "Já pago + ainda a pagar")}${row("Saldo previsto", o.projected, "Após quitar os custos restantes")}${o.expected ? row("Entradas futuras", o.expected, "Previstas, ainda não recebidas: não entram no saldo") : ""}</section>`;
+      `<div class="statrow"><span>${label}${hint ? `<br><small>${hint}</small>` : ""}</span><b>${money(v)}</b></div>`;
+  return `<section class="panel"><div class="paneltop"><h3>Resumo financeiro</h3><button class="link" onclick="go('income')">Ver por fonte →</button></div>${row("Total recebido", o.received)}${row("Já pago", o.paid)}${row("Saldo atual", o.current, "Recebido − pago")}${row("Falta pagar", o.open, o.unknown ? `+ ${o.unknown} ${o.unknown === 1 ? "item" : "itens"} sem valor definido` : "")}${row("Saldo previsto", o.projected, "Depois de pagar tudo")}${o.expected ? row("A receber", o.expected, "Entradas previstas, fora do saldo") : ""}</section>`;
 }
 
 function folderCard() {
@@ -221,8 +218,9 @@ function updateRows() {
 // Totais das pendências exibidas (respeita busca e filtros)
 function summary(list) {
   const s = totals(list),
-    box = (label, v) => `<div><small>${label}</small><b>${money(v)}</b>${eurLine(v)}</div>`;
-  return `<div class="summary">${box(`Total previsto${cat === "Todas" ? "" : " em " + esc(cat)}`, s.total)}${box("Já pago", s.paid)}${box("Ainda a pagar", s.open)}</div>${s.unknown ? `<p class="flag">Previsão incompleta: ${s.unknown} ${s.unknown === 1 ? "item com custo" : "itens com custo"} a definir, não contados como zero.</p>` : ""}`;
+    e = eurLaunched(list),
+    box = (label, v, extra = "") => `<div><small>${label}</small><b>${money(v)}</b>${extra}</div>`;
+  return `<div class="summary">${box(`Custo total${cat === "Todas" ? "" : " em " + esc(cat)}`, s.total, e ? `<small>Lançado em euro: ${money(e, "EUR")}</small>` : "")}${box("Já pago", s.paid)}${box("Falta pagar", s.open)}</div>${s.unknown ? `<p class="flag">${s.unknown} ${s.unknown === 1 ? "item ainda sem valor" : "itens ainda sem valor"} (não contados como zero).</p>` : ""}`;
 }
 
 function qtyBlock(t) {
@@ -232,25 +230,22 @@ function qtyBlock(t) {
     next = planSteps(t).find((s) => !s.done);
   return `<div class="qty"><small>${fmtQty(b)} de ${fmtQty(t.qty)} ${esc(t.unit || "un.")} compradas · ${rest ? `faltam ${fmtQty(rest)}` : "aquisição concluída ✓"}</small><div class="bar mini"><span style="width:${pct}%"></span></div>${next ? `<small>Próxima compra: ${fmtQty(next.qty)} ${next.date ? "em " + fmtDate(next.date) : "(data a definir)"}</small>` : ""}</div>`;
 }
-function finValues(t) {
+// Valor na moeda em que foi lançado, com a situação do pagamento
+function valueCell(t) {
+  if (!isCost(t)) return "<small>Sem custo</small>";
   const f = forecast(t),
+    ps = payStatus(t),
     paid = paidBRL(t),
-    open = outstandingBRL(t),
-    lines = [];
-  if (f.known > 0)
-    lines.push(
-      `<b>${money(f.known, t.currency)}</b>${t.currency === "EUR" ? ` <small>≈ ${money(paid + open)}</small>` : ""}`,
-    );
-  if (f.unknown) lines.push(`<small>${f.known > 0 ? "+ restante " : ""}a definir</small>`);
-  if (paid > 0 && open > 0.005) lines.push(`<small>Pago ${money(paid)} · falta ${money(open)}</small>`);
-  t.credits.forEach((c) => {
-    const p = c.installments.filter((i) => i.payment).length;
-    if (p < c.installments.length)
-      lines.push(
-        `<small>${esc(accountName(c.accountId))}: ${p} de ${c.installments.length} parcelas pagas</small>`,
-      );
-  });
-  if (t.payments.some((p) => !isConfirmed(p))) lines.push("<small>Há pagamento agendado</small>");
+    lines =
+      f.known > 0
+        ? [
+            `<b>${money(f.known, t.currency)}</b>${f.unknown ? " <small>+ a definir</small>" : ""}`,
+            badge(ps.label, ps.cls),
+          ]
+        : [badge(ps.label, ps.cls)];
+  if (ps.label === "Parcialmente pago") lines.push(`<small>Pago ${money(paid)}</small>`);
+  if (t.multi)
+    lines.push(`<small>${fmtQty(bought(t))} de ${fmtQty(t.qty)} ${esc(t.unit || "un.")} comprados</small>`);
   return lines.join("<br>");
 }
 function originText(t) {
@@ -261,11 +256,10 @@ function originText(t) {
 }
 function taskTable(a, manual = true) {
   if (!a.length) return '<div class="empty">Nenhuma pendência por aqui.</div>';
-  return `<div class="tablewrap"><table class="cardtable tasks"><thead><tr><th>Pendência</th><th>Prazo</th><th>Tarefa</th><th>Financeiro</th><th>Origem do dinheiro</th><th></th></tr></thead><tbody>${a
+  return `<div class="tablewrap"><table class="cardtable tasks"><thead><tr><th>Pendência</th><th>Prazo</th><th>Situação</th><th>Valor</th><th></th></tr></thead><tbody>${a
     .map((t) => {
-      const d = dueStatus(t),
-        ps = payStatus(t);
-      return `<tr data-id="${t.id}"><td data-label="Pendência"><div>${manual ? '<span class="draghandle" tabindex="0" role="button" aria-label="Arrastar pendência" title="Segure e arraste para reordenar">⠿</span>' : ""}<input class="check" aria-label="Concluir ${esc(t.title)}" type="checkbox" ${t.status === "Concluído" ? "checked" : ""} onchange="toggle('${t.id}',this.checked)"><b>${esc(t.title)}</b><br><small class="meta">${esc(t.category)}${inFolder(t) && t.required ? " · obrigatório da pasta" : ""}</small>${t.notes ? `<br><small>${esc(t.notes)}</small>` : ""}${isCost(t) && t.multi ? qtyBlock(t) : ""}</div></td><td data-label="Prazo"><div>${d ? `${badge(d.label, d.cls)}<br><small>${fmtDate(dueDate(t))}${t.date ? "" : " · prazo da pasta"}</small>` : "<small>Sem prazo</small>"}</div></td><td data-label="Tarefa"><div>${badge(t.status, statusCls(t.status))}</div></td><td data-label="Financeiro"><div>${badge(ps.label, ps.cls)}${isCost(t) ? "<br>" + finValues(t) : ""}</div></td><td data-label="Origem"><div><small>${isCost(t) ? esc(originText(t)) + (t.method ? `<br>${methodName(t.method)}${t.accountId ? " · " + esc(accountName(t.accountId)) : ""}` : "") : "—"}</small></div></td><td class="rowactions">${manual ? `<button class="link" aria-label="Mover para cima" onclick="moveTask('${t.id}',-1)">↑</button><button class="link" aria-label="Mover para baixo" onclick="moveTask('${t.id}',1)">↓</button>` : ""}<button class="link" onclick="openTask('${t.id}')">Abrir</button></td></tr>`;
+      const d = dueStatus(t);
+      return `<tr data-id="${t.id}"><td data-label="Pendência"><div>${manual ? '<span class="draghandle" tabindex="0" role="button" aria-label="Arrastar pendência" title="Segure e arraste para reordenar">⠿</span>' : ""}<input class="check" aria-label="Concluir ${esc(t.title)}" type="checkbox" ${t.status === "Concluído" ? "checked" : ""} onchange="toggle('${t.id}',this.checked)"><b>${esc(t.title)}</b><br><small class="meta">${esc(t.category)}${t.notes ? " · " + esc(t.notes) : ""}</small></div></td><td data-label="Prazo"><div>${d && d.key !== "done" ? `${badge(d.label, d.cls)}<br><small>${fmtDate(dueDate(t))}</small>` : `<small>${dueDate(t) ? fmtDate(dueDate(t)) : "Sem prazo"}</small>`}</div></td><td data-label="Situação"><div>${badge(t.status, statusCls(t.status))}</div></td><td data-label="Valor"><div>${valueCell(t)}</div></td><td class="rowactions">${manual ? `<button class="link" aria-label="Mover para cima" onclick="moveTask('${t.id}',-1)">↑</button><button class="link" aria-label="Mover para baixo" onclick="moveTask('${t.id}',1)">↓</button>` : ""}<button class="link" onclick="openTask('${t.id}')">Abrir</button></td></tr>`;
     })
     .join("")}</tbody></table></div>`;
 }
@@ -276,12 +270,12 @@ function sourcesPanel() {
     rows = [...data.sources.map((s) => [s.id, s.name]), ["", "Fonte não definida"]].filter(
       ([id]) => id || Object.values(st[""]).some((v) => Math.abs(v) > 0.005),
     );
-  return `<section class="panel"><div class="paneltop"><h3>Fontes de dinheiro</h3><button class="btn" onclick="manageSources()">Fontes</button><button class="btn primary" onclick="editIncome()">+ Nova entrada</button></div><p class="sub">Saldo atual = recebido − utilizado. Reservas (inclusive parcelas do cartão em aberto) reduzem só o saldo livre. ${rateNote()}</p><div class="tablewrap"><table class="cardtable"><thead><tr><th>Fonte</th><th>Recebido</th><th>Utilizado</th><th>Saldo atual</th><th>Reservado</th><th>Saldo livre</th><th></th></tr></thead><tbody>${rows
+  return `<section class="panel"><div class="paneltop"><h3>Fontes de dinheiro</h3><button class="btn" onclick="manageSources()">Fontes</button><button class="btn primary" onclick="editIncome()">+ Nova entrada</button></div><p class="sub">Saldo atual = recebido − utilizado. Reservado = o que já está separado para pagar despesas.</p><div class="tablewrap"><table class="cardtable"><thead><tr><th>Fonte</th><th>Recebido</th><th>Utilizado</th><th>Saldo atual</th><th>Reservado</th><th>Saldo livre</th><th></th></tr></thead><tbody>${rows
     .map(([id, name]) => {
       const s = st[id],
         noBalance = !id && !s.received && !s.expected,
         bal = (v) => (noBalance ? "—" : `<b>${money(v)}</b>`);
-      return `<tr><td data-label="Fonte"><div><b>${esc(name)}</b>${s.expected ? `<br><small>+ ${money(s.expected)} previsto</small>` : ""}</div></td><td data-label="Recebido"><div>${money(s.received)}</div></td><td data-label="Utilizado"><div>${money(s.used)}</div></td><td data-label="Saldo atual"${noBalance ? "" : neg(s.current)}><div>${bal(s.current)}${noBalance ? "" : "<br>" + eurLine(s.current)}</div></td><td data-label="${id ? "Reservado" : "A pagar sem fonte"}"><div>${money(s.reserved)}</div></td><td data-label="Saldo livre"${noBalance ? "" : neg(s.free)}><div>${bal(s.free)}${!noBalance && s.free < -0.005 ? "<br><small>⚠ reservas acima do saldo</small>" : ""}</div></td><td class="rowactions"><button class="link" onclick="sourceLinks('${id}')">Ver vínculos</button></td></tr>`;
+      return `<tr><td data-label="Fonte"><div><b>${esc(name)}</b>${s.expected ? `<br><small>+ ${money(s.expected)} previsto</small>` : ""}</div></td><td data-label="Recebido"><div>${money(s.received)}</div></td><td data-label="Utilizado"><div>${money(s.used)}</div></td><td data-label="Saldo atual"${noBalance ? "" : neg(s.current)}><div>${bal(s.current)}</div></td><td data-label="${id ? "Reservado" : "A pagar sem fonte"}"><div>${money(s.reserved)}</div></td><td data-label="Saldo livre"${noBalance ? "" : neg(s.free)}><div>${bal(s.free)}${!noBalance && s.free < -0.005 ? "<br><small>⚠ reservas acima do saldo</small>" : ""}</div></td><td class="rowactions"><button class="link" onclick="sourceLinks('${id}')">Ver vínculos</button></td></tr>`;
     })
     .join("")}</tbody></table></div></section>`;
 }

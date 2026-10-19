@@ -1239,3 +1239,27 @@ body:has(.dragfloat) {
 [data-pay][hidden] {
   display: none;
 }
+details.more {
+  display: grid;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+}
+details.more > summary {
+  cursor: pointer;
+  color: var(--green);
+  font-weight: 600;
+}
+details.more[open] {
+  gap: 12px;
+}
+details.more[open] > summary {
+  margin-bottom: 10px;
+}
+details.more > :not(summary) + * {
+  margin-top: 12px;
+}
+.eurtotal {
+  color: var(--ink);
+}

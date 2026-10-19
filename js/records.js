@@ -10,8 +10,8 @@ const methodOptions = (v, allow = () => true, empty = "Não informada") =>
   METHODS.filter(([k]) => allow(k))
     .map(([k, l]) => `<option value="${k}" ${k === v ? "selected" : ""}>${l}</option>`)
     .join("");
-const sourceOptions = (v) =>
-  `<option value="">Fonte não definida</option>` +
+const sourceOptions = (v, empty = "Fonte não definida") =>
+  `<option value="">${empty}</option>` +
   data.sources
     .map((s) => `<option value="${s.id}" ${s.id === v ? "selected" : ""}>${esc(s.name)}</option>`)
     .join("");
@@ -30,7 +30,7 @@ function openTask(id) {
     d = dueStatus(t),
     ps = payStatus(t),
     acq = acqStatus(t),
-    box = (label, v) => `<div><small>${label}</small><b>${money(v)}</b>${eurLine(v)}</div>`,
+    box = (label, v) => `<div><small>${label}</small><b>${money(v)}</b></div>`,
     unit = esc(t.unit || "un."),
     byDate = (a, b) => (a.date || "").localeCompare(b.date || ""),
     linkedText = (p) => {
@@ -59,7 +59,7 @@ function openTask(id) {
         .join("")}</div>`;
     });
   showForm(
-    `<h3>${esc(t.title)}</h3><p class="sub">${esc(t.category)}</p><div class="statusline"><span><small>Tarefa</small>${badge(t.status, statusCls(t.status))}</span><span><small>Prazo</small>${d ? badge(d.label, d.cls) + ` <small>${fmtDate(dueDate(t))}</small>` : "<small>Sem prazo</small>"}</span><span><small>Financeiro</small>${badge(ps.label, ps.cls)}</span><span><small>Aquisição</small>${badge(acq.label, acq.cls)}</span></div><div class="summary">${box("Total previsto", paidBRL(t) + outstandingBRL(t))}${box("Já pago", paidBRL(t))}${box("Ainda a pagar", outstandingBRL(t))}</div>${f.unknown ? '<p class="flag">Custo a definir: a previsão desta despesa está incompleta.</p>' : ""}${eurItem ? `<p class="sub">Valor previsto: ${cur(f.known)}. Pagamentos feitos mantêm o valor em reais registrado; o restante usa a cotação atual (estimativa).</p>` : ""}${
+    `<h3>${esc(t.title)}</h3><p class="sub">${esc(t.category)}</p><div class="statusline"><span><small>Tarefa</small>${badge(t.status, statusCls(t.status))}</span><span><small>Prazo</small>${d ? badge(d.label, d.cls) + ` <small>${fmtDate(dueDate(t))}</small>` : "<small>Sem prazo</small>"}</span><span><small>Financeiro</small>${badge(ps.label, ps.cls)}</span><span><small>Aquisição</small>${badge(acq.label, acq.cls)}</span></div><div class="summary">${box("Custo total", paidBRL(t) + outstandingBRL(t))}${box("Já pago", paidBRL(t))}${box("Falta pagar", outstandingBRL(t))}</div>${f.unknown ? '<p class="flag">Custo a definir: a previsão desta despesa está incompleta.</p>' : ""}${eurItem ? `<p class="sub">Valor previsto: ${cur(f.known)}. Pagamentos feitos mantêm o valor em reais registrado; o restante usa a cotação atual (estimativa).</p>` : ""}${
       t.multi
         ? `<fieldset class="sec"><legend>Quantidade</legend>${qtyBlock(t)}${t.priceKnown ? `<small>Estimativa por unidade: ${cur(num(t.unitPrice))}</small>` : "<small>Valor por unidade a definir</small>"}${
             t.plan.length
