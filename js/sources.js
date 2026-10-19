@@ -284,8 +284,11 @@ function addChecklistItems(category, text) {
     .split(/\r?\n/)
     .map((l) => l.replace(/^\s*(?:[-•*☐□▢✓✔]|\d+[.)])\s*/, "").trim())
     .filter((l) => l && l.length <= 250)
-    .forEach((title) => {
-      if (existing.has(title.toLowerCase())) return;
+    .forEach((line) => {
+      // "Título | observação": o texto depois da barra vira a observação do item
+      const [title, ...rest] = line.split("|").map((x) => x.trim()),
+        notes = rest.join(" | ");
+      if (!title || existing.has(title.toLowerCase())) return;
       existing.add(title.toLowerCase());
       data.tasks.push({
         id: uid(),
@@ -293,7 +296,7 @@ function addChecklistItems(category, text) {
         category,
         kind: "checklist",
         status: "Pendente",
-        notes: "",
+        notes,
         date: "",
         currency: "BRL",
         priceKnown: false,
@@ -328,7 +331,7 @@ function editFolder() {
         )
         .join("") || '<p class="sub">Nenhuma pendência nesta categoria ainda.</p>';
   showForm(
-    `<h3>Configurar pasta</h3><label>Categoria da pasta<select name="category" onchange="document.querySelector('#reqlist').innerHTML=folderItems(this.value)">${opts(categories, f.category)}</select></label>${field("Data limite geral (entrega à consultoria)", "deadline", f.deadline, "date")}<p class="sub">Itens sem prazo próprio seguem esta data. Prazos definidos em cada item são mantidos.</p><fieldset class="sec"><legend>Itens obrigatórios para concluir a pasta</legend><div id="reqlist">${items(f.category)}</div></fieldset><fieldset class="sec"><legend>Adicionar vários itens</legend><label>Cole a lista do checklist, um item por linha<textarea name="bulk" rows="8" placeholder="Passaporte válido&#10;Formulário de solicitação do visto&#10;Comprovante de matrícula"></textarea></label><p class="sub">Entram na ordem da lista, como “Só checklist” e obrigatórios. Itens com o mesmo nome não são repetidos.</p></fieldset><div class="actions"><button type="button" class="btn" onclick="$('#modal').close()">Cancelar</button><button class="btn primary">Salvar</button></div>`,
+    `<h3>Configurar pasta</h3><label>Categoria da pasta<select name="category" onchange="document.querySelector('#reqlist').innerHTML=folderItems(this.value)">${opts(categories, f.category)}</select></label>${field("Data limite geral (entrega à consultoria)", "deadline", f.deadline, "date")}<p class="sub">Itens sem prazo próprio seguem esta data. Prazos definidos em cada item são mantidos.</p><fieldset class="sec"><legend>Itens obrigatórios para concluir a pasta</legend><div id="reqlist">${items(f.category)}</div></fieldset><fieldset class="sec"><legend>Adicionar vários itens</legend><label>Cole a lista do checklist, um item por linha<textarea name="bulk" rows="8" placeholder="Passaporte válido&#10;Formulário de solicitação do visto&#10;Comprovante de matrícula"></textarea></label><p class="sub">Entram na ordem da lista, como “Só checklist” e obrigatórios. Use “Título | observação” para incluir uma observação. Itens com o mesmo nome não são repetidos.</p></fieldset><div class="actions"><button type="button" class="btn" onclick="$('#modal').close()">Cancelar</button><button class="btn primary">Salvar</button></div>`,
     (fd) => {
       const category = fd.get("category"),
         req = new Set(fd.getAll("req"));
