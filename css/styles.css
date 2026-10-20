@@ -1728,3 +1728,6 @@ tr.flash > td {
     justify-content: flex-start;
   }
 }
+.moneyshown {
+  font-variant-numeric: tabular-nums;
+}

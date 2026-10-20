@@ -79,16 +79,81 @@ function showForm(html, onsubmit, sync = () => {}) {
     e.preventDefault();
     onsubmit(new FormData(form));
   };
-  formSync = sync;
+  // Depois de cada atualização, prepara e reformata os campos de dinheiro
+  formSync = (e) => {
+    sync(e);
+    enhanceMoney(form);
+    refreshMoney(form);
+  };
   form.oninput = form.onchange = (e) => formSync(e);
+  enhanceMoney(form);
   formSync();
   if (!$("#modal").open) $("#modal").showModal();
   $("#modal").scrollTop = 0;
 }
 
+// Campos de dinheiro: pontos de milhar ao digitar e centavos completados ao sair (516 → 516,00).
+// O campo visível é só para leitura humana; o valor numérico fica num campo escondido com o mesmo nome
+const fmtMoney = (v) =>
+    v === "" || v == null || isNaN(Number(v))
+      ? ""
+      : Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+  parseMoney = (s) => {
+    const t = s.replace(/\./g, "").replace(",", ".");
+    return t === "" || t === "." || isNaN(Number(t)) ? "" : String(Number(t));
+  },
+  liveMoney = (s) => {
+    s = s.replace(/[^\d,]/g, "");
+    const [i, ...rest] = s.split(","),
+      int = (i.replace(/^0+(?=\d)/, "") || (s.includes(",") ? "0" : "")).replace(
+        /\B(?=(\d{3})+(?!\d))/g,
+        ".",
+      );
+    return s.includes(",") ? `${int},${rest.join("").slice(0, 2)}` : int;
+  };
+function enhanceMoney(root) {
+  root.querySelectorAll("input.money:not([data-done])").forEach((real) => {
+    real.dataset.done = "1";
+    const shown = document.createElement("input");
+    Object.assign(shown, {
+      type: "text",
+      inputMode: "decimal",
+      autocomplete: "off",
+      className: "moneyshown",
+    });
+    shown.placeholder = real.placeholder || "0,00";
+    shown.required = real.required;
+    shown.setAttribute(
+      "aria-label",
+      real.getAttribute("aria-label") || real.closest("label")?.firstChild?.textContent?.trim() || "Valor",
+    );
+    shown.value = fmtMoney(real.value);
+    shown.addEventListener("input", (e) => {
+      e.stopPropagation();
+      // ponto digitado vira vírgula decimal
+      if (e.data === "." && !shown.value.slice(0, -1).includes(","))
+        shown.value = shown.value.slice(0, -1) + ",";
+      shown.value = liveMoney(shown.value);
+      real.value = parseMoney(shown.value);
+      real.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    shown.addEventListener("change", (e) => e.stopPropagation());
+    shown.addEventListener("blur", () => (shown.value = fmtMoney(real.value)));
+    real.type = "hidden";
+    real.required = false;
+    real.before(shown);
+    real._shown = shown;
+  });
+}
+function refreshMoney(root) {
+  root.querySelectorAll("input.money").forEach((real) => {
+    if (real._shown && document.activeElement !== real._shown) real._shown.value = fmtMoney(real.value);
+  });
+}
+
 // Linhas de fonte do dinheiro (reserva da despesa ou divisão de um pagamento)
 function splitRow(sourceId = "", amount = null, allowUndefined = false) {
-  return `<div class="steprow"><select name="splitSource" aria-label="Fonte" data-prev="${esc(sourceId)}" onchange="pickSource(this)">${allowUndefined ? `<option value="">Fonte não definida</option>` : ""}${data.sources.map((s) => `<option value="${s.id}" ${s.id === sourceId ? "selected" : ""}>${esc(s.name)}</option>`).join("")}<option value="${NEW_CATEGORY}">+ Nova fonte…</option></select><input name="splitBrl" type="number" min="0" step="0.01" aria-label="Valor em reais" placeholder="R$ restante" value="${amount ?? ""}"><button type="button" class="link danger" aria-label="Remover fonte" onclick="this.parentElement.remove();formSync()">✕</button></div>`;
+  return `<div class="steprow"><select name="splitSource" aria-label="Fonte" data-prev="${esc(sourceId)}" onchange="pickSource(this)">${allowUndefined ? `<option value="">Fonte não definida</option>` : ""}${data.sources.map((s) => `<option value="${s.id}" ${s.id === sourceId ? "selected" : ""}>${esc(s.name)}</option>`).join("")}<option value="${NEW_CATEGORY}">+ Nova fonte…</option></select><input name="splitBrl" class="money" type="number" min="0" step="0.01" aria-label="Valor em reais" placeholder="R$ restante" value="${amount ?? ""}"><button type="button" class="link danger" aria-label="Remover fonte" onclick="this.parentElement.remove();formSync()">✕</button></div>`;
 }
 function addSplitRow(allowUndefined = false) {
   $("#splitrows").insertAdjacentHTML("beforeend", splitRow(data.sources[0]?.id || "", null, allowUndefined));
@@ -98,7 +163,10 @@ const readSplitRows = () =>
   [...document.querySelectorAll("#splitrows .steprow")]
     .map((r) => ({
       sourceId: r.querySelector("select").value,
-      brl: r.querySelector("input").value === "" ? null : Number(r.querySelector("input").value),
+      brl:
+        r.querySelector('[name="splitBrl"]').value === ""
+          ? null
+          : Number(r.querySelector('[name="splitBrl"]').value),
     }))
     .filter((r) => r.sourceId !== NEW_CATEGORY);
 // Divide um valor pago entre fontes; um campo em branco recebe o restante
@@ -222,10 +290,10 @@ function editTask(id) {
     $("#allocwarn").innerHTML = warn.join("<br>");
   };
   showForm(
-    `<h3>${id ? "Editar" : "Nova"} pendência</h3><fieldset class="sec"><legend>Pendência</legend>${field("O que precisa ser feito?", "title", t.title, "text", 'required maxlength="250"')}<label>Categoria<select name="category" data-prev="${esc(t.category)}" onchange="pickCategory(this)">${categoryOptions(t.category)}</select></label><div class="choices">${choice("kind", "checklist", t.kind === "checklist", "Só checklist", "Sem custo", locked)}${choice("kind", "cost", t.kind === "cost", "Com custo", "Taxa, compra ou serviço")}</div><label>Situação<select name="status">${opts(STATUSES, t.status)}</select></label><label class="inline" data-show="folder"><input type="checkbox" name="required" ${t.required ? "checked" : ""}> Obrigatório para a pasta do ${esc(data.folder?.category || "")}</label><label>Observações<textarea name="notes">${esc(t.notes)}</textarea></label><label data-show="prog">Lembrete do andamento (o que falta)<textarea name="progressNote" rows="2" placeholder="Ex.: falta levar as fotos e pegar o protocolo">${esc(t.progressNote || "")}</textarea></label></fieldset><fieldset class="sec"><legend>Prazo</legend>${field("Prazo (opcional)", "date", t.date, "date")}<small id="foldernote"></small></fieldset><fieldset class="sec" data-show="cost"><legend>Custo</legend><div class="twocol"><label id="valuelabel">Valor<input name="value" type="number" min="0.01" step="0.01" placeholder="A definir" value="${t.priceKnown ? (t.multi ? (t.unitPrice ?? "") : t.value || "") : ""}"></label><label>Moeda<select name="currency" ${locked ? "disabled" : ""}><option value="BRL" ${t.currency === "BRL" ? "selected" : ""}>R$ (real)</option><option value="EUR" ${t.currency === "EUR" ? "selected" : ""}>€ (euro)</option></select></label></div>${locked ? `<input type="hidden" name="currency" value="${t.currency}">` : ""}<p id="estimate" class="sub"></p><div class="choices" data-show="valued">${choice("valueType", "estimado", t.valueType === "estimado", "Estimativa", "Média pesquisada")}${choice("valueType", "confirmado", t.valueType === "confirmado", "Valor confirmado", "Orçamento ou oficial")}</div><label data-show="valued">Observação do valor (opcional)<input name="valueNote" maxlength="200" placeholder="Ex.: média de 3 sites, orçamento da clínica X" value="${esc(t.valueNote || "")}"></label><label>De onde sai o dinheiro${simpleAlloc ? `<select name="plannedSource" data-prev="${esc(t.alloc[0]?.sourceId || "")}" onchange="pickSource(this)">${sourceOptions(t.alloc[0]?.sourceId || "", "Ainda não sei")}<option value="${NEW_CATEGORY}">+ Nova fonte…</option></select>` : `<input value="${esc(originText(t))}" disabled>`}</label>${
+    `<h3>${id ? "Editar" : "Nova"} pendência</h3><fieldset class="sec"><legend>Pendência</legend>${field("O que precisa ser feito?", "title", t.title, "text", 'required maxlength="250"')}<label>Categoria<select name="category" data-prev="${esc(t.category)}" onchange="pickCategory(this)">${categoryOptions(t.category)}</select></label><div class="choices">${choice("kind", "checklist", t.kind === "checklist", "Só checklist", "Sem custo", locked)}${choice("kind", "cost", t.kind === "cost", "Com custo", "Taxa, compra ou serviço")}</div><label>Situação<select name="status">${opts(STATUSES, t.status)}</select></label><label class="inline" data-show="folder"><input type="checkbox" name="required" ${t.required ? "checked" : ""}> Obrigatório para a pasta do ${esc(data.folder?.category || "")}</label><label>Observações<textarea name="notes">${esc(t.notes)}</textarea></label><label data-show="prog">Lembrete do andamento (o que falta)<textarea name="progressNote" rows="2" placeholder="Ex.: falta levar as fotos e pegar o protocolo">${esc(t.progressNote || "")}</textarea></label></fieldset><fieldset class="sec"><legend>Prazo</legend>${field("Prazo (opcional)", "date", t.date, "date")}<small id="foldernote"></small></fieldset><fieldset class="sec" data-show="cost"><legend>Custo</legend><div class="twocol"><label id="valuelabel">Valor<input name="value" class="money" type="number" min="0.01" step="0.01" placeholder="A definir" value="${t.priceKnown ? (t.multi ? (t.unitPrice ?? "") : t.value || "") : ""}"></label><label>Moeda<select name="currency" ${locked ? "disabled" : ""}><option value="BRL" ${t.currency === "BRL" ? "selected" : ""}>R$ (real)</option><option value="EUR" ${t.currency === "EUR" ? "selected" : ""}>€ (euro)</option></select></label></div>${locked ? `<input type="hidden" name="currency" value="${t.currency}">` : ""}<p id="estimate" class="sub"></p><div class="choices" data-show="valued">${choice("valueType", "estimado", t.valueType === "estimado", "Estimativa", "Média pesquisada")}${choice("valueType", "confirmado", t.valueType === "confirmado", "Valor confirmado", "Orçamento ou oficial")}</div><label data-show="valued">Observação do valor (opcional)<input name="valueNote" maxlength="200" placeholder="Ex.: média de 3 sites, orçamento da clínica X" value="${esc(t.valueNote || "")}"></label><label>De onde sai o dinheiro${simpleAlloc ? `<select name="plannedSource" data-prev="${esc(t.alloc[0]?.sourceId || "")}" onchange="pickSource(this)">${sourceOptions(t.alloc[0]?.sourceId || "", "Ainda não sei")}<option value="${NEW_CATEGORY}">+ Nova fonte…</option></select>` : `<input value="${esc(originText(t))}" disabled>`}</label>${
       hasPay
         ? `<p class="notice">${badge(payStatus(t).label, payStatus(t).cls)} Já registrado: ${money(paidBRL(t))}. Para ver ou alterar, use <b>Pagamentos</b> na lista.</p>`
-        : `<div class="choices">${choice("paidNow", "0", true, "Ainda não paguei")}${choice("paidNow", "1", false, "Já paguei")}</div><div data-show="paid" class="twocol">${field("Data do pagamento", "payDate", todayStr(), "date")}<label>Forma (opcional)<select name="payMethod">${methodOptions(t.method, (k) => k !== "credito")}</select></label></div><div data-show="paideur">${field("Quanto saiu em reais", "paidBrl", "", "number", 'min="0" step="0.01" placeholder="Pela cotação do dia"')}</div><p class="sub" data-show="paid">Pagou no cartão de crédito parcelado? Salve e registre em Pagamentos, na lista.</p>`
+        : `<div class="choices">${choice("paidNow", "0", true, "Ainda não paguei")}${choice("paidNow", "1", false, "Já paguei")}</div><div data-show="paid" class="twocol">${field("Data do pagamento", "payDate", todayStr(), "date")}<label>Forma (opcional)<select name="payMethod">${methodOptions(t.method, (k) => k !== "credito")}</select></label></div><div data-show="paideur">${field("Quanto saiu em reais", "paidBrl", "", "number", 'class="money" min="0" step="0.01" placeholder="Pela cotação do dia"')}</div><p class="sub" data-show="paid">Pagou no cartão de crédito parcelado? Salve e registre em Pagamentos, na lista.</p>`
     }<p id="allocwarn" class="flag"></p><details class="more"><summary>Mais opções</summary><label class="inline"><input type="checkbox" name="multi" ${t.multi ? "checked" : ""} ${t.purchases.length ? "disabled" : ""}> Comprar em quantidade ou em etapas</label>${t.purchases.length ? `<input type="hidden" name="multi" value="on">` : ""}<div data-show="multi"><div class="twocol">${field("Quantidade", "qty", t.multi ? t.qty : "", "number", 'min="0.01" step="any"')}${field("Unidade", "unit", t.unit, "text", 'maxlength="30" placeholder="un., pares…"')}</div><small>Compras planejadas (quantidade e data)</small><div id="planrows">${t.plan.map(planRow).join("")}</div><button type="button" class="link" onclick="addPlanRow()">+ Adicionar etapa</button></div><label class="inline" data-show="single"><input type="checkbox" name="acquired" ${t.acquired ? "checked" : ""}> Item já adquirido / entregue</label><div class="twocol"><label>Forma de pagamento prevista<select name="method">${methodOptions(t.method, () => true, "A definir")}</select></label><label>Conta ou cartão previsto<select name="accountId" onchange="pickAccount(this)">${accountOptions(t.accountId)}</select></label></div></details></fieldset>${actions(id, "task")}`,
     (f) => {
       const d = draft(f),
@@ -290,7 +358,7 @@ function editIncome(id) {
     received: true,
   };
   showForm(
-    `<h3>${id ? "Editar" : "Nova"} entrada</h3><label>Fonte do dinheiro<select name="sourceId" data-prev="${esc(i.sourceId)}" onchange="pickSource(this)">${i.sourceId && data.sources.some((s) => s.id === i.sourceId) ? "" : '<option value="">Fonte não definida</option>'}${data.sources.map((s) => `<option value="${s.id}" ${s.id === i.sourceId ? "selected" : ""}>${esc(s.name)}</option>`).join("")}<option value="${NEW_CATEGORY}">+ Nova fonte…</option></select></label>${field("Descrição", "description", i.description)}<div class="twocol">${field("Valor (R$)", "value", i.value, "number", 'required min="0.01" step="0.01"')}${field("Data (opcional)", "date", i.date, "date")}</div><label>Situação<select name="received"><option value="1" ${i.received ? "selected" : ""}>Recebido</option><option value="0" ${i.received ? "" : "selected"}>Previsto (ainda não recebido)</option></select></label><p class="sub">Entradas previstas não aumentam o saldo disponível até serem marcadas como recebidas.</p><label>Observações<textarea name="notes">${esc(i.notes)}</textarea></label>${actions(id, "income")}`,
+    `<h3>${id ? "Editar" : "Nova"} entrada</h3><label>Fonte do dinheiro<select name="sourceId" data-prev="${esc(i.sourceId)}" onchange="pickSource(this)">${i.sourceId && data.sources.some((s) => s.id === i.sourceId) ? "" : '<option value="">Fonte não definida</option>'}${data.sources.map((s) => `<option value="${s.id}" ${s.id === i.sourceId ? "selected" : ""}>${esc(s.name)}</option>`).join("")}<option value="${NEW_CATEGORY}">+ Nova fonte…</option></select></label>${field("Descrição", "description", i.description)}<div class="twocol">${field("Valor (R$)", "value", i.value, "number", 'class="money" required min="0.01" step="0.01"')}${field("Data (opcional)", "date", i.date, "date")}</div><label>Situação<select name="received"><option value="1" ${i.received ? "selected" : ""}>Recebido</option><option value="0" ${i.received ? "" : "selected"}>Previsto (ainda não recebido)</option></select></label><p class="sub">Entradas previstas não aumentam o saldo disponível até serem marcadas como recebidas.</p><label>Observações<textarea name="notes">${esc(i.notes)}</textarea></label>${actions(id, "income")}`,
     (f) => {
       const sourceId = f.get("sourceId") === NEW_CATEGORY ? "" : f.get("sourceId"),
         item = {
