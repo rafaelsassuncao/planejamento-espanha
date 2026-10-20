@@ -152,21 +152,6 @@ function buyingCards() {
     .join("");
 }
 
-function originPanel() {
-  const st = sourceStats(),
-    used = data.sources.filter((s) => {
-      const x = st[s.id];
-      return x.received || x.expected || x.reserved || x.used;
-    }),
-    list = used.length ? used : data.sources;
-  return `<section class="panel"><div class="paneltop"><div class="titleicon"><span class="iconcircle small">${icon("coins")}</span><h3>Origem do dinheiro</h3></div><button class="btn soft" onclick="editIncome()">+ Nova entrada</button></div>${list
-    .map((s) => {
-      const x = st[s.id];
-      return `<div class="srcrow"><b>${esc(s.name)}</b><span><small>Recebido</small><b>${money(x.received)}</b></span><span><small>Reservado</small><b>${money(x.reserved)}</b></span><span><small>Livre</small><b class="${x.free < -0.005 ? "neg" : ""}">${money(x.free)}</b></span><button type="button" class="link more" title="Ver vínculos" aria-label="Ver vínculos de ${esc(s.name)}" onclick="sourceLinks('${s.id}')">⋮</button></div>`;
-    })
-    .join("")}</section>`;
-}
-
 function render() {
   document
     .querySelectorAll("nav button")
@@ -175,7 +160,7 @@ function render() {
     pct = data.tasks.length ? Math.round((done / data.tasks.length) * 100) : 0;
   if (page === "overview") {
     $("#app").innerHTML =
-      `<div class="hero"><div><span class="tag">NOSSA MUDANÇA • VISTO DE ESTUDANTE</span><h2>Uma nova vida. Um passo de cada vez.</h2><p>3 adultos, 1 bebê e 2 gatas rumo à Espanha.</p></div><div class="landmark" aria-hidden="true">☀︎ ⌂</div></div>${cards()}${folderCard()}${buyingCards()}${originPanel()}<section class="panel"><div class="paneltop"><h3>Como está o planejamento?</h3><span class="badge done">${pct}% concluído</span></div><div class="bar"><span style="width:${pct}%"></span></div><p class="muted">${done} de ${data.tasks.length} pendências resolvidas. Cada detalhe conta.</p><button class="link" onclick="go('tasks')">Ver todas as pendências →</button></section>`;
+      `<div class="hero"><div><span class="tag">NOSSA MUDANÇA • VISTO DE ESTUDANTE</span><h2>Uma nova vida. Um passo de cada vez.</h2><p>3 adultos, 1 bebê e 2 gatas rumo à Espanha.</p></div><div class="landmark" aria-hidden="true">☀︎ ⌂</div></div>${cards()}<section class="panel"><div class="paneltop"><h3>Como está o planejamento?</h3><span class="badge done">${pct}% concluído</span></div><div class="bar"><span style="width:${pct}%"></span></div><p class="muted">${done} de ${data.tasks.length} pendências resolvidas. Cada detalhe conta.</p><button class="link" onclick="go('tasks')">Ver todas as pendências →</button></section>${folderCard()}${buyingCards()}`;
   }
   if (page === "tasks") {
     $("#app").innerHTML =
