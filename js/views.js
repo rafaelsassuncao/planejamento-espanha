@@ -15,6 +15,7 @@ const ICONS = {
   card: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
   edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
   trash: '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
   folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
 };
 const icon = (n) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}</svg>`,
@@ -175,7 +176,7 @@ function render() {
   }
   if (page === "tasks") {
     $("#app").innerHTML =
-      `<section class="panel"><div class="paneltop"><h3>Seu checklist da mudança</h3><div class="panelactions"><button class="btn" onclick="manageCategories()">Categorias</button><button class="btn primary" onclick="editTask()">+ Nova pendência</button></div></div><div class="tools"><input id="search" aria-label="Buscar pendência" placeholder="Buscar uma pendência…" value="${esc(search)}">${filterSelect("cat")}<span class="mobilefilters">${filterSelect("due")}${filterSelect("filter")}${filterSelect("costf")}</span>${filterSelect("sort")}</div><p class="sub">${sort === "manual" ? "Segure ⠿ para arrastar. " : "Ordenado por vencimento. "}Mude a situação direto na coluna Situação. Marque as caixas para somar só algumas pendências.</p><div id="rows"></div></section>`;
+      `<section class="panel tasks-panel"><div class="paneltop"><div><h3>Pendências e custos</h3><p class="sub">Seu checklist da mudança, com prazos, andamento e pagamentos.</p></div><div class="panelactions"><button class="btn" onclick="manageCategories()">Categorias</button><button class="btn primary big" onclick="editTask()">+ Nova pendência</button></div></div><div class="tools"><label class="searchbox">${icon("search")}<input id="search" aria-label="Buscar pendência" placeholder="Buscar pendência ou observação…" value="${esc(search)}"></label>${filterSelect("cat")}<span class="mobilefilters">${filterSelect("due")}${filterSelect("filter")}${filterSelect("costf")}</span>${filterSelect("sort")}</div><p class="sub hint">${sort === "manual" ? "Segure ⠿ para arrastar. " : "Ordenado por vencimento. "}Mude o andamento direto na lista. Marque as caixas para somar só algumas pendências.</p><div id="rows"></div></section>`;
     updateRows();
     $("#search").oninput = (e) => {
       search = e.target.value;
@@ -234,7 +235,7 @@ const FILTERS = {
   due: {
     label: "Filtrar por prazo",
     opts: () => [
-      ["Todos", "Todos os prazos"],
+      ["Todos", "Prazo: todos"],
       ["Atrasados", "Atrasados"],
       ["Próximos", `Vencem em até ${NEAR_DAYS} dias`],
       ["Sem prazo", "Sem prazo"],
@@ -245,7 +246,7 @@ const FILTERS = {
   filter: {
     label: "Filtrar por situação",
     opts: () => [
-      ["Todos", "Todas as situações"],
+      ["Todos", "Andamento: todos"],
       ["Não concluídos", "Não concluídos"],
       ...STATUSES.map((s) => [s, s]),
     ],
@@ -255,7 +256,7 @@ const FILTERS = {
   costf: {
     label: "Filtrar por custo",
     opts: () => [
-      ["Todos", "Todos os valores"],
+      ["Todos", "Pagamento: todos"],
       ["Sem custo", "Sem custo (checklist)"],
       ["Sem valor", "Sem valor definido"],
       ["A pagar", "A pagar"],
@@ -340,26 +341,49 @@ function qtyBlock(t) {
     next = planSteps(t).find((s) => !s.done);
   return `<div class="qty"><small>${fmtQty(b)} de ${fmtQty(t.qty)} ${esc(t.unit || "un.")} compradas · ${rest ? `faltam ${fmtQty(rest)}` : "aquisição concluída ✓"}</small><div class="bar mini"><span style="width:${pct}%"></span></div>${next ? `<small>Próxima compra: ${fmtQty(next.qty)} ${next.date ? "em " + fmtDate(next.date) : "(data a definir)"}</small>` : ""}</div>`;
 }
-// Valor na moeda em que foi lançado, com a situação do pagamento
+// Data legível: 15 nov 2026
+const MONTHS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"],
+  fmtDay = (s) => {
+    const [y, m, d] = s.split("-");
+    return `${Number(d)} ${MONTHS[Number(m) - 1]} ${y}`;
+  };
+// Prazo: data em destaque; "Dentro do prazo" discreto; atraso e vencimento próximo em selo
+function dueCell(t) {
+  const s = dueDate(t),
+    d = dueStatus(t);
+  if (!s) return '<span class="muted small">Sem prazo</span>';
+  const urgent = d && ["late", "today", "near"].includes(d.key);
+  return `<span class="date">${fmtDay(s)}</span>${urgent ? badge(d.label, d.cls) : d?.key === "ok" ? '<small class="ontime">Dentro do prazo</small>' : ""}${t.date ? "" : '<small class="muted">prazo da pasta</small>'}`;
+}
+// Situação do pagamento, separada do andamento da pendência
+function payCell(t) {
+  if (!isCost(t)) return '<span class="muted small">Sem custo</span>';
+  const ps = payStatus(t),
+    lines = [badge(ps.label, ps.cls)];
+  if (ps.label === "Parcialmente pago") lines.push(`<small>Pago ${money(paidBRL(t))}</small>`);
+  t.credits.forEach((c) => {
+    const p = c.installments.filter((i) => i.payment).length;
+    if (p < c.installments.length)
+      lines.push(
+        `<small>${esc(accountName(c.accountId) || "Cartão")}: ${p} de ${c.installments.length} parcelas</small>`,
+      );
+  });
+  if (t.payments.some((p) => !isConfirmed(p))) lines.push("<small>Pagamento agendado</small>");
+  return lines.join("");
+}
+// Valor na moeda em que foi lançado, alinhado à direita
 function valueCell(t) {
-  if (!isCost(t)) return "<small>Sem custo</small>";
-  const f = forecast(t),
-    ps = payStatus(t),
-    paid = paidBRL(t),
-    lines =
-      f.known > 0
-        ? [
-            `<b>${money(f.known, t.currency)}</b>${f.unknown ? " <small>+ a definir</small>" : ""}`,
-            badge(ps.label, ps.cls),
-          ]
-        : [badge(ps.label, ps.cls)];
-  if (f.known > 0 && t.valueType === "estimado") lines[0] += ` <span class="vtag">estimado</span>`;
-  if (f.known > 0 && t.valueType === "confirmado") lines[0] += ` <span class="vtag ok">confirmado</span>`;
-  if (t.valueNote) lines.push(`<small class="vnote">${esc(t.valueNote)}</small>`);
-  if (ps.label === "Parcialmente pago") lines.push(`<small>Pago ${money(paid)}</small>`);
-  if (t.multi)
-    lines.push(`<small>${fmtQty(bought(t))} de ${fmtQty(t.qty)} ${esc(t.unit || "un.")} comprados</small>`);
-  return lines.join("<br>");
+  if (!isCost(t)) return '<span class="muted small">—</span>';
+  const f = forecast(t);
+  if (!(f.known > 0)) return '<span class="muted small">A definir</span>';
+  return `<b class="amount-sm">${money(f.known, t.currency)}</b>${f.unknown ? "<small>+ a definir</small>" : ""}${t.valueType === "estimado" ? '<span class="vtag">estimado</span>' : t.valueType === "confirmado" ? '<span class="vtag ok">confirmado</span>' : ""}${t.valueNote ? `<small class="vnote">${esc(t.valueNote)}</small>` : ""}`;
+}
+// Progresso das compras em etapas com a quantidade real adquirida (0 de 3 = barra vazia)
+function qtyProgress(t) {
+  if (!isCost(t) || !t.multi) return "";
+  const b = bought(t),
+    pct = Math.max(0, Math.min(100, Math.round((b / t.qty) * 100)));
+  return `<div class="qtyprog"><div class="bar mini" role="progressbar" aria-valuemin="0" aria-valuemax="${t.qty}" aria-valuenow="${b}"><span style="width:${pct}%"></span></div><small>${fmtQty(b)} de ${fmtQty(t.qty)} ${esc(t.unit || "un.")} comprados</small></div>`;
 }
 function originText(t) {
   if (!t.alloc.length) return "Fonte não definida";
@@ -369,11 +393,12 @@ function originText(t) {
 }
 function taskTable(a, manual = true, sel = false) {
   if (!a.length) return '<div class="empty">Nenhuma pendência por aqui.</div>';
-  return `<div class="tablewrap"><table class="cardtable tasks${selected.size ? " has-sel" : ""}"><thead><tr><th>${sel ? `<input class="sel" type="checkbox" id="selall" aria-label="Selecionar todas para somar" onchange="selectAll(this.checked)">` : ""}Pendência</th><th>${sel ? filterSelect("due", "hfilter") : "Prazo"}</th><th>${sel ? filterSelect("filter", "hfilter") : "Situação"}</th><th>${sel ? filterSelect("costf", "hfilter") : "Valor"}</th><th></th></tr></thead><tbody>${a
+  const th = (label, k, cls = "") =>
+    `<th class="${cls}">${sel && k ? filterSelect(k, "hfilter") : label}</th>`;
+  return `<div class="tablewrap tasks-wrap"><table class="cardtable tasks${selected.size ? " has-sel" : ""}"><thead><tr><th class="c-task">${sel ? `<input class="sel" type="checkbox" id="selall" aria-label="Selecionar todas para somar" onchange="selectAll(this.checked)">` : ""}Pendência</th>${th("Prazo", "due", "c-due")}${th("Andamento", "filter", "c-status")}${th("Pagamento", "costf", "c-pay")}<th class="c-val">Valor</th><th class="c-act"><span class="sr-only">Ações</span></th></tr></thead><tbody>${a
     .map((t) => {
       try {
-        const d = dueStatus(t);
-        return `<tr data-id="${t.id}" class="${statusRow(t.status)}${sel && selected.has(t.id) ? " picked" : ""}"><td data-label="Pendência"><div class="taskcell">${sel ? `<input class="sel" type="checkbox" aria-label="Selecionar ${esc(t.title)} para somar" ${selected.has(t.id) ? "checked" : ""} onchange="toggleSelect('${t.id}')">` : ""}${manual ? '<span class="draghandle" tabindex="0" role="button" aria-label="Arrastar pendência" title="Segure e arraste para reordenar">⠿</span>' : ""}<span class="tinfo"><button type="button" class="link title" onclick="editTask('${t.id}')">${esc(t.title)}</button><small class="meta">${esc(t.category)}${t.notes ? " · " + esc(t.notes) : ""}</small>${t.status === "Em andamento" && t.progressNote ? `<small class="pnote">⏳ ${esc(t.progressNote)}</small>` : ""}</span></div></td><td data-label="Prazo"><div>${d && d.key !== "done" ? `${badge(d.label, d.cls)}<br><small>${fmtDate(dueDate(t))}</small>` : `<small>${dueDate(t) ? fmtDate(dueDate(t)) : "Sem prazo"}</small>`}</div></td><td data-label="Situação"><div><select class="statussel ${statusCls(t.status) || "pend"}" aria-label="Situação de ${esc(t.title)}" onchange="setStatus('${t.id}', this.value)">${STATUSES.map((s) => `<option ${s === t.status ? "selected" : ""}>${s}</option>`).join("")}</select></div></td><td data-label="Valor"><div>${valueCell(t)}</div></td><td class="rowactions"><button class="link act" title="Editar" aria-label="Editar ${esc(t.title)}" onclick="editTask('${t.id}')">${icon("edit")}<span class="lbl">Editar</span></button>${isCost(t) ? `<button class="link act" title="Pagamentos" aria-label="Pagamentos de ${esc(t.title)}" onclick="openTask('${t.id}')">${icon("card")}<span class="lbl">Pagamentos</span></button>` : '<span class="actgap"></span>'}<button class="link act danger" title="Excluir pendência" aria-label="Excluir ${esc(t.title)}" onclick="deleteTask('${t.id}')">${icon("trash")}<span class="lbl">Excluir</span></button></td></tr>`;
+        return `<tr data-id="${t.id}" class="${statusRow(t.status)}${sel && selected.has(t.id) ? " picked" : ""}"><td data-label="Pendência" class="c-task"><div class="taskcell">${sel ? `<input class="sel" type="checkbox" aria-label="Selecionar ${esc(t.title)} para somar" ${selected.has(t.id) ? "checked" : ""} onchange="toggleSelect('${t.id}')">` : ""}${manual ? '<span class="draghandle" tabindex="0" role="button" aria-label="Arrastar pendência" title="Segure e arraste para reordenar">⠿</span>' : ""}<span class="tinfo"><button type="button" class="link title" onclick="editTask('${t.id}')">${esc(t.title)}</button><span class="catpill">${esc(t.category)}</span>${t.notes ? `<small class="tnotes">${esc(t.notes)}</small>` : ""}${t.status === "Em andamento" && t.progressNote ? `<small class="pnote">⏳ ${esc(t.progressNote)}</small>` : ""}${qtyProgress(t)}</span></div></td><td data-label="Prazo" class="c-due"><div class="stack">${dueCell(t)}</div></td><td data-label="Andamento" class="c-status"><div><select class="statussel ${statusCls(t.status) || "pend"}" aria-label="Andamento de ${esc(t.title)}" onchange="setStatus('${t.id}', this.value)">${STATUSES.map((s) => `<option ${s === t.status ? "selected" : ""}>${s}</option>`).join("")}</select></div></td><td data-label="Pagamento" class="c-pay"><div class="stack">${payCell(t)}</div></td><td data-label="Valor" class="c-val"><div class="stack end">${valueCell(t)}</div></td><td class="rowactions c-act"><button type="button" class="act2" title="Editar" aria-label="Editar ${esc(t.title)}" onclick="editTask('${t.id}')">${icon("edit")}<span>Editar</span></button>${isCost(t) ? `<button type="button" class="act2" title="Pagamento" aria-label="Pagamento de ${esc(t.title)}" onclick="openTask('${t.id}')">${icon("card")}<span>Pagamento</span></button>` : '<span class="act2gap"></span>'}<details class="rowmenu"><summary aria-label="Mais ações de ${esc(t.title)}" title="Mais ações">⋯</summary><div class="menu"><button type="button" class="danger" title="Excluir pendência" onclick="this.closest('details').open=false;deleteTask('${t.id}')">${icon("trash")}<span>Excluir pendência</span></button></div></details></td></tr>`;
       } catch (err) {
         return badRow(t, err);
       }
@@ -383,7 +408,7 @@ function taskTable(a, manual = true, sel = false) {
 // Linha de aviso quando uma pendência não pode ser exibida (o resto da lista continua aparecendo)
 function badRow(t, err) {
   console.error(err);
-  return `<tr data-id="${esc(t?.id)}"><td colspan="5"><div class="alert late">${icon("alert")}<span>Não consegui mostrar “${esc(t?.title || "sem nome")}”. <small>${esc(err?.message)}</small></span><button type="button" class="link" onclick="editTask('${esc(t?.id)}')">Editar</button></div></td></tr>`;
+  return `<tr data-id="${esc(t?.id)}"><td colspan="6"><div class="alert late">${icon("alert")}<span>Não consegui mostrar “${esc(t?.title || "sem nome")}”. <small>${esc(err?.message)}</small></span><button type="button" class="link" onclick="editTask('${esc(t?.id)}')">Editar</button></div></td></tr>`;
 }
 const safe = (fn) => {
   try {

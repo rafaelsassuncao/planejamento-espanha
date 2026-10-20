@@ -1731,3 +1731,395 @@ tr.flash > td {
 .moneyshown {
   font-variant-numeric: tabular-nums;
 }
+/* ---------- Pendências e custos: visual refinado ---------- */
+.tasks-panel .paneltop {
+  align-items: flex-start;
+}
+.tasks-panel .paneltop .sub {
+  margin: 4px 0 0;
+}
+.btn.big {
+  padding: 12px 20px;
+  font-weight: 700;
+  box-shadow: 0 6px 16px #1f665633;
+}
+.searchbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 2 1 260px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+}
+.searchbox:focus-within {
+  border-color: #9fbfa6;
+  box-shadow: 0 0 0 3px #e3efe2;
+}
+.searchbox .ic {
+  color: var(--muted);
+}
+.searchbox input {
+  flex: 1;
+  border: 0;
+  padding: 11px 0;
+  background: transparent;
+  outline: none;
+}
+.tools select {
+  border-radius: 10px;
+}
+.hint {
+  margin: -6px 0 14px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+.small {
+  font-size: 12px;
+}
+.tasks-wrap {
+  overflow: visible;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 2px 10px #14372d0d;
+}
+.cardtable.tasks th {
+  padding: 12px 10px;
+  background: #f6f7f1;
+}
+.cardtable.tasks th:first-child {
+  border-top-left-radius: 14px;
+}
+.cardtable.tasks th:last-child {
+  border-top-right-radius: 14px;
+}
+.cardtable.tasks td {
+  padding: 12px 10px;
+  vertical-align: middle;
+}
+.cardtable.tasks tbody tr:last-child td {
+  border-bottom: 0;
+}
+.cardtable.tasks tbody tr:hover > td {
+  background: #fbfcf8;
+}
+.cardtable.tasks .c-val {
+  text-align: right;
+}
+.cardtable.tasks .c-due {
+  min-width: 110px;
+}
+.cardtable.tasks .c-pay {
+  min-width: 120px;
+}
+.stack {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+}
+.stack.end {
+  justify-items: end;
+  text-align: right;
+}
+.date {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--ink);
+}
+.ontime {
+  font-size: 11px;
+  color: #5f8d6b;
+}
+.tinfo .link.title {
+  font-size: 14px;
+}
+.catpill {
+  justify-self: start;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #eef2ea;
+  color: #5d6f66;
+  font-size: 11px;
+  font-weight: 600;
+}
+.tnotes {
+  color: var(--muted);
+  line-height: 1.4;
+}
+.amount-sm {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.qtyprog {
+  display: grid;
+  gap: 3px;
+  width: min(220px, 100%);
+  margin-top: 4px;
+}
+.qtyprog .bar {
+  margin: 0;
+}
+.cardtable.tasks td.rowactions {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+.act2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+.act2 .ic {
+  width: 16px;
+  height: 16px;
+}
+.act2:hover {
+  border-color: #b9cdbd;
+  background: #f1f6ef;
+}
+.act2 + .act2 {
+  margin-left: 6px;
+}
+.act2gap {
+  display: inline-block;
+  width: 108px;
+}
+.rowmenu {
+  display: inline-block;
+  position: relative;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.rowmenu > summary {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  color: #5d7a6e;
+  font-size: 18px;
+  cursor: pointer;
+  list-style: none;
+}
+.rowmenu > summary::-webkit-details-marker {
+  display: none;
+}
+.rowmenu > summary:hover,
+.rowmenu[open] > summary {
+  background: #eef3ec;
+}
+.rowmenu .menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 30;
+  min-width: 190px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 12px 30px #14372d26;
+}
+.rowmenu .menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font-weight: 600;
+  text-align: left;
+}
+.rowmenu .menu button.danger {
+  color: #a1402f;
+}
+.rowmenu .menu button:hover {
+  background: #fbe9e5;
+}
+.rowmenu .menu .ic {
+  width: 16px;
+  height: 16px;
+}
+@media (max-width: 1100px) {
+  .act2 span {
+    display: none;
+  }
+  .act2gap {
+    width: 34px;
+  }
+}
+@media (max-width: 700px) {
+  .tasks-wrap {
+    border: 0;
+    box-shadow: none;
+  }
+  .cardtable.tasks tr {
+    padding: 14px 14px 10px;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px #14372d0f;
+  }
+  .cardtable.tasks td {
+    padding: 8px 0;
+  }
+  .cardtable.tasks .c-due,
+  .cardtable.tasks .c-pay {
+    min-width: 0;
+  }
+  .stack {
+    justify-items: end;
+    text-align: right;
+  }
+  .cardtable.tasks td.rowactions {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: stretch;
+    gap: 8px;
+    width: auto;
+    padding-top: 12px;
+  }
+  .act2 {
+    flex: 1;
+    justify-content: center;
+    min-height: 44px;
+    font-size: 14px;
+  }
+  .act2 + .act2 {
+    margin-left: 0;
+  }
+  .act2 span {
+    display: inline;
+  }
+  .act2gap {
+    display: none;
+  }
+  .rowmenu > summary {
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--line);
+  }
+  .searchbox {
+    flex-basis: 100%;
+  }
+  .qtyprog {
+    width: 100%;
+  }
+}
+/* Tabela de pendências cabe no painel sem rolar para o lado */
+.cardtable.tasks {
+  table-layout: auto;
+}
+.cardtable.tasks th,
+.cardtable.tasks td {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+.cardtable.tasks th .hfilter {
+  padding: 4px 18px 4px 0;
+  letter-spacing: 0.4px;
+  background-position: right 2px center;
+}
+.cardtable.tasks .c-due {
+  min-width: 96px;
+}
+.cardtable.tasks .c-pay {
+  min-width: 0;
+  max-width: 150px;
+}
+.c-pay .badge {
+  white-space: normal;
+  line-height: 1.3;
+}
+.cardtable.tasks .c-val {
+  white-space: nowrap;
+}
+.act2 {
+  padding: 6px 8px;
+}
+.act2 + .act2 {
+  margin-left: 4px;
+}
+.act2gap {
+  width: 100px;
+}
+@media (max-width: 1420px) {
+  .act2 span {
+    display: none;
+  }
+  .act2gap {
+    width: 34px;
+  }
+}
+.cardtable.tasks td:first-child {
+  min-width: 170px;
+}
+.cardtable.tasks .statussel {
+  padding-right: 24px;
+  background-position: right 9px center;
+}
+@media (max-width: 700px) {
+  .act2 span {
+    display: inline;
+  }
+  .mobilefilters > select {
+    flex: 1 1 40%;
+    min-width: 0;
+  }
+}
+.cardtable.tasks th.c-pay {
+  max-width: none;
+  min-width: 150px;
+}
+@media (max-width: 700px) {
+  .tools > select,
+  .mobilefilters > select {
+    flex: 1 1 100%;
+  }
+}
+.cardtable.tasks td:first-child {
+  min-width: 150px;
+}
+.cardtable.tasks th.c-pay {
+  min-width: 132px;
+}
+@media (min-width: 701px) {
+  .tasks-panel {
+    padding: 22px 18px;
+  }
+  .cardtable.tasks th,
+  .cardtable.tasks td {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+}
+/* Telas intermediárias (tablet): só a tabela rola para o lado, nunca a página */
+@media (min-width: 701px) and (max-width: 1240px) {
+  .tasks-wrap {
+    overflow-x: auto;
+  }
+}
+.cardtable.tasks th.c-act {
+  position: relative;
+}
+.sr-only {
+  left: 0;
+  top: 0;
+  white-space: nowrap;
+}

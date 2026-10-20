@@ -15,3 +15,9 @@ document.addEventListener("visibilitychange", () => {
   )
     refreshRate();
 });
+// Fecha o menu "⋯" das pendências ao clicar fora dele
+document.addEventListener("click", (e) => {
+  document
+    .querySelectorAll("details.rowmenu[open]")
+    .forEach((d) => !d.contains(e.target) && (d.open = false));
+});
