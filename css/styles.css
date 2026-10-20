@@ -1566,3 +1566,50 @@ textarea {
   color: #133d32;
   text-align: left;
 }
+/* Situação bem visível: selo forte e faixa lateral na linha */
+.badge.status.prog {
+  background: #2f6f80;
+  color: #fff;
+  font-weight: 700;
+}
+.badge.status.done {
+  background: #1f6656;
+  color: #fff;
+  font-weight: 700;
+}
+.badge.status.prog::before {
+  content: "◔ ";
+}
+.badge.status.done::before {
+  content: "✓ ";
+}
+tr.st-prog > td:first-child {
+  box-shadow: inset 4px 0 #2f8ba0;
+}
+tr.st-done > td:first-child {
+  box-shadow: inset 4px 0 #3c8a5f;
+}
+tr.st-prog > td {
+  background: #f3f9fb;
+}
+tr.st-done .link.title {
+  color: var(--muted);
+}
+@media (max-width: 700px) {
+  .cardtable tr.st-prog {
+    border-left: 5px solid #2f8ba0;
+    background: #f3f9fb;
+  }
+  .cardtable tr.st-done {
+    border-left: 5px solid #3c8a5f;
+  }
+  tr.st-prog > td,
+  tr.st-prog > td:first-child,
+  tr.st-done > td:first-child {
+    box-shadow: none;
+    background: transparent;
+  }
+}
+#app > .panel {
+  margin-bottom: 22px;
+}

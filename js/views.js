@@ -35,7 +35,8 @@ const icon = (n) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${IC
     n
       ? `<button type="button" class="link flag" onclick="showUnknown()">Previsão incompleta: ${n} ${n === 1 ? "item" : "itens"} com custo a definir →</button>`
       : "";
-const statusCls = (s) => (s === "Concluído" ? "done" : s === "Em andamento" ? "prog" : "");
+const statusCls = (s) => (s === "Concluído" ? "done" : s === "Em andamento" ? "prog" : ""),
+  statusRow = (s) => (s === "Concluído" ? "st-done" : s === "Em andamento" ? "st-prog" : "");
 
 // Total em euro só do que foi lançado em euro (valor original, sem conversão)
 const eurLaunched = (list = data.tasks) =>
@@ -46,13 +47,6 @@ function cards() {
     card = (cls, ic, label, v, sub) =>
       `<div class="card kpi ${cls}"><span class="iconcircle">${icon(ic)}</span><div><label>${label}</label><div class="amount">${money(v)}</div><span class="sub">${sub}</span></div></div>`;
   return `<div class="cards">${card("green", "wallet", "Saldo atual", o.current, `Recebido ${money(o.received)} − pago ${money(o.paid)}`)}${card("amber", "file", "Custo total", o.total, `${e ? `<b class="eurtotal">Lançado em euro: ${money(e, "EUR")}</b><br>` : ""}Já pago ${money(o.paid)} · falta ${money(o.open)}${o.unknown ? "<br>" + incomplete(o.unknown) : ""}`)}${card("mint", "chart", "Saldo previsto", o.projected, `Depois de pagar tudo${o.expected ? `<br>+ ${money(o.expected)} a receber` : ""}`)}</div>`;
-}
-
-function financePanel() {
-  const o = overall(),
-    row = (label, v, hint = "") =>
-      `<div class="statrow"><span>${label}${hint ? `<br><small>${hint}</small>` : ""}</span><b>${money(v)}</b></div>`;
-  return `<section class="panel"><div class="paneltop"><h3>Resumo financeiro</h3><button class="link" onclick="go('income')">Ver por fonte →</button></div>${row("Total recebido", o.received)}${row("Já pago", o.paid)}${row("Saldo atual", o.current, "Recebido − pago")}${row("Falta pagar", o.open, o.unknown ? `+ ${o.unknown} ${o.unknown === 1 ? "item" : "itens"} sem valor definido` : "")}${row("Saldo previsto", o.projected, "Depois de pagar tudo")}${o.expected ? row("A receber", o.expected, "Entradas previstas, fora do saldo") : ""}</section>`;
 }
 
 function folderCard() {
@@ -71,7 +65,7 @@ function folderCard() {
     open = f.items.filter((t) => t.status !== "Concluído").sort(byDue),
     tone = f.tone || "info";
   return `<section class="panel folder ${f.tone}"><div class="folderhead"><span class="iconcircle">${icon("file")}</span><div class="grow"><h3>Pasta do ${esc(f.category)}</h3><small>${f.done} de ${f.items.length} itens obrigatórios concluídos · ${f.pending} ${f.pending === 1 ? "falta" : "faltam"}</small><div class="barrow"><div class="bar"><span style="width:${pct}%"></span></div><b>${pct}%</b></div></div><div class="deadline">${icon("calendar")}<span><small>Entregar à consultoria até</small><b>${f.deadline ? fmtDate(f.deadline) : "—"}</b><small>${days}</small></span></div></div><div class="alert ${tone}">${icon(f.tone === "done" ? "check" : f.tone ? "alert" : "info")}<span>${esc(f.message)}</span></div>${
-    open.length && page !== "tasks"
+    open.length && page !== "tasks" && page !== "overview"
       ? `<div class="checklist">${open
           .slice(0, expanded.has(f.category) ? open.length : 6)
           .map(
@@ -80,13 +74,25 @@ function folderCard() {
           )
           .join("")}${moreButton(f.category, open.length, 6)}</div>`
       : ""
-  }<div class="folderactions">${doneLink(f.done)}<button class="link" onclick="editFolder()">Configurar pasta</button></div><p class="sub">O progresso considera apenas o seu checklist. Não representa validação oficial dos documentos nem aprovação do visto.</p></section>`;
+  }<div class="folderactions">${page === "overview" ? `<button class="btn" onclick="showFolderItems()">Ver pendências do ${esc(f.category)}</button>` : ""}${doneLink(f.done)}<button class="link" onclick="editFolder()">Configurar pasta</button></div><p class="sub">O progresso considera apenas o seu checklist. Não representa validação oficial dos documentos nem aprovação do visto.</p></section>`;
 }
 // Ao filtrar uma categoria, mostra um card de "pasta" com o progresso e o que falta
 const doneLink = (done) =>
   page === "tasks" && done
     ? `<button type="button" class="link" onclick="setFilter('filter','${filter === "Concluído" ? "Não concluídos" : "Concluído"}')">${filter === "Concluído" ? "Voltar às pendentes" : `Ver ${done} ${done === 1 ? "concluída" : "concluídas"}`}</button>`
     : "";
+// Abre a lista de pendências filtrada pela pasta
+function showFolderItems() {
+  page = "tasks";
+  cat = data.folder.category;
+  filter = "Não concluídos";
+  due = "Todos";
+  costF = "Todos";
+  search = "";
+  selected.clear();
+  render();
+  scrollTo(0, 0);
+}
 function categoryCard(c) {
   if (data.folder && c === data.folder.category) return folderCard();
   const items = data.tasks.filter((t) => t.category === c);
@@ -101,7 +107,7 @@ function categoryCard(c) {
       ? "Tudo concluído nesta categoria!"
       : `${pending === 1 ? "Falta 1 pendência" : `Faltam ${pending} pendências`}${late ? ` · ${late} atrasada${late === 1 ? "" : "s"}` : ""}.`;
   return `<section class="panel folder ${tone === "info" ? "" : tone}"><div class="folderhead"><span class="iconcircle">${icon("folder")}</span><div class="grow"><h3>${esc(c)}</h3><small>${done} de ${items.length} concluídas</small><div class="barrow"><div class="bar"><span style="width:${pct}%"></span></div><b>${pct}%</b></div></div></div><div class="alert ${tone}">${icon(tone === "done" ? "check" : tone === "late" ? "alert" : "info")}<span>${message}</span></div>${
-    open.length && page !== "tasks"
+    open.length && page !== "tasks" && page !== "overview"
       ? `<div class="checklist">${open
           .slice(0, expanded.has(c) ? open.length : 8)
           .map(
@@ -168,12 +174,8 @@ function render() {
   const done = data.tasks.filter((t) => t.status === "Concluído").length,
     pct = data.tasks.length ? Math.round((done / data.tasks.length) * 100) : 0;
   if (page === "overview") {
-    const next = data.tasks
-      .filter((t) => t.status !== "Concluído")
-      .sort(byDue)
-      .slice(0, 5);
     $("#app").innerHTML =
-      `<div class="hero"><div><span class="tag">NOSSA MUDANÇA • VISTO DE ESTUDANTE</span><h2>Uma nova vida. Um passo de cada vez.</h2><p>3 adultos, 1 bebê e 2 gatas rumo à Espanha.</p></div><div class="landmark" aria-hidden="true">☀︎ ⌂</div></div>${cards()}${folderCard()}${buyingCards()}<div class="grid even">${originPanel()}${financePanel()}</div><div class="grid"><section class="panel"><div class="paneltop"><h3>Como está o planejamento?</h3><span class="badge done">${pct}% concluído</span></div><div class="bar"><span style="width:${pct}%"></span></div><p class="muted">${done} de ${data.tasks.length} pendências resolvidas. Cada detalhe conta.</p><button class="link" onclick="go('tasks')">Ver todas as pendências →</button></section><section class="panel"><div class="paneltop"><h3>Câmbio do planejamento</h3><span>€ → R$</span></div><p class="muted">Cotação automática para os custos em euros.</p><label>1 euro = R$ <b>${fmtRate(data.rate)}</b></label><p class="sub">${rateInfo()}</p></section></div><section class="panel"><div class="paneltop"><h3>Próximos passos</h3><button class="btn primary" onclick="editTask()">+ Nova pendência</button></div>${taskTable(next, false)}</section>`;
+      `<div class="hero"><div><span class="tag">NOSSA MUDANÇA • VISTO DE ESTUDANTE</span><h2>Uma nova vida. Um passo de cada vez.</h2><p>3 adultos, 1 bebê e 2 gatas rumo à Espanha.</p></div><div class="landmark" aria-hidden="true">☀︎ ⌂</div></div>${cards()}${folderCard()}${buyingCards()}${originPanel()}<section class="panel"><div class="paneltop"><h3>Como está o planejamento?</h3><span class="badge done">${pct}% concluído</span></div><div class="bar"><span style="width:${pct}%"></span></div><p class="muted">${done} de ${data.tasks.length} pendências resolvidas. Cada detalhe conta.</p><button class="link" onclick="go('tasks')">Ver todas as pendências →</button></section>`;
   }
   if (page === "tasks") {
     $("#app").innerHTML =
@@ -372,7 +374,7 @@ function taskTable(a, manual = true, sel = false) {
     .map((t) => {
       try {
         const d = dueStatus(t);
-        return `<tr data-id="${t.id}"${sel && selected.has(t.id) ? ' class="picked"' : ""}><td data-label="Pendência"><div class="taskcell">${sel ? `<input class="sel" type="checkbox" aria-label="Selecionar ${esc(t.title)} para somar" ${selected.has(t.id) ? "checked" : ""} onchange="toggleSelect('${t.id}')">` : ""}${manual ? '<span class="draghandle" tabindex="0" role="button" aria-label="Arrastar pendência" title="Segure e arraste para reordenar">⠿</span>' : ""}<button type="button" class="donebtn${t.status === "Concluído" ? " on" : ""}" aria-pressed="${t.status === "Concluído"}" aria-label="${t.status === "Concluído" ? "Reabrir" : "Concluir"} ${esc(t.title)}" title="${t.status === "Concluído" ? "Concluída · toque para reabrir" : "Marcar como concluída"}" onclick="toggle('${t.id}',${t.status !== "Concluído"})">${icon("check")}</button><span class="tinfo"><button type="button" class="link title" onclick="editTask('${t.id}')">${esc(t.title)}</button><small class="meta">${esc(t.category)}${t.notes ? " · " + esc(t.notes) : ""}</small></span></div></td><td data-label="Prazo"><div>${d && d.key !== "done" ? `${badge(d.label, d.cls)}<br><small>${fmtDate(dueDate(t))}</small>` : `<small>${dueDate(t) ? fmtDate(dueDate(t)) : "Sem prazo"}</small>`}</div></td><td data-label="Situação"><div>${badge(t.status, statusCls(t.status))}</div></td><td data-label="Valor"><div>${valueCell(t)}</div></td><td class="rowactions"><button class="link act" title="Editar" aria-label="Editar ${esc(t.title)}" onclick="editTask('${t.id}')">${icon("edit")}<span class="lbl">Editar</span></button>${isCost(t) ? `<button class="link act" title="Pagamentos" aria-label="Pagamentos de ${esc(t.title)}" onclick="openTask('${t.id}')">${icon("card")}<span class="lbl">Pagamentos</span></button>` : '<span class="actgap"></span>'}<button class="link act danger" title="Excluir pendência" aria-label="Excluir ${esc(t.title)}" onclick="deleteTask('${t.id}')">${icon("trash")}<span class="lbl">Excluir</span></button></td></tr>`;
+        return `<tr data-id="${t.id}" class="${statusRow(t.status)}${sel && selected.has(t.id) ? " picked" : ""}"><td data-label="Pendência"><div class="taskcell">${sel ? `<input class="sel" type="checkbox" aria-label="Selecionar ${esc(t.title)} para somar" ${selected.has(t.id) ? "checked" : ""} onchange="toggleSelect('${t.id}')">` : ""}${manual ? '<span class="draghandle" tabindex="0" role="button" aria-label="Arrastar pendência" title="Segure e arraste para reordenar">⠿</span>' : ""}<button type="button" class="donebtn${t.status === "Concluído" ? " on" : ""}" aria-pressed="${t.status === "Concluído"}" aria-label="${t.status === "Concluído" ? "Reabrir" : "Concluir"} ${esc(t.title)}" title="${t.status === "Concluído" ? "Concluída · toque para reabrir" : "Marcar como concluída"}" onclick="toggle('${t.id}',${t.status !== "Concluído"})">${icon("check")}</button><span class="tinfo"><button type="button" class="link title" onclick="editTask('${t.id}')">${esc(t.title)}</button><small class="meta">${esc(t.category)}${t.notes ? " · " + esc(t.notes) : ""}</small></span></div></td><td data-label="Prazo"><div>${d && d.key !== "done" ? `${badge(d.label, d.cls)}<br><small>${fmtDate(dueDate(t))}</small>` : `<small>${dueDate(t) ? fmtDate(dueDate(t)) : "Sem prazo"}</small>`}</div></td><td data-label="Situação"><div>${badge(t.status, "status " + statusCls(t.status))}</div></td><td data-label="Valor"><div>${valueCell(t)}</div></td><td class="rowactions"><button class="link act" title="Editar" aria-label="Editar ${esc(t.title)}" onclick="editTask('${t.id}')">${icon("edit")}<span class="lbl">Editar</span></button>${isCost(t) ? `<button class="link act" title="Pagamentos" aria-label="Pagamentos de ${esc(t.title)}" onclick="openTask('${t.id}')">${icon("card")}<span class="lbl">Pagamentos</span></button>` : '<span class="actgap"></span>'}<button class="link act danger" title="Excluir pendência" aria-label="Excluir ${esc(t.title)}" onclick="deleteTask('${t.id}')">${icon("trash")}<span class="lbl">Excluir</span></button></td></tr>`;
       } catch (err) {
         return badRow(t, err);
       }
