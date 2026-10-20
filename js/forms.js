@@ -6,13 +6,15 @@ function go(p) {
   render();
 }
 document.querySelectorAll("nav button").forEach((b) => (b.onclick = () => go(b.dataset.page)));
-function toggle(id, v) {
+// Muda a situação direto da lista; ao concluir (e a lista esconder concluídas), oferece desfazer
+function setStatus(id, status) {
   const t = data.tasks.find((t) => t.id === id),
     prev = t.status;
-  t.status = v ? "Concluído" : "Pendente";
+  if (!t || prev === status) return;
+  t.status = status;
   save();
   render();
-  if (v)
+  if (status === "Concluído")
     toast(page === "tasks" && filter === "Não concluídos" ? "Concluída e ocultada da lista" : "Concluída", {
       label: "Desfazer",
       fn: () => {
@@ -23,6 +25,7 @@ function toggle(id, v) {
       },
     });
 }
+const toggle = (id, v) => setStatus(id, v ? "Concluído" : "Pendente");
 const field = (label, name, val = "", type = "text", extra = "") =>
   `<label>${label}<input name="${name}" type="${type}" value="${esc(val)}" ${extra}></label>`;
 const opts = (a, v) => a.map((x) => `<option ${x === v ? "selected" : ""}>${esc(x)}</option>`).join("");

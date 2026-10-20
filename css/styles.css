@@ -1613,3 +1613,38 @@ tr.st-done .link.title {
 #app > .panel {
   margin-bottom: 22px;
 }
+/* Situação: seletor em forma de selo, mudado direto na lista */
+.statussel {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 6px 28px 6px 12px;
+  border: 0;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+}
+.statussel.pend {
+  background-color: #fff2d9;
+  color: #8a6420;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238a6420' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+.statussel.prog {
+  background-color: #2f6f80;
+  color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23ffffff' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+.statussel.done {
+  background-color: #1f6656;
+  color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23ffffff' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+.statussel:hover {
+  filter: brightness(0.96);
+}
+.statussel option {
+  background: #fff;
+  color: var(--ink);
+}
