@@ -1648,3 +1648,23 @@ tr.st-done .link.title {
   background: #fff;
   color: var(--ink);
 }
+.vtag {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 7px;
+  border: 1px dashed #c9a35a;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #8a6420;
+  vertical-align: middle;
+}
+.vtag.ok {
+  border: 1px solid #9cc7a8;
+  color: #2f6b3f;
+}
+.vnote {
+  display: inline-block;
+  max-width: 220px;
+  font-style: italic;
+}

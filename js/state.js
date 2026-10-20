@@ -95,6 +95,9 @@ function migrate(d) {
     t.method ??= "";
     t.accountId ??= "";
     t.acquired ??= false;
+    // Tipo do valor: "estimado" (média pesquisada) ou "confirmado" (orçamento/oficial); vazio = não informado
+    t.valueType ??= "";
+    t.valueNote ??= "";
     t.required ??= t.category === d.folder.category;
     // "Já foi pago" antigo vira um pagamento registrado, com a cotação vigente na migração
     if (t.paid !== undefined) {

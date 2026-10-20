@@ -334,6 +334,8 @@ function addChecklistItems(category, text) {
         accountId: "",
         acquired: false,
         required: true,
+        valueType: "",
+        valueNote: "",
       });
       added++;
     });

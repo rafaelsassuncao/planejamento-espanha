@@ -41,12 +41,16 @@ const statusCls = (s) => (s === "Concluído" ? "done" : s === "Em andamento" ? "
 // Total em euro só do que foi lançado em euro (valor original, sem conversão)
 const eurLaunched = (list = data.tasks) =>
   sum(list.filter((t) => isCost(t) && t.currency === "EUR").map((t) => forecast(t).known));
+// Quanto do que falta pagar vem de valores marcados como estimativa
+const estimatedOpen = () =>
+  sum(data.tasks.filter((t) => isCost(t) && t.valueType === "estimado").map(outstandingBRL));
 function cards() {
   const o = overall(),
     e = eurLaunched(),
+    est = estimatedOpen(),
     card = (cls, ic, label, v, sub) =>
       `<div class="card kpi ${cls}"><span class="iconcircle">${icon(ic)}</span><div><label>${label}</label><div class="amount">${money(v)}</div><span class="sub">${sub}</span></div></div>`;
-  return `<div class="cards">${card("green", "wallet", "Saldo atual", o.current, `Recebido ${money(o.received)} − pago ${money(o.paid)}`)}${card("amber", "file", "Custo total", o.total, `${e ? `<b class="eurtotal">Lançado em euro: ${money(e, "EUR")}</b><br>` : ""}Já pago ${money(o.paid)} · falta ${money(o.open)}${o.unknown ? "<br>" + incomplete(o.unknown) : ""}`)}${card("mint", "chart", "Saldo previsto", o.projected, `Depois de pagar tudo${o.expected ? `<br>+ ${money(o.expected)} a receber` : ""}`)}</div>`;
+  return `<div class="cards">${card("green", "wallet", "Saldo atual", o.current, `Recebido ${money(o.received)} − pago ${money(o.paid)}`)}${card("amber", "file", "Custo total", o.total, `${e ? `<b class="eurtotal">Lançado em euro: ${money(e, "EUR")}</b><br>` : ""}Já pago ${money(o.paid)} · falta ${money(o.open)}${est > 0.005 ? `<br>${money(est)} são estimativas` : ""}${o.unknown ? "<br>" + incomplete(o.unknown) : ""}`)}${card("mint", "chart", "Saldo previsto", o.projected, `Depois de pagar tudo${o.expected ? `<br>+ ${money(o.expected)} a receber` : ""}`)}</div>`;
 }
 
 function folderCard() {
@@ -342,6 +346,9 @@ function valueCell(t) {
             badge(ps.label, ps.cls),
           ]
         : [badge(ps.label, ps.cls)];
+  if (f.known > 0 && t.valueType === "estimado") lines[0] += ` <span class="vtag">estimado</span>`;
+  if (f.known > 0 && t.valueType === "confirmado") lines[0] += ` <span class="vtag ok">confirmado</span>`;
+  if (t.valueNote) lines.push(`<small class="vnote">${esc(t.valueNote)}</small>`);
   if (ps.label === "Parcialmente pago") lines.push(`<small>Pago ${money(paid)}</small>`);
   if (t.multi)
     lines.push(`<small>${fmtQty(bought(t))} de ${fmtQty(t.qty)} ${esc(t.unit || "un.")} comprados</small>`);
