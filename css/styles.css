@@ -1668,3 +1668,63 @@ tr.st-done .link.title {
   max-width: 220px;
   font-style: italic;
 }
+.pnote {
+  color: #2f6f80;
+  font-weight: 600;
+}
+.nextlist {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0 8px;
+}
+.nextrow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.nextrow:hover {
+  border-color: #b9c9bb;
+  background: #f8faf6;
+}
+.nextrow > span:first-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.nextrow.st-prog {
+  border-left: 4px solid #2f8ba0;
+}
+.nextside {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  flex: none;
+}
+tr.flash > td {
+  animation: flash 2.2s ease-out;
+}
+@keyframes flash {
+  0%,
+  40% {
+    background: #fff3c4;
+  }
+}
+@media (max-width: 700px) {
+  .nextrow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .nextside {
+    justify-content: flex-start;
+  }
+}

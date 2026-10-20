@@ -21,10 +21,6 @@ const icon = (n) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${IC
   badge = (label, cls = "") => `<span class="badge ${cls}">${esc(label)}</span>`,
   fmtQty = (n) => Number(n).toLocaleString("pt-BR", { maximumFractionDigits: 2 }),
   fmtRate = (r) => Number(r).toLocaleString("pt-BR", { minimumFractionDigits: 4, maximumFractionDigits: 4 }),
-  monthOnly = (s) => {
-    const m = parseDate(s).toLocaleDateString("pt-BR", { month: "long" });
-    return m[0].toUpperCase() + m.slice(1);
-  },
   selectOpts = (pairs, v) =>
     pairs
       .map(
@@ -133,29 +129,40 @@ function toggleExpand(c) {
   render();
 }
 
-// Itens comprados em etapas que ainda não foram totalmente adquiridos
-function buyingCards() {
-  return data.tasks
-    .filter((t) => isCost(t) && t.multi && bought(t) < t.qty)
-    .slice(0, 3)
-    .map((t) => {
-      const b = bought(t),
-        pct = Math.min(100, Math.round((b / t.qty) * 100)),
-        unit = esc(t.unit || "un.");
-      return `<section class="panel buying"><div class="folderhead"><span class="iconcircle">${icon("cart")}</span><div class="grow"><h3><button type="button" class="link title" onclick="openTask('${t.id}')">${esc(t.title)}</button></h3><small>${fmtQty(b)} de ${fmtQty(t.qty)} compradas</small><div class="barrow"><div class="bar"><span style="width:${pct}%"></span></div><b>${pct}%</b></div></div></div><div class="steps">${planSteps(
-        t,
-      )
-        .map(
-          (s) =>
-            `<div class="step ${s.done ? "done" : ""}">${s.done ? `<span class="stepicon">${icon("check")}</span>` : '<span class="dot"></span>'}<span><b>${s.date ? monthOnly(s.date) : "Sem data"}</b><small>${fmtQty(s.qty)} ${unit} ${s.done ? "comprada" : "planejada"}</small></span></div>`,
-        )
-        .join(
-          "",
-        )}<button class="btn primary" onclick="editPurchase('${t.id}')">Registrar compra</button></div></section>`;
-    })
-    .join("");
+// Próximas 5 pendências não concluídas, pela ordem de prazo
+function nextTasks() {
+  const next = data.tasks
+    .filter((t) => t.status !== "Concluído")
+    .sort(byDue)
+    .slice(0, 5);
+  return next.length
+    ? `<div class="nextlist"><small>Próximas pendências</small>${next
+        .map((t) => {
+          const d = dueStatus(t);
+          return `<button type="button" class="nextrow ${statusRow(t.status)}" onclick="showTask('${t.id}')"><span><b>${esc(t.title)}</b><small>${esc(t.category)}${t.status === "Em andamento" && t.progressNote ? " · ⏳ " + esc(t.progressNote) : ""}</small></span><span class="nextside">${d && d.key !== "done" ? badge(d.label, d.cls) : ""}<span class="badge ${statusCls(t.status)}">${esc(t.status)}</span></span></button>`;
+        })
+        .join("")}</div>`
+    : "";
 }
-
+// Leva até a pendência na aba de pendências e a destaca
+function showTask(id) {
+  const t = data.tasks.find((x) => x.id === id);
+  if (!t) return;
+  page = "tasks";
+  cat = "Todas";
+  filter = t.status === "Concluído" ? "Todos" : "Não concluídos";
+  due = "Todos";
+  costF = "Todos";
+  search = "";
+  selected.clear();
+  render();
+  const row = document.querySelector(`#rows tr[data-id="${id}"]`);
+  if (row) {
+    row.scrollIntoView({ block: "center" });
+    row.classList.add("flash");
+    setTimeout(() => row.classList.remove("flash"), 2200);
+  }
+}
 function render() {
   document
     .querySelectorAll("nav button")
@@ -164,7 +171,7 @@ function render() {
     pct = data.tasks.length ? Math.round((done / data.tasks.length) * 100) : 0;
   if (page === "overview") {
     $("#app").innerHTML =
-      `<div class="hero"><div><span class="tag">NOSSA MUDANÇA • VISTO DE ESTUDANTE</span><h2>Uma nova vida. Um passo de cada vez.</h2><p>3 adultos, 1 bebê e 2 gatas rumo à Espanha.</p></div><div class="landmark" aria-hidden="true">☀︎ ⌂</div></div>${cards()}<section class="panel"><div class="paneltop"><h3>Como está o planejamento?</h3><span class="badge done">${pct}% concluído</span></div><div class="bar"><span style="width:${pct}%"></span></div><p class="muted">${done} de ${data.tasks.length} pendências resolvidas. Cada detalhe conta.</p><button class="link" onclick="go('tasks')">Ver todas as pendências →</button></section>${folderCard()}${buyingCards()}`;
+      `<div class="hero"><div><span class="tag">NOSSA MUDANÇA • VISTO DE ESTUDANTE</span><h2>Uma nova vida. Um passo de cada vez.</h2><p>3 adultos, 1 bebê e 2 gatas rumo à Espanha.</p></div><div class="landmark" aria-hidden="true">☀︎ ⌂</div></div>${cards()}<section class="panel"><div class="paneltop"><h3>Como está o planejamento?</h3><span class="badge done">${pct}% concluído</span></div><div class="bar"><span style="width:${pct}%"></span></div><p class="muted">${done} de ${data.tasks.length} pendências resolvidas. Cada detalhe conta.</p>${nextTasks()}<button class="link" onclick="go('tasks')">Ver todas as pendências →</button></section>${folderCard()}`;
   }
   if (page === "tasks") {
     $("#app").innerHTML =
@@ -366,7 +373,7 @@ function taskTable(a, manual = true, sel = false) {
     .map((t) => {
       try {
         const d = dueStatus(t);
-        return `<tr data-id="${t.id}" class="${statusRow(t.status)}${sel && selected.has(t.id) ? " picked" : ""}"><td data-label="Pendência"><div class="taskcell">${sel ? `<input class="sel" type="checkbox" aria-label="Selecionar ${esc(t.title)} para somar" ${selected.has(t.id) ? "checked" : ""} onchange="toggleSelect('${t.id}')">` : ""}${manual ? '<span class="draghandle" tabindex="0" role="button" aria-label="Arrastar pendência" title="Segure e arraste para reordenar">⠿</span>' : ""}<span class="tinfo"><button type="button" class="link title" onclick="editTask('${t.id}')">${esc(t.title)}</button><small class="meta">${esc(t.category)}${t.notes ? " · " + esc(t.notes) : ""}</small></span></div></td><td data-label="Prazo"><div>${d && d.key !== "done" ? `${badge(d.label, d.cls)}<br><small>${fmtDate(dueDate(t))}</small>` : `<small>${dueDate(t) ? fmtDate(dueDate(t)) : "Sem prazo"}</small>`}</div></td><td data-label="Situação"><div><select class="statussel ${statusCls(t.status) || "pend"}" aria-label="Situação de ${esc(t.title)}" onchange="setStatus('${t.id}', this.value)">${STATUSES.map((s) => `<option ${s === t.status ? "selected" : ""}>${s}</option>`).join("")}</select></div></td><td data-label="Valor"><div>${valueCell(t)}</div></td><td class="rowactions"><button class="link act" title="Editar" aria-label="Editar ${esc(t.title)}" onclick="editTask('${t.id}')">${icon("edit")}<span class="lbl">Editar</span></button>${isCost(t) ? `<button class="link act" title="Pagamentos" aria-label="Pagamentos de ${esc(t.title)}" onclick="openTask('${t.id}')">${icon("card")}<span class="lbl">Pagamentos</span></button>` : '<span class="actgap"></span>'}<button class="link act danger" title="Excluir pendência" aria-label="Excluir ${esc(t.title)}" onclick="deleteTask('${t.id}')">${icon("trash")}<span class="lbl">Excluir</span></button></td></tr>`;
+        return `<tr data-id="${t.id}" class="${statusRow(t.status)}${sel && selected.has(t.id) ? " picked" : ""}"><td data-label="Pendência"><div class="taskcell">${sel ? `<input class="sel" type="checkbox" aria-label="Selecionar ${esc(t.title)} para somar" ${selected.has(t.id) ? "checked" : ""} onchange="toggleSelect('${t.id}')">` : ""}${manual ? '<span class="draghandle" tabindex="0" role="button" aria-label="Arrastar pendência" title="Segure e arraste para reordenar">⠿</span>' : ""}<span class="tinfo"><button type="button" class="link title" onclick="editTask('${t.id}')">${esc(t.title)}</button><small class="meta">${esc(t.category)}${t.notes ? " · " + esc(t.notes) : ""}</small>${t.status === "Em andamento" && t.progressNote ? `<small class="pnote">⏳ ${esc(t.progressNote)}</small>` : ""}</span></div></td><td data-label="Prazo"><div>${d && d.key !== "done" ? `${badge(d.label, d.cls)}<br><small>${fmtDate(dueDate(t))}</small>` : `<small>${dueDate(t) ? fmtDate(dueDate(t)) : "Sem prazo"}</small>`}</div></td><td data-label="Situação"><div><select class="statussel ${statusCls(t.status) || "pend"}" aria-label="Situação de ${esc(t.title)}" onchange="setStatus('${t.id}', this.value)">${STATUSES.map((s) => `<option ${s === t.status ? "selected" : ""}>${s}</option>`).join("")}</select></div></td><td data-label="Valor"><div>${valueCell(t)}</div></td><td class="rowactions"><button class="link act" title="Editar" aria-label="Editar ${esc(t.title)}" onclick="editTask('${t.id}')">${icon("edit")}<span class="lbl">Editar</span></button>${isCost(t) ? `<button class="link act" title="Pagamentos" aria-label="Pagamentos de ${esc(t.title)}" onclick="openTask('${t.id}')">${icon("card")}<span class="lbl">Pagamentos</span></button>` : '<span class="actgap"></span>'}<button class="link act danger" title="Excluir pendência" aria-label="Excluir ${esc(t.title)}" onclick="deleteTask('${t.id}')">${icon("trash")}<span class="lbl">Excluir</span></button></td></tr>`;
       } catch (err) {
         return badRow(t, err);
       }

@@ -14,6 +14,7 @@ function setStatus(id, status) {
   t.status = status;
   save();
   render();
+  if (status === "Em andamento") return askProgressNote(id);
   if (status === "Concluído")
     toast(page === "tasks" && filter === "Não concluídos" ? "Concluída e ocultada da lista" : "Concluída", {
       label: "Desfazer",
@@ -24,6 +25,19 @@ function setStatus(id, status) {
         render();
       },
     });
+}
+// Lembrete opcional ao colocar uma pendência em andamento
+function askProgressNote(id) {
+  const t = data.tasks.find((x) => x.id === id);
+  showForm(
+    `<h3>Em andamento</h3><p class="sub">${esc(t.title)}</p><label>O que falta ou o que lembrar? (opcional)<textarea name="note" rows="3" placeholder="Ex.: falta levar as fotos e pegar o protocolo">${esc(t.progressNote || "")}</textarea></label><div class="actions"><button type="button" class="btn" onclick="$('#modal').close()">Pular</button><button class="btn primary">Salvar lembrete</button></div>`,
+    (f) => {
+      const cur = data.tasks.find((x) => x.id === id);
+      if (cur) cur.progressNote = (f.get("note") || "").trim();
+      finish("Lembrete salvo");
+    },
+  );
+  setTimeout(() => $("#form textarea")?.focus(), 50);
 }
 const toggle = (id, v) => setStatus(id, v ? "Concluído" : "Pendente");
 const field = (label, name, val = "", type = "text", extra = "") =>
@@ -162,6 +176,7 @@ function editTask(id) {
       acquired: f.has("acquired"),
       valueType: f.get("valueType") || "",
       valueNote: (f.get("valueNote") || "").trim(),
+      progressNote: (f.get("progressNote") || "").trim(),
       alloc: simpleAlloc ? (src ? [{ sourceId: src, brl: null }] : []) : t.alloc,
     };
   };
@@ -175,6 +190,7 @@ function editTask(id) {
         multi: cost && d.multi,
         single: cost && !d.multi,
         valued: cost && d.priceKnown,
+        prog: f.get("status") === "Em andamento",
         paid: cost && f.get("paidNow") === "1",
         paideur: cost && f.get("paidNow") === "1" && d.currency === "EUR",
         folder: data.folder && d.category === data.folder.category,
@@ -206,7 +222,7 @@ function editTask(id) {
     $("#allocwarn").innerHTML = warn.join("<br>");
   };
   showForm(
-    `<h3>${id ? "Editar" : "Nova"} pendência</h3><fieldset class="sec"><legend>Pendência</legend>${field("O que precisa ser feito?", "title", t.title, "text", 'required maxlength="250"')}<label>Categoria<select name="category" data-prev="${esc(t.category)}" onchange="pickCategory(this)">${categoryOptions(t.category)}</select></label><div class="choices">${choice("kind", "checklist", t.kind === "checklist", "Só checklist", "Sem custo", locked)}${choice("kind", "cost", t.kind === "cost", "Com custo", "Taxa, compra ou serviço")}</div><label>Situação<select name="status">${opts(STATUSES, t.status)}</select></label><label class="inline" data-show="folder"><input type="checkbox" name="required" ${t.required ? "checked" : ""}> Obrigatório para a pasta do ${esc(data.folder?.category || "")}</label><label>Observações<textarea name="notes">${esc(t.notes)}</textarea></label></fieldset><fieldset class="sec"><legend>Prazo</legend>${field("Prazo (opcional)", "date", t.date, "date")}<small id="foldernote"></small></fieldset><fieldset class="sec" data-show="cost"><legend>Custo</legend><div class="twocol"><label id="valuelabel">Valor<input name="value" type="number" min="0.01" step="0.01" placeholder="A definir" value="${t.priceKnown ? (t.multi ? (t.unitPrice ?? "") : t.value || "") : ""}"></label><label>Moeda<select name="currency" ${locked ? "disabled" : ""}><option value="BRL" ${t.currency === "BRL" ? "selected" : ""}>R$ (real)</option><option value="EUR" ${t.currency === "EUR" ? "selected" : ""}>€ (euro)</option></select></label></div>${locked ? `<input type="hidden" name="currency" value="${t.currency}">` : ""}<p id="estimate" class="sub"></p><div class="choices" data-show="valued">${choice("valueType", "estimado", t.valueType === "estimado", "Estimativa", "Média pesquisada")}${choice("valueType", "confirmado", t.valueType === "confirmado", "Valor confirmado", "Orçamento ou oficial")}</div><label data-show="valued">Observação do valor (opcional)<input name="valueNote" maxlength="200" placeholder="Ex.: média de 3 sites, orçamento da clínica X" value="${esc(t.valueNote || "")}"></label><label>De onde sai o dinheiro${simpleAlloc ? `<select name="plannedSource" data-prev="${esc(t.alloc[0]?.sourceId || "")}" onchange="pickSource(this)">${sourceOptions(t.alloc[0]?.sourceId || "", "Ainda não sei")}<option value="${NEW_CATEGORY}">+ Nova fonte…</option></select>` : `<input value="${esc(originText(t))}" disabled>`}</label>${
+    `<h3>${id ? "Editar" : "Nova"} pendência</h3><fieldset class="sec"><legend>Pendência</legend>${field("O que precisa ser feito?", "title", t.title, "text", 'required maxlength="250"')}<label>Categoria<select name="category" data-prev="${esc(t.category)}" onchange="pickCategory(this)">${categoryOptions(t.category)}</select></label><div class="choices">${choice("kind", "checklist", t.kind === "checklist", "Só checklist", "Sem custo", locked)}${choice("kind", "cost", t.kind === "cost", "Com custo", "Taxa, compra ou serviço")}</div><label>Situação<select name="status">${opts(STATUSES, t.status)}</select></label><label class="inline" data-show="folder"><input type="checkbox" name="required" ${t.required ? "checked" : ""}> Obrigatório para a pasta do ${esc(data.folder?.category || "")}</label><label>Observações<textarea name="notes">${esc(t.notes)}</textarea></label><label data-show="prog">Lembrete do andamento (o que falta)<textarea name="progressNote" rows="2" placeholder="Ex.: falta levar as fotos e pegar o protocolo">${esc(t.progressNote || "")}</textarea></label></fieldset><fieldset class="sec"><legend>Prazo</legend>${field("Prazo (opcional)", "date", t.date, "date")}<small id="foldernote"></small></fieldset><fieldset class="sec" data-show="cost"><legend>Custo</legend><div class="twocol"><label id="valuelabel">Valor<input name="value" type="number" min="0.01" step="0.01" placeholder="A definir" value="${t.priceKnown ? (t.multi ? (t.unitPrice ?? "") : t.value || "") : ""}"></label><label>Moeda<select name="currency" ${locked ? "disabled" : ""}><option value="BRL" ${t.currency === "BRL" ? "selected" : ""}>R$ (real)</option><option value="EUR" ${t.currency === "EUR" ? "selected" : ""}>€ (euro)</option></select></label></div>${locked ? `<input type="hidden" name="currency" value="${t.currency}">` : ""}<p id="estimate" class="sub"></p><div class="choices" data-show="valued">${choice("valueType", "estimado", t.valueType === "estimado", "Estimativa", "Média pesquisada")}${choice("valueType", "confirmado", t.valueType === "confirmado", "Valor confirmado", "Orçamento ou oficial")}</div><label data-show="valued">Observação do valor (opcional)<input name="valueNote" maxlength="200" placeholder="Ex.: média de 3 sites, orçamento da clínica X" value="${esc(t.valueNote || "")}"></label><label>De onde sai o dinheiro${simpleAlloc ? `<select name="plannedSource" data-prev="${esc(t.alloc[0]?.sourceId || "")}" onchange="pickSource(this)">${sourceOptions(t.alloc[0]?.sourceId || "", "Ainda não sei")}<option value="${NEW_CATEGORY}">+ Nova fonte…</option></select>` : `<input value="${esc(originText(t))}" disabled>`}</label>${
       hasPay
         ? `<p class="notice">${badge(payStatus(t).label, payStatus(t).cls)} Já registrado: ${money(paidBRL(t))}. Para ver ou alterar, use <b>Pagamentos</b> na lista.</p>`
         : `<div class="choices">${choice("paidNow", "0", true, "Ainda não paguei")}${choice("paidNow", "1", false, "Já paguei")}</div><div data-show="paid" class="twocol">${field("Data do pagamento", "payDate", todayStr(), "date")}<label>Forma (opcional)<select name="payMethod">${methodOptions(t.method, (k) => k !== "credito")}</select></label></div><div data-show="paideur">${field("Quanto saiu em reais", "paidBrl", "", "number", 'min="0" step="0.01" placeholder="Pela cotação do dia"')}</div><p class="sub" data-show="paid">Pagou no cartão de crédito parcelado? Salve e registre em Pagamentos, na lista.</p>`

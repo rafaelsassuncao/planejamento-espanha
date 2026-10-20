@@ -98,6 +98,8 @@ function migrate(d) {
     // Tipo do valor: "estimado" (média pesquisada) ou "confirmado" (orçamento/oficial); vazio = não informado
     t.valueType ??= "";
     t.valueNote ??= "";
+    // Lembrete do que falta enquanto a pendência está em andamento
+    t.progressNote ??= "";
     t.required ??= t.category === d.folder.category;
     // "Já foi pago" antigo vira um pagamento registrado, com a cotação vigente na migração
     if (t.paid !== undefined) {
