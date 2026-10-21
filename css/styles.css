@@ -2222,3 +2222,6 @@ tr.flash > td {
     width: 100%;
   }
 }
+#app > .cards:first-child {
+  margin-top: 0;
+}
