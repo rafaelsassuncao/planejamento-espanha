@@ -14,7 +14,6 @@ function setStatus(id, status) {
   t.status = status;
   save();
   render();
-  if (status === "Em andamento") return askProgressNote(id);
   if (status === "Concluído")
     toast(page === "tasks" && filter === "Não concluídos" ? "Concluída e ocultada da lista" : "Concluída", {
       label: "Desfazer",
@@ -25,19 +24,6 @@ function setStatus(id, status) {
         render();
       },
     });
-}
-// Lembrete opcional ao colocar uma pendência em andamento
-function askProgressNote(id) {
-  const t = data.tasks.find((x) => x.id === id);
-  showForm(
-    `<h3>Em andamento</h3><p class="sub">${esc(t.title)}</p><label>O que falta ou o que lembrar? (opcional)<textarea name="note" rows="3" placeholder="Ex.: falta levar as fotos e pegar o protocolo">${esc(t.progressNote || "")}</textarea></label><div class="actions"><button type="button" class="btn" onclick="$('#modal').close()">Pular</button><button class="btn primary">Salvar lembrete</button></div>`,
-    (f) => {
-      const cur = data.tasks.find((x) => x.id === id);
-      if (cur) cur.progressNote = (f.get("note") || "").trim();
-      finish("Lembrete salvo");
-    },
-  );
-  setTimeout(() => $("#form textarea")?.focus(), 50);
 }
 const toggle = (id, v) => setStatus(id, v ? "Concluído" : "Pendente");
 const field = (label, name, val = "", type = "text", extra = "") =>
