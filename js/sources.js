@@ -336,6 +336,7 @@ function addChecklistItems(category, text) {
         required: true,
         valueType: "",
         valueNote: "",
+        steps: [],
       });
       added++;
     });

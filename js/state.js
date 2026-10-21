@@ -100,6 +100,12 @@ function migrate(d) {
     t.valueNote ??= "";
     // O lembrete de andamento foi descontinuado: remove o texto antigo
     delete t.progressNote;
+    // Etapas da pendência (ex.: tirar cópia → autenticar), com prazo opcional por etapa
+    t.steps = Array.isArray(t.steps)
+      ? t.steps
+          .filter((s) => s && s.text)
+          .map((s) => ({ id: s.id || uid(), text: String(s.text), done: !!s.done, date: s.date || "" }))
+      : [];
     t.required ??= t.category === d.folder.category;
     // "Já foi pago" antigo vira um pagamento registrado, com a cotação vigente na migração
     if (t.paid !== undefined) {

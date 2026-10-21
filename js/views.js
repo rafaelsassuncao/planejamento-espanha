@@ -140,7 +140,7 @@ function nextTasks() {
     ? `<div class="nextlist"><small>Próximas pendências</small>${next
         .map((t) => {
           const d = dueStatus(t);
-          return `<button type="button" class="nextrow ${statusRow(t.status)}" onclick="showTask('${t.id}')"><span><b>${esc(t.title)}</b><small>${esc(t.category)}</small></span><span class="nextside">${d && d.key !== "done" ? badge(d.label, d.cls) : ""}<span class="badge ${statusCls(t.status)}">${esc(t.status)}</span></span></button>`;
+          return `<button type="button" class="nextrow ${statusRow(t.status)}" onclick="showTask('${t.id}')"><span><b>${esc(t.title)}</b><small>${esc(t.category)}${(t.steps || []).find((s) => !s.done) ? " · Próxima etapa: " + esc((t.steps || []).find((s) => !s.done).text) : ""}</small></span><span class="nextside">${d && d.key !== "done" ? badge(d.label, d.cls) : ""}<span class="badge ${statusCls(t.status)}">${esc(t.status)}</span></span></button>`;
         })
         .join("")}</div>`
     : "";
@@ -298,7 +298,9 @@ function updateRows() {
       matchCost(t) &&
       (cat === "Todas" || t.category === cat) &&
       matchDue(t) &&
-      (t.title + " " + t.notes).toLowerCase().includes(search.toLowerCase()),
+      (t.title + " " + t.notes + " " + (t.steps || []).map((s) => s.text).join(" "))
+        .toLowerCase()
+        .includes(search.toLowerCase()),
     hiddenDone =
       filter === "Não concluídos" ? data.tasks.filter((t) => base(t) && t.status === "Concluído").length : 0;
   let list = data.tasks.filter(
@@ -349,11 +351,21 @@ const MONTHS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "
   };
 // Prazo: data em destaque; "Dentro do prazo" discreto; atraso e vencimento próximo em selo
 function dueCell(t) {
-  const s = dueDate(t),
-    d = dueStatus(t);
-  if (!s) return '<span class="muted small">Sem prazo</span>';
-  const urgent = d && ["late", "today", "near"].includes(d.key);
-  return `<span class="date">${fmtDay(s)}</span>${urgent ? badge(d.label, d.cls) : d?.key === "ok" ? '<small class="ontime">Dentro do prazo</small>' : ""}${t.date ? "" : '<small class="muted">prazo da pasta</small>'}`;
+  const d = dueStatus(t),
+    urgent = d && ["late", "today", "near"].includes(d.key);
+  if (!t.date)
+    return urgent && inFolder(t)
+      ? `${badge(d.label, d.cls)}<small class="muted">prazo da pasta</small>`
+      : '<span class="muted small">Sem prazo próprio</span>';
+  return `<span class="date">${fmtDay(t.date)}</span>${urgent ? badge(d.label, d.cls) : d?.key === "ok" ? '<small class="ontime">Dentro do prazo</small>' : ""}`;
+}
+// Próxima etapa da pendência, clicável para marcar ou adicionar etapas
+function stepsLine(t) {
+  if (!t.steps?.length) return "";
+  const n = t.steps.length,
+    d = (t.steps || []).filter((s) => s.done).length,
+    next = (t.steps || []).find((s) => !s.done);
+  return `<button type="button" class="stepline${next ? "" : " alldone"}" onclick="showSteps('${t.id}')" title="Ver e marcar etapas"><span class="stepcount">${d}/${n}</span><span>${next ? `Próxima: <b>${esc(next.text)}</b>${next.date ? ` · até ${fmtDay(next.date)}` : ""}` : "Todas as etapas feitas ✓"}</span></button>`;
 }
 // Situação do pagamento, separada do andamento da pendência
 function payCell(t) {
@@ -398,7 +410,7 @@ function taskTable(a, manual = true, sel = false) {
   return `<div class="tablewrap tasks-wrap"><table class="cardtable tasks${selected.size ? " has-sel" : ""}"><thead><tr><th class="c-task">${sel ? `<input class="sel" type="checkbox" id="selall" aria-label="Selecionar todas para somar" onchange="selectAll(this.checked)">` : ""}Pendência</th>${th("Prazo", "due", "c-due")}${th("Andamento", "filter", "c-status")}${th("Pagamento", "costf", "c-pay")}<th class="c-val">Valor</th><th class="c-act"><span class="sr-only">Ações</span></th></tr></thead><tbody>${a
     .map((t) => {
       try {
-        return `<tr data-id="${t.id}" class="${statusRow(t.status)}${sel && selected.has(t.id) ? " picked" : ""}"><td data-label="Pendência" class="c-task"><div class="taskcell">${sel ? `<input class="sel" type="checkbox" aria-label="Selecionar ${esc(t.title)} para somar" ${selected.has(t.id) ? "checked" : ""} onchange="toggleSelect('${t.id}')">` : ""}${manual ? '<span class="draghandle" tabindex="0" role="button" aria-label="Arrastar pendência" title="Segure e arraste para reordenar">⠿</span>' : ""}<span class="tinfo"><button type="button" class="link title" onclick="editTask('${t.id}')">${esc(t.title)}</button><span class="catpill">${esc(t.category)}</span>${t.notes ? `<small class="tnotes">${esc(t.notes)}</small>` : ""}${qtyProgress(t)}</span></div></td><td data-label="Prazo" class="c-due"><div class="stack">${dueCell(t)}</div></td><td data-label="Andamento" class="c-status"><div><select class="statussel ${statusCls(t.status) || "pend"}" aria-label="Andamento de ${esc(t.title)}" onchange="setStatus('${t.id}', this.value)">${STATUSES.map((s) => `<option ${s === t.status ? "selected" : ""}>${s}</option>`).join("")}</select></div></td><td data-label="Pagamento" class="c-pay"><div class="stack">${payCell(t)}</div></td><td data-label="Valor" class="c-val"><div class="stack end">${valueCell(t)}</div></td><td class="rowactions c-act"><button type="button" class="act2" title="Editar" aria-label="Editar ${esc(t.title)}" onclick="editTask('${t.id}')">${icon("edit")}<span>Editar</span></button>${isCost(t) ? `<button type="button" class="act2" title="Pagamento" aria-label="Pagamento de ${esc(t.title)}" onclick="openTask('${t.id}')">${icon("card")}<span>Pagamento</span></button>` : '<span class="act2gap"></span>'}<details class="rowmenu"><summary aria-label="Mais ações de ${esc(t.title)}" title="Mais ações">⋯</summary><div class="menu"><button type="button" class="danger" title="Excluir pendência" onclick="this.closest('details').open=false;deleteTask('${t.id}')">${icon("trash")}<span>Excluir pendência</span></button></div></details></td></tr>`;
+        return `<tr data-id="${t.id}" class="${statusRow(t.status)}${sel && selected.has(t.id) ? " picked" : ""}"><td data-label="Pendência" class="c-task"><div class="taskcell">${sel ? `<input class="sel" type="checkbox" aria-label="Selecionar ${esc(t.title)} para somar" ${selected.has(t.id) ? "checked" : ""} onchange="toggleSelect('${t.id}')">` : ""}${manual ? '<span class="draghandle" tabindex="0" role="button" aria-label="Arrastar pendência" title="Segure e arraste para reordenar">⠿</span>' : ""}<span class="tinfo"><button type="button" class="link title" onclick="editTask('${t.id}')">${esc(t.title)}</button><span class="catpill">${esc(t.category)}</span>${t.notes ? `<small class="tnotes">${esc(t.notes)}</small>` : ""}${stepsLine(t)}${qtyProgress(t)}</span></div></td><td data-label="Prazo" class="c-due"><div class="stack">${dueCell(t)}</div></td><td data-label="Andamento" class="c-status"><div><select class="statussel ${statusCls(t.status) || "pend"}" aria-label="Andamento de ${esc(t.title)}" onchange="setStatus('${t.id}', this.value)">${STATUSES.map((s) => `<option ${s === t.status ? "selected" : ""}>${s}</option>`).join("")}</select></div></td><td data-label="Pagamento" class="c-pay"><div class="stack">${payCell(t)}</div></td><td data-label="Valor" class="c-val"><div class="stack end">${valueCell(t)}</div></td><td class="rowactions c-act"><button type="button" class="act2" title="Editar" aria-label="Editar ${esc(t.title)}" onclick="editTask('${t.id}')">${icon("edit")}<span>Editar</span></button>${isCost(t) ? `<button type="button" class="act2" title="Pagamento" aria-label="Pagamento de ${esc(t.title)}" onclick="openTask('${t.id}')">${icon("card")}<span>Pagamento</span></button>` : '<span class="act2gap"></span>'}<details class="rowmenu"><summary aria-label="Mais ações de ${esc(t.title)}" title="Mais ações">⋯</summary><div class="menu"><button type="button" onclick="this.closest('details').open=false;showSteps('${t.id}')">${icon("check")}<span>Etapas da pendência</span></button><button type="button" class="danger" title="Excluir pendência" onclick="this.closest('details').open=false;deleteTask('${t.id}')">${icon("trash")}<span>Excluir pendência</span></button></div></details></td></tr>`;
       } catch (err) {
         return badRow(t, err);
       }
