@@ -13,7 +13,7 @@ function applyOrder(ids) {
 
 // Arrastar: a linha vira um bloco flutuante que segue o ponteiro; as demais abrem espaço com animação
 let drag = null;
-const rowIds = (tbody) => [...tbody.children].map((r) => r.dataset.id);
+const rowIds = (tbody) => [...tbody.querySelectorAll(":scope > tr[data-id]")].map((r) => r.dataset.id);
 document.addEventListener("pointerdown", (e) => {
   const handle = e.target.closest(".draghandle");
   if (!handle || e.button > 0) return;
@@ -29,6 +29,8 @@ document.addEventListener("pointerdown", (e) => {
   table.appendChild(document.createElement("tbody")).appendChild(clone);
   document.body.appendChild(table);
   row.classList.add("placeholder");
+  // A faixa de etapas some enquanto arrasta e volta no lugar certo ao soltar
+  row.parentElement.classList.add("dragging-rows");
   drag = {
     row,
     tbody: row.parentElement,
@@ -46,7 +48,7 @@ function dragTo(y) {
   const { row, tbody, table, dy } = drag;
   drag.y = y;
   table.style.top = y - dy + "px";
-  const others = [...tbody.children].filter((r) => r !== row),
+  const others = [...tbody.querySelectorAll(":scope > tr[data-id]")].filter((r) => r !== row),
     ref =
       others.find((r) => {
         const b = r.getBoundingClientRect();
@@ -94,6 +96,7 @@ function endDrag(cancel) {
     const ids = rowIds(tbody);
     if (cancel) render();
     else if (ids.join() !== before.join()) applyOrder(ids);
+    else render();
   };
   // O bloco desliza até o lugar onde vai ficar antes de ser solto
   const anim = table.animate([{ top: table.style.top }, { top: target.top + "px" }], {

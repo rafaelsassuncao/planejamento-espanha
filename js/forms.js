@@ -43,33 +43,62 @@ function applySteps(t) {
       },
     });
 }
-// Janela rápida das etapas: marcar, adicionar e remover sem abrir o formulário inteiro
+// Etapas direto na lista: abrir/fechar, marcar, concluir a próxima e adicionar, sem janela
+const openSteps = new Set();
+// Redesenha a lista mantendo a posição da página e, se pedido, o foco no campo de nova etapa
+function refreshSteps(id, focusAdd = false) {
+  const y = scrollY;
+  save();
+  render();
+  scrollTo(0, y);
+  if (focusAdd) visibleStepInput(id)?.focus();
+}
+// Campo "nova etapa" que está visível (faixa abaixo da linha no computador, dentro do card no celular)
+const visibleStepInput = (id) =>
+  [
+    ...document.querySelectorAll(
+      `#rows [data-for="${id}"] .stepadd [name=newStep], #rows tr[data-id="${id}"] .stepadd [name=newStep]`,
+    ),
+  ].find((el) => el.offsetParent);
+// Abre as etapas da pendência na própria linha (na aba Pendências)
 function showSteps(id) {
+  openSteps.add(id);
+  if (page !== "tasks") {
+    page = "tasks";
+    render();
+  }
+  if ($("#modal").open) $("#modal").close();
   const t = data.tasks.find((x) => x.id === id);
-  if (!t) return;
-  const done = t.steps.filter((s) => s.done).length;
-  showForm(
-    `<h3>Etapas</h3><p class="sub">${esc(t.title)} · ${done} de ${t.steps.length} feitas</p><div class="steplist">${
-      t.steps
-        .map(
-          (s) =>
-            `<div class="stepitem${s.done ? " done" : ""}"><label><input type="checkbox" ${s.done ? "checked" : ""} onchange="toggleStep('${t.id}','${s.id}',this.checked)"><span>${esc(s.text)}${s.date ? `<small>até ${fmtDay(s.date)}</small>` : ""}</span></label><button type="button" class="link danger" aria-label="Remover etapa" onclick="removeStep('${t.id}','${s.id}')">✕</button></div>`,
-        )
-        .join("") || '<p class="sub">Nenhuma etapa ainda.</p>'
-    }</div><div class="steprow2 add"><input name="newStep" maxlength="160" placeholder="Nova etapa, ex.: tirar cópia" aria-label="Nova etapa"><input name="newStepDate" type="date" aria-label="Prazo da etapa"><span></span></div><div class="actions"><button type="button" class="btn" onclick="$('#modal').close()">Fechar</button><button class="btn primary">Adicionar etapa</button></div>`,
-    (fd) => {
-      const text = (fd.get("newStep") || "").trim();
-      if (!text) return toast("Escreva a etapa");
-      const cur = data.tasks.find((x) => x.id === id);
-      cur.steps.push({ id: uid(), text, done: false, date: fd.get("newStepDate") || "" });
-      applySteps(cur);
-      save();
-      render();
-      showSteps(id);
-      setTimeout(() => $("#form [name=newStep]")?.focus(), 30);
-    },
-  );
-  setTimeout(() => $("#form [name=newStep]")?.focus(), 30);
+  if (t?.status === "Concluído" && filter === "Não concluídos") filter = "Todos";
+  render();
+  const row = document.querySelector(`#rows tr[data-id="${id}"]`);
+  row?.scrollIntoView({ block: "center" });
+  if (!t?.steps.length) visibleStepInput(id)?.focus();
+}
+function toggleStepsOpen(id) {
+  openSteps.has(id) ? openSteps.delete(id) : openSteps.add(id);
+  refreshSteps(id, openSteps.has(id) && !data.tasks.find((x) => x.id === id)?.steps.length);
+}
+// Conclui a próxima etapa com um clique, com opção de desfazer
+function doNextStep(id) {
+  const t = data.tasks.find((x) => x.id === id),
+    s = t?.steps.find((x) => !x.done),
+    prev = t?.status;
+  if (!s) return;
+  s.done = true;
+  applySteps(t);
+  refreshSteps(id);
+  if (t.status !== "Concluído")
+    toast(`Etapa feita: ${s.text}`, {
+      label: "Desfazer",
+      fn: () => {
+        const cur = data.tasks.find((x) => x.id === id),
+          st = cur?.steps.find((x) => x.id === s.id);
+        if (st) st.done = false;
+        if (cur) cur.status = prev;
+        refreshSteps(id);
+      },
+    });
 }
 function toggleStep(id, stepId, v) {
   const t = data.tasks.find((x) => x.id === id),
@@ -77,17 +106,25 @@ function toggleStep(id, stepId, v) {
   if (!s) return;
   s.done = v;
   applySteps(t);
-  save();
-  render();
-  showSteps(id);
+  refreshSteps(id);
+}
+function addStepInline(id, input) {
+  const box = input.closest(".stepadd"),
+    text = box.querySelector("[name=newStep]").value.trim(),
+    date = box.querySelector("[name=newStepDate]").value;
+  if (!text) return box.querySelector("[name=newStep]").focus();
+  const t = data.tasks.find((x) => x.id === id);
+  t.steps.push({ id: uid(), text, done: false, date });
+  if (t.status === "Concluído") t.status = "Em andamento";
+  openSteps.add(id);
+  refreshSteps(id, true);
 }
 function removeStep(id, stepId) {
   const t = data.tasks.find((x) => x.id === id);
   if (!t || !confirm("Remover esta etapa?")) return;
   t.steps = t.steps.filter((x) => x.id !== stepId);
-  save();
-  render();
-  showSteps(id);
+  applySteps(t);
+  refreshSteps(id);
 }
 
 // Muda a situação direto da lista; ao concluir (e a lista esconder concluídas), oferece desfazer

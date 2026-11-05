@@ -24,6 +24,7 @@ js/categories.js      Gerenciar categorias
 js/main.js            Inicialização
 js/cloud.js           Login com Google e sincronização com o Firestore (módulo, carregado por último)
 firestore.rules       Regras de acesso ao banco (colar no console do Firebase)
+tests/                Testes automáticos (Firebase simulado, sem internet)
 ```
 Os scripts são carregados em ordem no `index.html` e compartilham variáveis globais, então mantenha essa ordem.
 
@@ -43,3 +44,10 @@ O app também guarda uma cópia no navegador, então funciona sem internet e sin
 Para o login funcionar no site publicado, `rafaelsassuncao.github.io` precisa estar em Firebase → Authentication → Configurações → Domínios autorizados.
 
 A cotação exige internet; em caso de falha, o app mantém o último valor salvo e mostra um aviso.
+
+## Testes
+Com Python 3 e Google Chrome instalados, rode na pasta do projeto:
+```
+node tests/run.mjs
+```
+Os testes abrem o app num Chrome sem janela, com o Firebase simulado (nenhum dado real é usado), e verificam funcionamento, sincronização e se nada passa da largura da tela no celular e no computador.

@@ -359,14 +359,33 @@ function dueCell(t) {
       : '<span class="muted small">Sem prazo próprio</span>';
   return `<span class="date">${fmtDay(t.date)}</span>${urgent ? badge(d.label, d.cls) : d?.key === "ok" ? '<small class="ontime">Dentro do prazo</small>' : ""}`;
 }
-// Próxima etapa da pendência, clicável para marcar ou adicionar etapas
+// Etapas na linha: bolinhas de progresso, próxima etapa com "✓ Feito" e lista que abre ali mesmo
 function stepsLine(t) {
-  if (!t.steps?.length) return "";
-  const n = t.steps.length,
-    d = (t.steps || []).filter((s) => s.done).length,
-    next = (t.steps || []).find((s) => !s.done);
-  return `<button type="button" class="stepline${next ? "" : " alldone"}" onclick="showSteps('${t.id}')" title="Ver e marcar etapas"><span class="stepcount">${d}/${n}</span><span>${next ? `Próxima: <b>${esc(next.text)}</b>${next.date ? ` · até ${fmtDay(next.date)}` : ""}` : "Todas as etapas feitas ✓"}</span></button>`;
+  const steps = t.steps || [],
+    open = openSteps.has(t.id),
+    next = steps.find((s) => !s.done),
+    d = steps.filter((s) => s.done).length;
+  if (!steps.length && !open)
+    return isClosed(t)
+      ? ""
+      : `<button type="button" class="link addsteps" onclick="toggleStepsOpen('${t.id}')">+ etapas</button>`;
+  const dots = steps.map((s) => `<i class="${s.done ? "on" : s === next ? "next" : ""}"></i>`).join(""),
+    head = steps.length
+      ? `<div class="stepbar${next ? "" : " alldone"}"><span class="dots" title="${d} de ${steps.length} etapas feitas">${dots}</span><span class="steptext">${next ? `<small>Próxima etapa</small><b>${esc(next.text)}</b>${next.date ? `<small>até ${fmtDay(next.date)}</small>` : ""}` : "<b>Todas as etapas feitas ✓</b>"}</span>${next ? `<button type="button" class="stepdo" onclick="doNextStep('${t.id}')" title="Marcar “${esc(next.text)}” como feita">✓ Feito</button>` : ""}<button type="button" class="link steptoggle" aria-expanded="${open}" onclick="toggleStepsOpen('${t.id}')">${open ? "fechar ▴" : `ver etapas (${d}/${steps.length}) ▾`}</button></div>`
+      : "";
+  const list = open
+    ? `<div class="stepsopen">${steps
+        .map(
+          (s) =>
+            `<div class="steprowi${s.done ? " done" : ""}"><label><input type="checkbox" ${s.done ? "checked" : ""} onchange="toggleStep('${t.id}','${s.id}',this.checked)"><span>${esc(s.text)}${s.date ? `<small>até ${fmtDay(s.date)}</small>` : ""}</span></label><button type="button" class="link danger" aria-label="Remover etapa ${esc(s.text)}" onclick="removeStep('${t.id}','${s.id}')">✕</button></div>`,
+        )
+        .join(
+          "",
+        )}<div class="stepadd"><input name="newStep" maxlength="160" placeholder="${steps.length ? "Nova etapa…" : "Primeira etapa, ex.: tirar cópia"}" aria-label="Nova etapa" onkeydown="if(event.key==='Enter'){event.preventDefault();addStepInline('${t.id}',this)}"><input name="newStepDate" type="date" aria-label="Prazo da etapa (opcional)"><button type="button" class="btn small" onclick="addStepInline('${t.id}',this)">Adicionar</button>${steps.length ? "" : `<button type="button" class="link" onclick="toggleStepsOpen('${t.id}')">cancelar</button>`}</div></div>`
+    : "";
+  return head + list;
 }
+const isClosed = (t) => t.status === "Concluído";
 // Situação do pagamento, separada do andamento da pendência
 function payCell(t) {
   if (!isCost(t)) return '<span class="muted small">Sem custo</span>';
@@ -410,7 +429,7 @@ function taskTable(a, manual = true, sel = false) {
   return `<div class="tablewrap tasks-wrap"><table class="cardtable tasks${selected.size ? " has-sel" : ""}"><thead><tr><th class="c-task">${sel ? `<input class="sel" type="checkbox" id="selall" aria-label="Selecionar todas para somar" onchange="selectAll(this.checked)">` : ""}Pendência</th>${th("Prazo", "due", "c-due")}${th("Andamento", "filter", "c-status")}${th("Pagamento", "costf", "c-pay")}<th class="c-val">Valor</th><th class="c-act"><span class="sr-only">Ações</span></th></tr></thead><tbody>${a
     .map((t) => {
       try {
-        return `<tr data-id="${t.id}" class="${statusRow(t.status)}${sel && selected.has(t.id) ? " picked" : ""}"><td data-label="Pendência" class="c-task"><div class="taskcell">${sel ? `<input class="sel" type="checkbox" aria-label="Selecionar ${esc(t.title)} para somar" ${selected.has(t.id) ? "checked" : ""} onchange="toggleSelect('${t.id}')">` : ""}${manual ? '<span class="draghandle" tabindex="0" role="button" aria-label="Arrastar pendência" title="Segure e arraste para reordenar">⠿</span>' : ""}<span class="tinfo"><button type="button" class="link title" onclick="editTask('${t.id}')">${esc(t.title)}</button><span class="catpill">${esc(t.category)}</span>${t.notes ? `<small class="tnotes">${esc(t.notes)}</small>` : ""}${stepsLine(t)}${qtyProgress(t)}</span></div></td><td data-label="Prazo" class="c-due"><div class="stack">${dueCell(t)}</div></td><td data-label="Andamento" class="c-status"><div><select class="statussel ${statusCls(t.status) || "pend"}" aria-label="Andamento de ${esc(t.title)}" onchange="setStatus('${t.id}', this.value)">${STATUSES.map((s) => `<option ${s === t.status ? "selected" : ""}>${s}</option>`).join("")}</select></div></td><td data-label="Pagamento" class="c-pay"><div class="stack">${payCell(t)}</div></td><td data-label="Valor" class="c-val"><div class="stack end">${valueCell(t)}</div></td><td class="rowactions c-act"><button type="button" class="act2" title="Editar" aria-label="Editar ${esc(t.title)}" onclick="editTask('${t.id}')">${icon("edit")}<span>Editar</span></button>${isCost(t) ? `<button type="button" class="act2" title="Pagamento" aria-label="Pagamento de ${esc(t.title)}" onclick="openTask('${t.id}')">${icon("card")}<span>Pagamento</span></button>` : '<span class="act2gap"></span>'}<details class="rowmenu"><summary aria-label="Mais ações de ${esc(t.title)}" title="Mais ações">⋯</summary><div class="menu"><button type="button" onclick="this.closest('details').open=false;showSteps('${t.id}')">${icon("check")}<span>Etapas da pendência</span></button><button type="button" class="danger" title="Excluir pendência" onclick="this.closest('details').open=false;deleteTask('${t.id}')">${icon("trash")}<span>Excluir pendência</span></button></div></details></td></tr>`;
+        return `<tr data-id="${t.id}" class="${statusRow(t.status)}${sel && selected.has(t.id) ? " picked" : ""}${(t.steps || []).length || openSteps.has(t.id) ? " has-sub" : ""}"><td data-label="Pendência" class="c-task"><div class="taskcell">${sel ? `<input class="sel" type="checkbox" aria-label="Selecionar ${esc(t.title)} para somar" ${selected.has(t.id) ? "checked" : ""} onchange="toggleSelect('${t.id}')">` : ""}${manual ? '<span class="draghandle" tabindex="0" role="button" aria-label="Arrastar pendência" title="Segure e arraste para reordenar">⠿</span>' : ""}<span class="tinfo"><button type="button" class="link title" onclick="editTask('${t.id}')">${esc(t.title)}</button><span class="catpill">${esc(t.category)}</span>${t.notes ? `<small class="tnotes">${esc(t.notes)}</small>` : ""}${(t.steps || []).length || openSteps.has(t.id) ? `<div class="steps-incell">${stepsLine(t)}</div>` : stepsLine(t)}${qtyProgress(t)}</span></div></td><td data-label="Prazo" class="c-due"><div class="stack">${dueCell(t)}</div></td><td data-label="Andamento" class="c-status"><div><select class="statussel ${statusCls(t.status) || "pend"}" aria-label="Andamento de ${esc(t.title)}" onchange="setStatus('${t.id}', this.value)">${STATUSES.map((s) => `<option ${s === t.status ? "selected" : ""}>${s}</option>`).join("")}</select></div></td><td data-label="Pagamento" class="c-pay"><div class="stack">${payCell(t)}</div></td><td data-label="Valor" class="c-val"><div class="stack end">${valueCell(t)}</div></td><td class="rowactions c-act"><button type="button" class="act2" title="Editar" aria-label="Editar ${esc(t.title)}" onclick="editTask('${t.id}')">${icon("edit")}<span>Editar</span></button>${isCost(t) ? `<button type="button" class="act2" title="Pagamento" aria-label="Pagamento de ${esc(t.title)}" onclick="openTask('${t.id}')">${icon("card")}<span>Pagamento</span></button>` : '<span class="act2gap"></span>'}<details class="rowmenu"><summary aria-label="Mais ações de ${esc(t.title)}" title="Mais ações">⋯</summary><div class="menu"><button type="button" onclick="this.closest('details').open=false;showSteps('${t.id}')">${icon("check")}<span>${(t.steps || []).length ? "Ver etapas" : "Adicionar etapas"}</span></button><button type="button" class="danger" title="Excluir pendência" onclick="this.closest('details').open=false;deleteTask('${t.id}')">${icon("trash")}<span>Excluir pendência</span></button></div></details></td></tr>${(t.steps || []).length || openSteps.has(t.id) ? `<tr class="subrow ${statusRow(t.status)}" data-for="${t.id}"><td colspan="6"><div class="steps-sub">${stepsLine(t)}</div></td></tr>` : ""}`;
       } catch (err) {
         return badRow(t, err);
       }
