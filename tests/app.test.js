@@ -97,7 +97,7 @@
       "B prazo próprio com data legível",
       /\d+ [a-z]{3} \d{4}/.test(row(at()).querySelector(".c-due").textContent),
     );
-    [...row(at()).querySelectorAll(".act2")].find((b) => b.textContent.includes("Editar")).click();
+    row(at()).querySelector('.rowmenu [data-act="edit"]').click();
     check("B 'Editar' abre o formulário", $("#modal").open && F().elements.title.value === "Atestado médico");
     set("notes", "levar ao cartório");
     submit();
@@ -200,7 +200,7 @@
       row(folderItem()).querySelector(".c-due").textContent.trim() === "—",
     );
     check("E prazo da pasta vale por trás", dueDate(folderItem()) === "2026-11-15");
-    const hf = document.querySelector('thead [data-f="costf"]');
+    const hf = document.querySelector('.morefilters [data-f="costf"]');
     hf.value = "Pago";
     hf.dispatchEvent(new Event("change"));
     const shown = () =>
@@ -208,11 +208,11 @@
         data.tasks.find((t) => t.id === r.dataset.id),
       );
     check(
-      "E filtro de pagamento no cabeçalho",
+      "E filtro de pagamento em Filtros",
       shown().length > 0 && shown().every((t) => payStatus(t).label.startsWith("Pago")),
     );
     setFilter("costf", "Todos");
-    const sumText = () => document.querySelector("#rows .summary").textContent.replace(/\s/g, " ");
+    const sumText = () => document.querySelector("#sum .sumcard").textContent.replace(/\s/g, " ");
     check("E sem seleção soma tudo", sumText().includes(moneyFmt(totals(shown()).total)));
     const pick = [T("Passagens"), at()];
     pick.forEach((t) => row(t).querySelector("input.sel").click());
@@ -224,7 +224,7 @@
     setFilter("cat", "Consulado");
     check(
       "E card da categoria aparece ao filtrar",
-      document.querySelector("#rows .folder h3").textContent.includes("Consulado"),
+      document.querySelector("#sum .folder h3").textContent.includes("Consulado"),
     );
 
     // ---------- F. Pagamentos ----------

@@ -177,7 +177,7 @@ function render() {
   }
   if (page === "tasks") {
     $("#app").innerHTML =
-      `<section class="panel tasks-panel"><div class="paneltop"><h3>Pendências e custos</h3><div class="panelactions"><button class="btn" onclick="manageCategories()">Categorias</button><button class="btn primary big" onclick="editTask()">+ Nova pendência</button></div></div><div class="tools"><label class="searchbox">${icon("search")}<input id="search" aria-label="Buscar pendência" placeholder="Buscar pendência ou observação…" value="${esc(search)}"></label>${filterSelect("cat")}<span class="mobilefilters">${filterSelect("due")}${filterSelect("filter")}${filterSelect("costf")}</span>${filterSelect("sort")}</div><div id="rows"></div></section>`;
+      `<div class="tpage"><div class="tphead"><h2>Pendências e custos</h2><div class="panelactions"><button class="btn" onclick="manageCategories()">Categorias</button><button class="btn primary big" onclick="editTask()">+ Nova pendência</button></div></div><div id="sum"></div><div class="tools2"><label class="searchbox">${icon("search")}<input id="search" type="search" aria-label="Buscar pendência" placeholder="Buscar pendência ou etapa" value="${esc(search)}"></label>${filterSelect("cat", "catsel")}<details class="morefilters"><summary>Filtros<span id="morecount"></span></summary><div class="menu">${["due", "costf", "sort"].map((k) => `<label>${FILTERS[k].label}${filterSelect(k)}</label>`).join("")}</div></details><div id="chips" class="chips"></div></div><div id="rows"></div></div>`;
     updateRows();
     $("#search").oninput = (e) => {
       search = e.target.value;
@@ -221,22 +221,18 @@ function showUnknown() {
   render();
   scrollTo(0, 0);
 }
-function clearUnknown() {
-  costF = "Todos";
-  updateRows();
-}
-// Filtros usados no cabeçalho da tabela e, no celular, na barra de cima
+// Filtros da barra de cima: categoria à vista, os demais em "Filtros"
 const FILTERS = {
   cat: {
-    label: "Filtrar categoria",
+    label: "Categoria",
     opts: () => [["Todas", "Todas as categorias"], ...categories.map((c) => [c, c])],
     get: () => cat,
     set: (v) => (cat = v),
   },
   due: {
-    label: "Filtrar por prazo",
+    label: "Prazo",
     opts: () => [
-      ["Todos", "Prazo: todos"],
+      ["Todos", "Todos"],
       ["Atrasados", "Atrasados"],
       ["Próximos", `Vencem em até ${NEAR_DAYS} dias`],
       ["Sem prazo", "Sem prazo"],
@@ -245,7 +241,7 @@ const FILTERS = {
     set: (v) => (due = v),
   },
   filter: {
-    label: "Filtrar por situação",
+    label: "Andamento",
     opts: () => [
       ["Todos", "Andamento: todos"],
       ["Não concluídos", "Não concluídos"],
@@ -255,9 +251,9 @@ const FILTERS = {
     set: (v) => (filter = v),
   },
   costf: {
-    label: "Filtrar por custo",
+    label: "Pagamento",
     opts: () => [
-      ["Todos", "Pagamento: todos"],
+      ["Todos", "Todos"],
       ["Sem custo", "Sem custo (checklist)"],
       ["Sem valor", "Sem valor definido"],
       ["A pagar", "A pagar"],
@@ -267,7 +263,7 @@ const FILTERS = {
     set: (v) => (costF = v),
   },
   sort: {
-    label: "Ordenar",
+    label: "Ordem",
     opts: () => [
       ["manual", "Minha ordem"],
       ["prazo", "Por vencimento"],
@@ -295,37 +291,82 @@ function selectAll(on) {
   updateRows();
 }
 function updateRows() {
-  const base = (t) =>
-      matchCost(t) &&
+  const text = (t) =>
       (cat === "Todas" || t.category === cat) &&
       matchDue(t) &&
       (t.title + " " + t.notes + " " + (t.steps || []).map((s) => s.text).join(" "))
         .toLowerCase()
         .includes(search.toLowerCase()),
+    base = (t) => text(t) && matchCost(t),
+    byStatus = (t, f = filter) =>
+      f === "Todos" || (f === "Não concluídos" ? t.status !== "Concluído" : t.status === f),
     hiddenDone =
       filter === "Não concluídos" ? data.tasks.filter((t) => base(t) && t.status === "Concluído").length : 0;
-  let list = data.tasks.filter(
-    (t) =>
-      base(t) &&
-      (filter === "Todos" || (filter === "Não concluídos" ? t.status !== "Concluído" : t.status === filter)),
-  );
+  let list = data.tasks.filter((t) => base(t) && byStatus(t));
   if (sort === "prazo") list = [...list].sort(byDue);
+  // Botões de andamento com a contagem de cada um; "Sem valor" liga e desliga o filtro de custo
+  const count = (f) => data.tasks.filter((t) => base(t) && byStatus(t, f)).length,
+    noValue = data.tasks.filter((t) => {
+      try {
+        return text(t) && byStatus(t) && isCost(t) && forecast(t).unknown;
+      } catch {
+        return false;
+      }
+    }).length,
+    chip = (label, n, on, fn, cls = "") =>
+      `<button type="button" class="chip${on ? " on" : ""}${cls}" aria-pressed="${on}" onclick="${fn}">${label} <span>${n}</span></button>`;
+  $("#chips").innerHTML =
+    [
+      ["Não concluídos", "A fazer"],
+      ["Em andamento", "Em andamento"],
+      ["Concluído", "Concluídas"],
+      ["Todos", "Todas"],
+    ]
+      .map(([f, label]) => chip(label, count(f), filter === f, `setFilter('filter','${f}')`))
+      .join("") +
+    (noValue || costF === "Sem valor"
+      ? chip(
+          "Sem valor",
+          noValue,
+          costF === "Sem valor",
+          `setFilter('costf','${costF === "Sem valor" ? "Todos" : "Sem valor"}')`,
+          " warn",
+        )
+      : "");
+  const more = (due !== "Todos") + (costF !== "Todos" && costF !== "Sem valor") + (sort !== "manual");
+  $("#morecount").textContent = more ? ` · ${more}` : "";
+  $("#sum").innerHTML =
+    (cat !== "Todas" && costF === "Todos" ? safe(() => categoryCard(cat)) : "") + safe(() => summary(list));
+  const groups =
+    cat === "Todas"
+      ? [...new Set([...categories, ...list.map((t) => t.category)])]
+          .map((c) => [c, list.filter((t) => t.category === c)])
+          .filter(([, a]) => a.length)
+      : [[cat, list]];
   $("#rows").innerHTML =
-    (costF === "Sem valor"
-      ? `<div class="alert warn">${icon("alert")}<span>Mostrando só as pendências sem valor (${list.length}). Toque em Editar para preencher.</span><button type="button" class="link" onclick="clearUnknown()">Limpar filtro</button></div>`
-      : "") +
-    (cat !== "Todas" && costF === "Todos" ? safe(() => categoryCard(cat)) : "") +
-    safe(() => summary(list)) +
+    (list.length
+      ? groups.map(([c, a]) => safe(() => taskGroup(c, a, cat === "Todas"))).join("")
+      : '<div class="empty">Nenhuma pendência por aqui.</div>') +
     (hiddenDone
-      ? `<p class="sumnote">${hiddenDone} ${hiddenDone === 1 ? "concluída oculta" : "concluídas ocultas"} <button type="button" class="link" onclick="setFilter('filter','Todos')">mostrar</button></p>`
-      : "") +
-    taskTable(list, sort === "manual", true);
-  const all = $("#selall"),
-    n = list.filter((t) => selected.has(t.id)).length;
-  if (all) {
-    all.checked = n === list.length;
-    all.indeterminate = n > 0 && n < list.length;
-  }
+      ? `<p class="donenote">${hiddenDone} ${hiddenDone === 1 ? "concluída oculta" : "concluídas ocultas"} · <button type="button" class="link" onclick="setFilter('filter','Todos')">mostrar</button></p>`
+      : "");
+}
+// Grupo de uma categoria: título com quantidade e quanto falta pagar, depois a lista
+function taskGroup(c, a, head) {
+  const open = sum(
+      a.map((t) => {
+        try {
+          return isCost(t) ? outstandingBRL(t) : 0;
+        } catch {
+          return 0;
+        }
+      }),
+    ),
+    folder = data.folder && c === data.folder.category && data.folder.deadline,
+    info = [folder ? "prazo da pasta " + fmtDate(data.folder.deadline).slice(0, 5) : "", open > 0.005 ? "falta " + money(open) : ""]
+      .filter(Boolean)
+      .join(" · ");
+  return `<section class="tgroup">${head ? `<div class="tghead"><h3>${esc(c)} <small>· ${a.length} ${a.length === 1 ? "item" : "itens"}</small></h3>${info ? `<small>${info}</small>` : ""}</div>` : ""}${taskTable(a, sort === "manual", true)}</section>`;
 }
 // Totais das pendências marcadas entre as exibidas (respeita busca e filtros)
 function summary(list) {
@@ -333,8 +374,10 @@ function summary(list) {
     chosen = picked.length ? picked : list,
     s = totals(chosen),
     e = eurLaunched(chosen),
-    box = (label, v, extra = "") => `<div><small>${label}</small><b>${money(v)}</b>${extra}</div>`;
-  return `<div class="summary">${box(`Custo total${cat === "Todas" ? "" : " em " + esc(cat)}`, s.total, e ? `<small>${money(e, "EUR")} em euro</small>` : "")}${box("Já pago", s.paid)}${box("Falta pagar", s.open)}</div>${picked.length ? `<p class="sumnote">${picked.length} de ${list.length} somadas <button type="button" class="link" onclick="selectAll(false)">limpar</button></p>` : ""}${s.unknown && costF !== "Sem valor" ? `<button type="button" class="link flag" onclick="showUnknown()">${s.unknown} ${s.unknown === 1 ? "sem valor" : "sem valor"} →</button>` : ""}`;
+    pct = s.total > 0 ? Math.round((s.paid / s.total) * 100) : 0,
+    box = (label, v, cls, extra = "") =>
+      `<div class="${cls}"><small>${label}</small><b>${money(v)}</b>${extra}</div>`;
+  return `<section class="sumcard"><div class="sumgrid">${box(`Custo total${cat === "Todas" ? "" : " em " + esc(cat)}`, s.total, "", e ? `<small>${money(e, "EUR")} em euro</small>` : "")}${box("Já pago", s.paid, "paid")}${box("Falta pagar", s.open, "open")}</div><div class="sumbar"><div class="bar"><span style="width:${pct}%"></span></div><small>${pct}% pago</small></div>${picked.length ? `<p class="sumnote">${picked.length} de ${list.length} somadas <button type="button" class="link" onclick="selectAll(false)">limpar</button></p>` : ""}</section>`;
 }
 
 function qtyBlock(t) {
@@ -360,55 +403,52 @@ function dueCell(t) {
       : '<span class="muted small">—</span>';
   return `<span class="date">${fmtDay(t.date)}</span>${urgent ? badge(d.label, d.cls) : d?.key === "ok" ? '<small class="ontime">no prazo</small>' : ""}`;
 }
-// Etapas na linha: bolinhas de progresso, próxima etapa com "✓ Feito" e lista que abre ali mesmo
+// Etapas na linha: bolinhas, próxima etapa e "✓ Feito"; a lista completa abre logo abaixo
 function stepsLine(t) {
   const steps = t.steps || [],
     open = openSteps.has(t.id),
     next = steps.find((s) => !s.done),
     d = steps.filter((s) => s.done).length;
-  if (!steps.length && !open)
-    return isClosed(t)
+  if (!steps.length)
+    return isClosed(t) || open
       ? ""
       : `<button type="button" class="link addsteps" onclick="toggleStepsOpen('${t.id}')">+ etapas</button>`;
-  const dots = steps.map((s) => `<i class="${s.done ? "on" : s === next ? "next" : ""}"></i>`).join(""),
-    head = steps.length
-      ? `<div class="stepbar${next ? "" : " alldone"}"><span class="dots" title="${d} de ${steps.length} etapas feitas">${dots}</span><span class="steptext">${next ? `<small>Próxima etapa</small><b>${esc(next.text)}</b>${next.date ? `<small>até ${fmtDay(next.date)}</small>` : ""}` : "<b>Todas as etapas feitas ✓</b>"}</span>${next ? `<button type="button" class="stepdo" onclick="doNextStep('${t.id}')" title="Marcar “${esc(next.text)}” como feita">✓ Feito</button>` : ""}<button type="button" class="link steptoggle" aria-expanded="${open}" onclick="toggleStepsOpen('${t.id}')">${open ? "fechar ▴" : `ver etapas (${d}/${steps.length}) ▾`}</button></div>`
-      : "";
-  const list = open
-    ? `<div class="stepsopen">${steps
-        .map(
-          (s) =>
-            `<div class="steprowi${s.done ? " done" : ""}"><label><input type="checkbox" ${s.done ? "checked" : ""} onchange="toggleStep('${t.id}','${s.id}',this.checked)"><span>${esc(s.text)}${s.date ? `<small>até ${fmtDay(s.date)}</small>` : ""}</span></label><button type="button" class="link danger" aria-label="Remover etapa ${esc(s.text)}" onclick="removeStep('${t.id}','${s.id}')">✕</button></div>`,
-        )
-        .join(
-          "",
-        )}<div class="stepadd"><input name="newStep" maxlength="160" placeholder="${steps.length ? "Nova etapa…" : "Primeira etapa, ex.: tirar cópia"}" aria-label="Nova etapa" onkeydown="if(event.key==='Enter'){event.preventDefault();addStepInline('${t.id}',this)}"><input name="newStepDate" type="date" aria-label="Prazo da etapa"><button type="button" class="btn small" onclick="addStepInline('${t.id}',this)">Adicionar</button>${steps.length ? "" : `<button type="button" class="link" onclick="toggleStepsOpen('${t.id}')">cancelar</button>`}</div></div>`
-    : "";
-  return head + list;
+  const dots = steps.map((s) => `<i class="${s.done ? "on" : s === next ? "next" : ""}"></i>`).join("");
+  return `<div class="stepbar${next ? "" : " alldone"}"><span class="dots" title="${d} de ${steps.length} etapas feitas">${dots}</span><span class="steptext">${next ? `<b>${esc(next.text)}</b>${next.date ? `<small>até ${fmtDay(next.date)}</small>` : ""}` : "<b>Etapas feitas ✓</b>"}</span>${next ? `<button type="button" class="stepdo" onclick="doNextStep('${t.id}')" title="Marcar “${esc(next.text)}” como feita">✓ Feito</button>` : ""}<button type="button" class="link steptoggle" aria-expanded="${open}" onclick="toggleStepsOpen('${t.id}')">${d}/${steps.length} ${open ? "▴" : "▾"}</button></div>`;
+}
+// Lista completa das etapas, para marcar, remover e adicionar
+function stepsList(t) {
+  const steps = t.steps || [];
+  return `<div class="stepsopen">${steps
+    .map(
+      (s) =>
+        `<div class="steprowi${s.done ? " done" : ""}"><label><input type="checkbox" ${s.done ? "checked" : ""} onchange="toggleStep('${t.id}','${s.id}',this.checked)"><span>${esc(s.text)}${s.date ? `<small>até ${fmtDay(s.date)}</small>` : ""}</span></label><button type="button" class="link danger" aria-label="Remover etapa ${esc(s.text)}" onclick="removeStep('${t.id}','${s.id}')">✕</button></div>`,
+    )
+    .join(
+      "",
+    )}<div class="stepadd"><input name="newStep" maxlength="160" placeholder="${steps.length ? "Nova etapa…" : "Primeira etapa, ex.: tirar cópia"}" aria-label="Nova etapa" onkeydown="if(event.key==='Enter'){event.preventDefault();addStepInline('${t.id}',this)}"><input name="newStepDate" type="date" aria-label="Prazo da etapa"><button type="button" class="btn small" onclick="addStepInline('${t.id}',this)">Adicionar</button><button type="button" class="link steptoggle" onclick="toggleStepsOpen('${t.id}')">${steps.length ? "fechar" : "cancelar"}</button></div></div>`;
 }
 const isClosed = (t) => t.status === "Concluído";
-// Situação do pagamento, separada do andamento da pendência
+// Situação do pagamento, em texto curto abaixo do valor
 function payCell(t) {
-  if (!isCost(t)) return '<span class="muted small">Sem custo</span>';
+  if (!isCost(t)) return "";
   const ps = payStatus(t),
-    lines = [badge(ps.label, ps.cls)];
-  if (ps.label === "Parcialmente pago") lines.push(`<small>Pago ${money(paidBRL(t))}</small>`);
+    parts = [];
   t.credits.forEach((c) => {
     const p = c.installments.filter((i) => i.payment).length;
-    if (p < c.installments.length)
-      lines.push(
-        `<small>${esc(accountName(c.accountId) || "Cartão")}: ${p} de ${c.installments.length} parcelas</small>`,
-      );
+    if (p < c.installments.length) parts.push(`${p} de ${c.installments.length} parcelas`);
   });
-  if (t.payments.some((p) => !isConfirmed(p))) lines.push("<small>Pagamento agendado</small>");
-  return lines.join("");
+  if (ps.label === "Parcialmente pago") parts.unshift(`pago ${money(paidBRL(t))}`);
+  if (!parts.length && ps.label !== "Valor a definir") parts.push(ps.label.toLowerCase());
+  return parts.length ? `<small class="paystate ${ps.cls}">${parts.join(" · ")}</small>` : "";
 }
-// Valor na moeda em que foi lançado, alinhado à direita
+// Valor na moeda em que foi lançado, com o tipo (estimado/confirmado) em texto pequeno
 function valueCell(t) {
-  if (!isCost(t)) return '<span class="muted small">—</span>';
+  if (!isCost(t)) return '<span class="muted small">Sem custo</span>';
   const f = forecast(t);
-  if (!(f.known > 0)) return '<span class="muted small">A definir</span>';
-  return `<b class="amount-sm">${money(f.known, t.currency)}</b>${f.unknown ? "<small>+ a definir</small>" : ""}${t.valueType === "estimado" ? '<span class="vtag">estimado</span>' : t.valueType === "confirmado" ? '<span class="vtag ok">confirmado</span>' : ""}${t.valueNote ? `<small class="vnote">${esc(t.valueNote)}</small>` : ""}`;
+  if (!(f.known > 0)) return `<button type="button" class="link novalue" onclick="editTask('${t.id}')">Sem valor</button>`;
+  const kind = t.valueType === "estimado" ? "estimado" : t.valueType === "confirmado" ? "confirmado" : "";
+  return `<b class="amount-sm">${money(f.known, t.currency)}</b>${f.unknown ? "<small>+ a definir</small>" : ""}${kind || t.valueNote ? `<small class="vtag2">${kind}${t.valueNote ? tip(t.valueNote) : ""}</small>` : ""}`;
 }
 // Progresso das compras em etapas com a quantidade real adquirida (0 de 3 = barra vazia)
 function qtyProgress(t) {
@@ -425,22 +465,21 @@ function originText(t) {
 }
 function taskTable(a, manual = true, sel = false) {
   if (!a.length) return '<div class="empty">Nenhuma pendência por aqui.</div>';
-  const th = (label, k, cls = "") =>
-    `<th class="${cls}">${sel && k ? filterSelect(k, "hfilter") : label}</th>`;
-  return `<div class="tablewrap tasks-wrap"><table class="cardtable tasks${selected.size ? " has-sel" : ""}"><thead><tr><th class="c-task">${sel ? `<input class="sel" type="checkbox" id="selall" aria-label="Selecionar todas para somar" onchange="selectAll(this.checked)">` : ""}Pendência</th>${th("Prazo", "due", "c-due")}${th("Andamento", "filter", "c-status")}${th("Pagamento", "costf", "c-pay")}<th class="c-val">Valor</th><th class="c-act"><span class="sr-only">Ações</span></th></tr></thead><tbody>${a
+  return `<table class="tlist${selected.size ? " has-sel" : ""}"><tbody>${a
     .map((t) => {
       try {
-        return `<tr data-id="${t.id}" class="${statusRow(t.status)}${sel && selected.has(t.id) ? " picked" : ""}${(t.steps || []).length || openSteps.has(t.id) ? " has-sub" : ""}"><td data-label="Pendência" class="c-task"><div class="taskcell">${sel ? `<input class="sel" type="checkbox" aria-label="Selecionar ${esc(t.title)} para somar" ${selected.has(t.id) ? "checked" : ""} onchange="toggleSelect('${t.id}')">` : ""}${manual ? '<span class="draghandle" tabindex="0" role="button" aria-label="Arrastar pendência" title="Segure e arraste para reordenar">⠿</span>' : ""}<span class="tinfo"><button type="button" class="link title" onclick="editTask('${t.id}')">${esc(t.title)}</button><span class="catpill">${esc(t.category)}</span>${t.notes ? `<small class="tnotes">${esc(t.notes)}</small>` : ""}${(t.steps || []).length || openSteps.has(t.id) ? `<div class="steps-incell">${stepsLine(t)}</div>` : stepsLine(t)}${qtyProgress(t)}</span></div></td><td data-label="Prazo" class="c-due"><div class="stack">${dueCell(t)}</div></td><td data-label="Andamento" class="c-status"><div><select class="statussel ${statusCls(t.status) || "pend"}" aria-label="Andamento de ${esc(t.title)}" onchange="setStatus('${t.id}', this.value)">${STATUSES.map((s) => `<option ${s === t.status ? "selected" : ""}>${s}</option>`).join("")}</select></div></td><td data-label="Pagamento" class="c-pay"><div class="stack">${payCell(t)}</div></td><td data-label="Valor" class="c-val"><div class="stack end">${valueCell(t)}</div></td><td class="rowactions c-act"><button type="button" class="act2" title="Editar" aria-label="Editar ${esc(t.title)}" onclick="editTask('${t.id}')">${icon("edit")}<span>Editar</span></button>${isCost(t) ? `<button type="button" class="act2" title="Pagamento" aria-label="Pagamento de ${esc(t.title)}" onclick="openTask('${t.id}')">${icon("card")}<span>Pagamento</span></button>` : '<span class="act2gap"></span>'}<details class="rowmenu"><summary aria-label="Mais ações de ${esc(t.title)}" title="Mais ações">⋯</summary><div class="menu"><button type="button" onclick="this.closest('details').open=false;showSteps('${t.id}')">${icon("check")}<span>${(t.steps || []).length ? "Ver etapas" : "Adicionar etapas"}</span></button><button type="button" class="danger" title="Excluir pendência" onclick="this.closest('details').open=false;deleteTask('${t.id}')">${icon("trash")}<span>Excluir pendência</span></button></div></details></td></tr>${(t.steps || []).length || openSteps.has(t.id) ? `<tr class="subrow ${statusRow(t.status)}" data-for="${t.id}"><td colspan="6"><div class="steps-sub">${stepsLine(t)}</div></td></tr>` : ""}`;
+        const open = openSteps.has(t.id);
+        return `<tr data-id="${t.id}" class="${statusRow(t.status)}${sel && selected.has(t.id) ? " picked" : ""}${open ? " has-sub" : ""}"><td class="c-task"><div class="taskcell">${sel ? `<input class="sel" type="checkbox" aria-label="Selecionar ${esc(t.title)} para somar" ${selected.has(t.id) ? "checked" : ""} onchange="toggleSelect('${t.id}')">` : ""}${manual ? '<span class="draghandle" tabindex="0" role="button" aria-label="Arrastar pendência" title="Segure e arraste para reordenar">⠿</span>' : ""}<span class="tinfo"><button type="button" class="link title" onclick="editTask('${t.id}')">${esc(t.title)}</button>${t.notes ? `<small class="tnotes">${esc(t.notes)}</small>` : ""}${stepsLine(t)}${qtyProgress(t)}</span></div></td><td class="c-status"><select class="statussel ${statusCls(t.status) || "pend"}" aria-label="Andamento de ${esc(t.title)}" onchange="setStatus('${t.id}', this.value)">${STATUSES.map((s) => `<option ${s === t.status ? "selected" : ""}>${s}</option>`).join("")}</select></td><td class="c-due${t.date || ["late", "today", "near"].includes(dueStatus(t)?.key) ? "" : " nodue"}"><div class="stack">${dueCell(t)}</div></td><td class="c-money"><div class="c-val">${valueCell(t)}</div><div class="c-pay">${payCell(t)}</div></td><td class="c-act"><details class="rowmenu"><summary aria-label="Mais ações de ${esc(t.title)}" title="Mais ações">⋯</summary><div class="menu"><button type="button" data-act="edit" onclick="this.closest('details').open=false;editTask('${t.id}')">${icon("edit")}<span>Editar</span></button>${isCost(t) ? `<button type="button" data-act="pay" onclick="this.closest('details').open=false;openTask('${t.id}')">${icon("card")}<span>Pagamento</span></button>` : ""}<button type="button" onclick="this.closest('details').open=false;showSteps('${t.id}')">${icon("check")}<span>${(t.steps || []).length ? "Ver etapas" : "Adicionar etapas"}</span></button><button type="button" class="danger" onclick="this.closest('details').open=false;deleteTask('${t.id}')">${icon("trash")}<span>Excluir pendência</span></button></div></details></td></tr>${open ? `<tr class="subrow ${statusRow(t.status)}" data-for="${t.id}"><td colspan="5">${stepsList(t)}</td></tr>` : ""}`;
       } catch (err) {
         return badRow(t, err);
       }
     })
-    .join("")}</tbody></table></div>`;
+    .join("")}</tbody></table>`;
 }
 // Linha de aviso quando uma pendência não pode ser exibida (o resto da lista continua aparecendo)
 function badRow(t, err) {
   console.error(err);
-  return `<tr data-id="${esc(t?.id)}"><td colspan="6"><div class="alert late">${icon("alert")}<span>Não consegui mostrar “${esc(t?.title || "sem nome")}”. <small>${esc(err?.message)}</small></span><button type="button" class="link" onclick="editTask('${esc(t?.id)}')">Editar</button></div></td></tr>`;
+  return `<tr data-id="${esc(t?.id)}"><td colspan="5"><div class="alert late">${icon("alert")}<span>Não consegui mostrar “${esc(t?.title || "sem nome")}”. <small>${esc(err?.message)}</small></span><button type="button" class="link" onclick="editTask('${esc(t?.id)}')">Editar</button></div></td></tr>`;
 }
 const safe = (fn) => {
   try {

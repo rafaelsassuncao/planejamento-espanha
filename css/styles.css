@@ -2497,3 +2497,560 @@ tr.has-sub > td {
 .tip.show .tiptext {
   display: block;
 }
+/* ===== Pendências e custos: resumo, filtros em botões e lista agrupada por categoria ===== */
+.tpage {
+  display: grid;
+  gap: 22px;
+  max-width: 1100px;
+}
+.tphead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.tphead h2 {
+  margin: 0;
+  font:
+    800 26px Manrope,
+    sans-serif;
+  color: #133d32;
+  letter-spacing: -0.5px;
+}
+#sum {
+  display: grid;
+  gap: 14px;
+}
+#sum:empty {
+  display: none;
+}
+#sum .folder {
+  margin: 0;
+}
+.sumcard {
+  display: grid;
+  gap: 14px;
+  padding: 20px 24px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+}
+.sumgrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+.sumgrid > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.sumgrid small {
+  color: var(--muted);
+  font-size: 13px;
+}
+.sumgrid b {
+  font:
+    800 24px Manrope,
+    sans-serif;
+  color: #133d32;
+}
+.sumgrid .paid b {
+  color: #2e7351;
+}
+.sumgrid .open b {
+  color: #7a5518;
+}
+.sumbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sumbar .bar {
+  flex: 1;
+  margin: 0;
+  background: #f3ead7;
+}
+.sumbar .bar span {
+  background: #3c8a5f;
+}
+.sumbar small {
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.sumcard .sumnote {
+  margin: 0;
+}
+.tools2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.tools2 .searchbox {
+  flex: 1 1 260px;
+  min-height: 44px;
+}
+.tools2 .catsel {
+  min-height: 44px;
+  max-width: 240px;
+  border-radius: 10px;
+}
+.morefilters {
+  position: relative;
+}
+.morefilters > summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--green);
+  font-weight: 600;
+  list-style: none;
+  cursor: pointer;
+}
+.morefilters > summary::-webkit-details-marker {
+  display: none;
+}
+.morefilters .menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 30;
+  display: grid;
+  gap: 12px;
+  width: 240px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 12px 30px #14372d26;
+}
+.morefilters label {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.morefilters select {
+  width: 100%;
+  min-height: 40px;
+  border-radius: 8px;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  flex-basis: 100%;
+  gap: 6px;
+}
+.chip {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid #d6ded4;
+  border-radius: 99px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.chip span {
+  opacity: 0.7;
+  font-weight: 500;
+}
+.chip:hover:not(.on) {
+  border-color: #9fbfa6;
+}
+.chip.on {
+  border-color: #1f6656;
+  background: #1f6656;
+  color: #fff;
+}
+.chip.warn {
+  border-color: #e5c88f;
+  background: #fff8ea;
+  color: #7a5518;
+}
+.chip.warn.on {
+  border-color: #8a6420;
+  background: #8a6420;
+  color: #fff;
+}
+.tgroup {
+  display: grid;
+  gap: 10px;
+}
+.tghead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 12px;
+  padding: 0 4px;
+}
+.tghead h3 {
+  margin: 0;
+  font:
+    700 17px Manrope,
+    sans-serif;
+  color: #133d32;
+}
+.tghead h3 small,
+.tghead > small {
+  font:
+    500 13px "DM Sans",
+    sans-serif;
+  color: var(--muted);
+}
+.tlist {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  background: #fff;
+}
+.tlist td {
+  padding: 14px 12px;
+  border-top: 1px solid #eef1ec;
+  vertical-align: middle;
+}
+.tlist tbody > tr:first-child > td,
+.tlist .subrow > td {
+  border-top: 0;
+}
+.tlist .c-task {
+  padding-left: 16px;
+}
+.tlist .c-status {
+  width: 150px;
+}
+.tlist .c-due {
+  width: 120px;
+}
+.tlist .c-money {
+  width: 160px;
+  text-align: right;
+}
+.tlist .c-act {
+  width: 56px;
+  padding-right: 8px;
+  text-align: right;
+}
+.tlist .subrow > td {
+  padding: 0 16px 14px 44px;
+}
+.tlist tr.st-prog > td {
+  background: transparent;
+}
+.tlist tbody > tr:first-child > td:first-child {
+  border-top-left-radius: 14px;
+}
+.tlist tbody > tr:last-child > td:first-child {
+  border-bottom-left-radius: 14px;
+}
+.tlist .rowmenu {
+  margin: 0;
+}
+.tlist .rowmenu > summary {
+  width: 44px;
+  height: 44px;
+}
+.tlist .tinfo .link.title {
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+}
+.tlist .stepbar {
+  display: inline-flex;
+  flex-wrap: wrap;
+  max-width: 100%;
+  margin-top: 6px;
+  padding: 4px 4px 4px 10px;
+  border: 0;
+  background: #f4f8f3;
+}
+.tlist .stepbar.alldone {
+  background: #eef6ec;
+}
+.tlist .steptext {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+}
+.tlist .stepdo {
+  min-height: 30px;
+  border: 1px solid #b9d3c2;
+  background: #fff;
+  color: #1f6656;
+}
+.tlist .stepdo:hover {
+  background: #e1efe2;
+}
+.tlist .steptoggle {
+  color: var(--muted);
+  white-space: nowrap;
+}
+.tlist .stepsopen {
+  max-width: 640px;
+  margin-top: 0;
+}
+.c-val {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+.c-val .amount-sm {
+  color: #133d32;
+  font-size: 15px;
+}
+.c-val small,
+.paystate {
+  color: var(--muted);
+  font-size: 12px;
+}
+.paystate.done {
+  color: #2e6b4a;
+}
+.vtag2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.link.novalue {
+  color: #7a5518;
+  font-weight: 700;
+}
+.donenote {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+@media (min-width: 701px) and (max-width: 1100px) {
+  .tlist .c-status {
+    width: 132px;
+  }
+  .tlist .c-due {
+    width: 100px;
+  }
+  .tlist .c-money {
+    width: 130px;
+  }
+}
+@media (max-width: 700px) {
+  .tpage {
+    gap: 18px;
+  }
+  .tphead h2 {
+    font-size: 22px;
+  }
+  .sumcard {
+    padding: 16px;
+  }
+  .sumgrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 12px;
+  }
+  .sumgrid .open {
+    grid-column: 1 / -1;
+    order: -1;
+  }
+  .sumgrid b {
+    font-size: 18px;
+  }
+  .sumgrid .open b {
+    font-size: 24px;
+  }
+  .tools2 .searchbox {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .tools2 .catsel {
+    order: 3;
+    flex: 1 1 100%;
+    max-width: none;
+  }
+  .chips {
+    order: 4;
+  }
+  .tlist,
+  .tlist tbody,
+  .tlist tr,
+  .tlist td {
+    display: block;
+  }
+  .tlist {
+    border: 0;
+    background: transparent;
+    table-layout: auto;
+  }
+  .tlist tbody {
+    display: grid;
+    gap: 10px;
+  }
+  .tlist td,
+  .tlist .c-task,
+  .tlist .c-status,
+  .tlist .c-due,
+  .tlist .c-money,
+  .tlist .c-act {
+    width: auto;
+    padding: 0;
+    border: 0;
+    border-radius: 0 !important;
+  }
+  .tlist tr[data-id] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto 44px;
+    grid-template-areas:
+      "task status status"
+      "due money act";
+    align-items: center;
+    gap: 10px;
+    padding: 14px 8px 8px 14px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: #fff;
+  }
+  .tlist .c-task {
+    grid-area: task;
+  }
+  .tlist .c-status {
+    grid-area: status;
+    align-self: start;
+    padding-right: 6px;
+  }
+  .tlist .c-due {
+    grid-area: due;
+  }
+  .tlist .c-money {
+    grid-area: money;
+  }
+  .tlist .c-act {
+    grid-area: act;
+  }
+  .tlist tr.st-prog,
+  .tlist tr.st-prog > td:first-child,
+  .tlist tr.st-done > td:first-child {
+    box-shadow: none;
+  }
+  .tlist tr.st-prog[data-id] {
+    box-shadow: inset 4px 0 #2f8ba0;
+  }
+  .tlist tr.st-done[data-id] {
+    box-shadow: inset 4px 0 #3c8a5f;
+  }
+  .tlist tr.has-sub {
+    border-bottom: 0;
+    border-radius: 14px 14px 0 0;
+  }
+  .tlist .subrow {
+    margin-top: -10px;
+    padding: 0 12px 12px;
+    border: 1px solid var(--line);
+    border-top: 0;
+    border-radius: 0 0 14px 14px;
+    background: #fff;
+  }
+  .tlist .subrow > td {
+    padding: 0;
+  }
+  .tlist .taskcell {
+    padding-right: 0;
+  }
+  .tlist .taskcell .sel {
+    position: static;
+  }
+  .tlist .stepbar {
+    display: flex;
+  }
+  .tlist .statussel {
+    max-width: 150px;
+  }
+}
+.tpage {
+  grid-template-columns: minmax(0, 1fr);
+}
+.tpage > *,
+.tools2 > * {
+  min-width: 0;
+}
+#rows {
+  display: grid;
+  gap: 26px;
+}
+.tlist .c-status {
+  width: 164px;
+}
+.tlist .statussel {
+  max-width: 100%;
+}
+.tlist .link.title {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 700px) {
+  .tlist .c-due.nodue {
+    visibility: hidden;
+  }
+  .tlist .rowmenu > summary {
+    border: 0;
+    background: transparent;
+  }
+}
+.tlist td:first-child {
+  min-width: 0;
+}
+@media (max-width: 700px) {
+  .tlist .c-status {
+    width: auto;
+  }
+  .tlist .taskcell .draghandle {
+    margin-right: -6px;
+  }
+}
+/* Celular: nome ocupa a largura toda; prazo (se houver) embaixo; andamento à esquerda e valor à direita */
+@media (max-width: 700px) {
+  .tlist tr[data-id] {
+    grid-template-columns: auto minmax(0, 1fr) 44px;
+    grid-template-areas:
+      "task task task"
+      "due due due"
+      "status money act";
+    row-gap: 8px;
+  }
+  .tlist .c-status {
+    align-self: center;
+    padding-right: 0;
+  }
+  .tlist .c-due.nodue {
+    display: none;
+  }
+  .tlist .c-due .stack {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .tlist .link.title {
+    overflow-wrap: break-word;
+  }
+}
+@media (max-width: 700px) {
+  .tlist .c-due {
+    text-align: left;
+  }
+  .tlist .c-due .stack {
+    justify-content: flex-start;
+  }
+}

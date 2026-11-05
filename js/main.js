@@ -18,7 +18,7 @@ document.addEventListener("visibilitychange", () => {
 // Fecha o menu "⋯" das pendências ao clicar fora dele
 document.addEventListener("click", (e) => {
   document
-    .querySelectorAll("details.rowmenu[open]")
+    .querySelectorAll("details.rowmenu[open], details.morefilters[open]")
     .forEach((d) => !d.contains(e.target) && (d.open = false));
 });
 // Dica ⓘ: abre e fecha com um toque (no celular nem sempre há "passar o mouse")
