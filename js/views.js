@@ -18,6 +18,9 @@ const ICONS = {
   search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
   folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
 };
+// Dica ⓘ: explicação que só aparece ao passar o mouse ou tocar
+const tip = (text) =>
+  `<span class="tip" tabindex="0" role="note" aria-label="${esc(text)}">ⓘ<span class="tiptext">${esc(text)}</span></span>`;
 const icon = (n) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}</svg>`,
   badge = (label, cls = "") => `<span class="badge ${cls}">${esc(label)}</span>`,
   fmtQty = (n) => Number(n).toLocaleString("pt-BR", { maximumFractionDigits: 2 }),
@@ -29,9 +32,7 @@ const icon = (n) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${IC
       )
       .join(""),
   incomplete = (n) =>
-    n
-      ? `<button type="button" class="link flag" onclick="showUnknown()">Previsão incompleta: ${n} ${n === 1 ? "item" : "itens"} com custo a definir →</button>`
-      : "";
+    n ? `<button type="button" class="link flag" onclick="showUnknown()">${n} sem valor →</button>` : "";
 const statusCls = (s) => (s === "Concluído" ? "done" : s === "Em andamento" ? "prog" : ""),
   statusRow = (s) => (s === "Concluído" ? "st-done" : s === "Em andamento" ? "st-prog" : "");
 
@@ -45,9 +46,9 @@ function cards() {
   const o = overall(),
     e = eurLaunched(),
     est = estimatedOpen(),
-    card = (cls, ic, label, v, sub) =>
-      `<div class="card kpi ${cls}"><span class="iconcircle">${icon(ic)}</span><div><label>${label}</label><div class="amount">${money(v)}</div><span class="sub">${sub}</span></div></div>`;
-  return `<div class="cards">${card("green", "wallet", "Saldo atual", o.current, `Recebido ${money(o.received)} − pago ${money(o.paid)}`)}${card("amber", "file", "Custo total", o.total, `${e ? `<b class="eurtotal">Lançado em euro: ${money(e, "EUR")}</b><br>` : ""}Já pago ${money(o.paid)} · falta ${money(o.open)}${est > 0.005 ? `<br>${money(est)} são estimativas` : ""}${o.unknown ? "<br>" + incomplete(o.unknown) : ""}`)}${card("mint", "chart", "Saldo previsto", o.projected, `Depois de pagar tudo${o.expected ? `<br>+ ${money(o.expected)} a receber` : ""}`)}</div>`;
+    card = (cls, ic, label, v, sub, help = "") =>
+      `<div class="card kpi ${cls}"><span class="iconcircle">${icon(ic)}</span><div><label>${label} ${help ? tip(help) : ""}</label><div class="amount">${money(v)}</div><span class="sub">${sub}</span></div></div>`;
+  return `<div class="cards">${card("green", "wallet", "Saldo atual", o.current, "", `Recebido ${money(o.received)} − pago ${money(o.paid)}`)}${card("amber", "file", "Custo total", o.total, `Pago ${money(o.paid)} · falta ${money(o.open)}${e ? `<br>${money(e, "EUR")} em euro` : ""}${o.unknown ? "<br>" + incomplete(o.unknown) : ""}`, est > 0.005 ? `${money(est)} são estimativas` : "")}${card("mint", "chart", "Saldo previsto", o.projected, `${o.expected ? `+ ${money(o.expected)} a receber` : ""}`, "Saldo atual menos o que falta pagar")}</div>`;
 }
 
 function folderCard() {
@@ -65,7 +66,7 @@ function folderCard() {
             : `${f.days} ${plural(f.days)} restantes`,
     open = f.items.filter((t) => t.status !== "Concluído").sort(byDue),
     tone = f.tone || "info";
-  return `<section class="panel folder ${f.tone}"><div class="folderhead"><span class="iconcircle">${icon("file")}</span><div class="grow"><h3>Pasta do ${esc(f.category)}</h3><small>${f.done} de ${f.items.length} itens obrigatórios concluídos · ${f.pending} ${f.pending === 1 ? "falta" : "faltam"}</small><div class="barrow"><div class="bar"><span style="width:${pct}%"></span></div><b>${pct}%</b></div></div><div class="deadline">${icon("calendar")}<span><small>Entregar à consultoria até</small><b>${f.deadline ? fmtDate(f.deadline) : "—"}</b><small>${days}</small></span></div></div><div class="alert ${tone}">${icon(f.tone === "done" ? "check" : f.tone ? "alert" : "info")}<span>${esc(f.message)}</span></div>${
+  return `<section class="panel folder ${f.tone}"><div class="folderhead"><span class="iconcircle">${icon("file")}</span><div class="grow"><h3>Pasta do ${esc(f.category)} ${tip("Progresso do seu checklist. Não é validação oficial dos documentos nem aprovação do visto.")}</h3><small>${f.done} de ${f.items.length} concluídos</small><div class="barrow"><div class="bar"><span style="width:${pct}%"></span></div><b>${pct}%</b></div></div><div class="deadline">${icon("calendar")}<span><small>Entrega à consultoria</small><b>${f.deadline ? fmtDate(f.deadline) : "—"}</b><small>${days}</small></span></div></div><div class="alert ${tone}">${icon(f.tone === "done" ? "check" : f.tone ? "alert" : "info")}<span>${esc(f.message)}</span></div>${
     open.length && page !== "tasks" && page !== "overview"
       ? `<div class="checklist">${open
           .slice(0, expanded.has(f.category) ? open.length : 6)
@@ -75,7 +76,7 @@ function folderCard() {
           )
           .join("")}${moreButton(f.category, open.length, 6)}</div>`
       : ""
-  }<div class="folderactions">${page === "overview" ? `<button class="btn" onclick="showFolderItems()">Ver pendências do ${esc(f.category)}</button>` : ""}${doneLink(f.done)}<button class="link" onclick="editFolder()">Configurar pasta</button></div><p class="sub">O progresso considera apenas o seu checklist. Não representa validação oficial dos documentos nem aprovação do visto.</p></section>`;
+  }<div class="folderactions">${page === "overview" ? `<button class="btn" onclick="showFolderItems()">Ver pendências do ${esc(f.category)}</button>` : ""}${doneLink(f.done)}<button class="link" onclick="editFolder()">Configurar pasta</button></div></section>`;
 }
 // Ao filtrar uma categoria, mostra um card de "pasta" com o progresso e o que falta
 const doneLink = (done) =>
@@ -140,7 +141,7 @@ function nextTasks() {
     ? `<div class="nextlist"><small>Próximas pendências</small>${next
         .map((t) => {
           const d = dueStatus(t);
-          return `<button type="button" class="nextrow ${statusRow(t.status)}" onclick="showTask('${t.id}')"><span><b>${esc(t.title)}</b><small>${esc(t.category)}${(t.steps || []).find((s) => !s.done) ? " · Próxima etapa: " + esc((t.steps || []).find((s) => !s.done).text) : ""}</small></span><span class="nextside">${d && d.key !== "done" ? badge(d.label, d.cls) : ""}<span class="badge ${statusCls(t.status)}">${esc(t.status)}</span></span></button>`;
+          return `<button type="button" class="nextrow ${statusRow(t.status)}" onclick="showTask('${t.id}')"><span><b>${esc(t.title)}</b><small>${esc(t.category)}${(t.steps || []).find((s) => !s.done) ? " · Próxima etapa: " + esc((t.steps || []).find((s) => !s.done).text) : ""}</small></span><span class="nextside">${d && ["late", "today", "near"].includes(d.key) ? badge(d.label, d.cls) : ""}<span class="badge ${statusCls(t.status)}">${esc(t.status)}</span></span></button>`;
         })
         .join("")}</div>`
     : "";
@@ -172,11 +173,11 @@ function render() {
     pct = data.tasks.length ? Math.round((done / data.tasks.length) * 100) : 0;
   if (page === "overview") {
     $("#app").innerHTML =
-      `${cards()}<section class="panel"><div class="paneltop"><h3>Como está o planejamento?</h3><span class="badge done">${pct}% concluído</span></div><div class="bar"><span style="width:${pct}%"></span></div><p class="muted">${done} de ${data.tasks.length} pendências resolvidas. Cada detalhe conta.</p>${nextTasks()}<button class="link" onclick="go('tasks')">Ver todas as pendências →</button></section>${folderCard()}`;
+      `${cards()}<section class="panel"><div class="paneltop"><h3>Como está o planejamento?</h3><span class="badge done">${pct}% concluído</span></div><div class="bar"><span style="width:${pct}%"></span></div><p class="muted">${done} de ${data.tasks.length} concluídas</p>${nextTasks()}<button class="link" onclick="go('tasks')">Ver todas as pendências →</button></section>${folderCard()}`;
   }
   if (page === "tasks") {
     $("#app").innerHTML =
-      `<section class="panel tasks-panel"><div class="paneltop"><div><h3>Pendências e custos</h3><p class="sub">Seu checklist da mudança, com prazos, andamento e pagamentos.</p></div><div class="panelactions"><button class="btn" onclick="manageCategories()">Categorias</button><button class="btn primary big" onclick="editTask()">+ Nova pendência</button></div></div><div class="tools"><label class="searchbox">${icon("search")}<input id="search" aria-label="Buscar pendência" placeholder="Buscar pendência ou observação…" value="${esc(search)}"></label>${filterSelect("cat")}<span class="mobilefilters">${filterSelect("due")}${filterSelect("filter")}${filterSelect("costf")}</span>${filterSelect("sort")}</div><p class="sub hint">${sort === "manual" ? "Segure ⠿ para arrastar. " : "Ordenado por vencimento. "}Mude o andamento direto na lista. Marque as caixas para somar só algumas pendências.</p><div id="rows"></div></section>`;
+      `<section class="panel tasks-panel"><div class="paneltop"><h3>Pendências e custos</h3><div class="panelactions"><button class="btn" onclick="manageCategories()">Categorias</button><button class="btn primary big" onclick="editTask()">+ Nova pendência</button></div></div><div class="tools"><label class="searchbox">${icon("search")}<input id="search" aria-label="Buscar pendência" placeholder="Buscar pendência ou observação…" value="${esc(search)}"></label>${filterSelect("cat")}<span class="mobilefilters">${filterSelect("due")}${filterSelect("filter")}${filterSelect("costf")}</span>${filterSelect("sort")}</div><div id="rows"></div></section>`;
     updateRows();
     $("#search").oninput = (e) => {
       search = e.target.value;
@@ -187,7 +188,7 @@ function render() {
   if (page === "income") $("#app").innerHTML = sourcesPanel() + cardsPanel() + incomeTable();
   if (page === "settings")
     $("#app").innerHTML =
-      `<div class="grid"><section class="panel"><h3>Cotação do euro</h3><p class="muted">Atualização automática ao abrir e a cada hora. Só o que ainda falta pagar é recalculado; pagamentos já feitos mantêm a cotação registrada.</p><label>1 euro = R$ <b>${fmtRate(data.rate)}</b></label><p class="notice">${rateInfo()}</p></section><section class="panel"><h3 style="margin-bottom:20px">Backup</h3><button class="btn primary" onclick="backup()">↓ Exportar backup</button> <button class="btn" onclick="$('#import').click()">↑ Importar backup</button><input hidden id="import" type="file" accept="application/json" onchange="restore(this)"></section><section class="panel"><h3>Cartões e contas</h3><p class="muted">Apelidos usados nos pagamentos, sem dados sensíveis do cartão.</p><button class="btn" onclick="manageAccounts()">Gerenciar cartões e contas</button></section><section class="panel"><h3>Conta</h3><p class="muted">Conectado como <b>${esc(window.currentEmail)}</b>. Os dados ficam salvos na nuvem e sincronizados entre os aparelhos.</p><button class="btn" onclick="if(confirm('Sair desta conta?'))logout()">Sair</button></section></div>`;
+      `<div class="grid"><section class="panel"><h3>Cotação do euro ${tip("Atualiza sozinha a cada hora. Pagamentos já feitos mantêm a cotação registrada.")}</h3><label>1 euro = R$ <b>${fmtRate(data.rate)}</b></label><p class="notice">${rateInfo()}</p></section><section class="panel"><h3 style="margin-bottom:20px">Backup</h3><button class="btn primary" onclick="backup()">↓ Exportar backup</button> <button class="btn" onclick="$('#import').click()">↑ Importar backup</button><input hidden id="import" type="file" accept="application/json" onchange="restore(this)"></section><section class="panel"><h3>Cartões e contas</h3><button class="btn" onclick="manageAccounts()">Gerenciar cartões e contas</button></section><section class="panel"><h3>Conta</h3><p class="muted">${esc(window.currentEmail)}</p><button class="btn" onclick="if(confirm('Sair desta conta?'))logout()">Sair</button></section></div>`;
 }
 
 const byDue = (a, b) =>
@@ -333,7 +334,7 @@ function summary(list) {
     s = totals(chosen),
     e = eurLaunched(chosen),
     box = (label, v, extra = "") => `<div><small>${label}</small><b>${money(v)}</b>${extra}</div>`;
-  return `<div class="summary">${box(`Custo total${cat === "Todas" ? "" : " em " + esc(cat)}`, s.total, e ? `<small>Lançado em euro: ${money(e, "EUR")}</small>` : "")}${box("Já pago", s.paid)}${box("Falta pagar", s.open)}</div>${picked.length ? `<p class="sumnote">Somando ${picked.length} ${picked.length === 1 ? "selecionada" : "selecionadas"} de ${list.length} <button type="button" class="link" onclick="selectAll(false)">limpar seleção</button></p>` : ""}${s.unknown && costF !== "Sem valor" ? `<button type="button" class="link flag" onclick="showUnknown()">${s.unknown} ${s.unknown === 1 ? "item ainda sem valor" : "itens ainda sem valor"} (não contados como zero) · ver quais →</button>` : ""}`;
+  return `<div class="summary">${box(`Custo total${cat === "Todas" ? "" : " em " + esc(cat)}`, s.total, e ? `<small>${money(e, "EUR")} em euro</small>` : "")}${box("Já pago", s.paid)}${box("Falta pagar", s.open)}</div>${picked.length ? `<p class="sumnote">${picked.length} de ${list.length} somadas <button type="button" class="link" onclick="selectAll(false)">limpar</button></p>` : ""}${s.unknown && costF !== "Sem valor" ? `<button type="button" class="link flag" onclick="showUnknown()">${s.unknown} ${s.unknown === 1 ? "sem valor" : "sem valor"} →</button>` : ""}`;
 }
 
 function qtyBlock(t) {
@@ -356,8 +357,8 @@ function dueCell(t) {
   if (!t.date)
     return urgent && inFolder(t)
       ? `${badge(d.label, d.cls)}<small class="muted">prazo da pasta</small>`
-      : '<span class="muted small">Sem prazo próprio</span>';
-  return `<span class="date">${fmtDay(t.date)}</span>${urgent ? badge(d.label, d.cls) : d?.key === "ok" ? '<small class="ontime">Dentro do prazo</small>' : ""}`;
+      : '<span class="muted small">—</span>';
+  return `<span class="date">${fmtDay(t.date)}</span>${urgent ? badge(d.label, d.cls) : d?.key === "ok" ? '<small class="ontime">no prazo</small>' : ""}`;
 }
 // Etapas na linha: bolinhas de progresso, próxima etapa com "✓ Feito" e lista que abre ali mesmo
 function stepsLine(t) {
@@ -381,7 +382,7 @@ function stepsLine(t) {
         )
         .join(
           "",
-        )}<div class="stepadd"><input name="newStep" maxlength="160" placeholder="${steps.length ? "Nova etapa…" : "Primeira etapa, ex.: tirar cópia"}" aria-label="Nova etapa" onkeydown="if(event.key==='Enter'){event.preventDefault();addStepInline('${t.id}',this)}"><input name="newStepDate" type="date" aria-label="Prazo da etapa (opcional)"><button type="button" class="btn small" onclick="addStepInline('${t.id}',this)">Adicionar</button>${steps.length ? "" : `<button type="button" class="link" onclick="toggleStepsOpen('${t.id}')">cancelar</button>`}</div></div>`
+        )}<div class="stepadd"><input name="newStep" maxlength="160" placeholder="${steps.length ? "Nova etapa…" : "Primeira etapa, ex.: tirar cópia"}" aria-label="Nova etapa" onkeydown="if(event.key==='Enter'){event.preventDefault();addStepInline('${t.id}',this)}"><input name="newStepDate" type="date" aria-label="Prazo da etapa"><button type="button" class="btn small" onclick="addStepInline('${t.id}',this)">Adicionar</button>${steps.length ? "" : `<button type="button" class="link" onclick="toggleStepsOpen('${t.id}')">cancelar</button>`}</div></div>`
     : "";
   return head + list;
 }
@@ -456,7 +457,7 @@ function sourcesPanel() {
     rows = [...data.sources.map((s) => [s.id, s.name]), ["", "Fonte não definida"]].filter(
       ([id]) => id || Object.values(st[""]).some((v) => Math.abs(v) > 0.005),
     );
-  return `<section class="panel"><div class="paneltop"><h3>Fontes de dinheiro</h3><div class="panelactions"><button class="btn" onclick="manageSources()">Fontes</button><button class="btn primary" onclick="editIncome()">+ Nova entrada</button></div></div><p class="sub">Saldo atual = recebido − utilizado. Reservado = o que já está separado para pagar despesas.</p><div class="tablewrap"><table class="cardtable"><thead><tr><th>Fonte</th><th>Recebido</th><th>Utilizado</th><th>Saldo atual</th><th>Reservado</th><th>Saldo livre</th><th></th></tr></thead><tbody>${rows
+  return `<section class="panel"><div class="paneltop"><h3>Fontes de dinheiro ${tip("Saldo atual = recebido − utilizado. Reservado = separado para despesas futuras.")}</h3><div class="panelactions"><button class="btn" onclick="manageSources()">Fontes</button><button class="btn primary" onclick="editIncome()">+ Nova entrada</button></div></div><div class="tablewrap"><table class="cardtable"><thead><tr><th>Fonte</th><th>Recebido</th><th>Utilizado</th><th>Saldo atual</th><th>Reservado</th><th>Saldo livre</th><th></th></tr></thead><tbody>${rows
     .map(([id, name]) => {
       const s = st[id],
         noBalance = !id && !s.received && !s.expected,
@@ -468,15 +469,15 @@ function sourcesPanel() {
 // Faturas em aberto por cartão; pagar a fatura quita as parcelas vinculadas
 function cardsPanel() {
   const bills = openBills();
-  return `<section class="panel"><div class="paneltop"><div class="titleicon"><span class="iconcircle small">${icon("card")}</span><h3>Cartões e faturas</h3></div><button class="btn" onclick="manageAccounts()">Cartões e contas</button></div>${
+  return `<section class="panel"><div class="paneltop"><div class="titleicon"><span class="iconcircle small">${icon("card")}</span><h3>Cartões e faturas ${tip("O saldo da fonte só diminui quando a parcela ou a fatura é paga.")}</h3></div><button class="btn" onclick="manageAccounts()">Cartões e contas</button></div>${
     bills.length
-      ? `<p class="sub">Compras no crédito comprometem o orçamento; o saldo da fonte só diminui quando a parcela ou a fatura é paga.</p>${bills
+      ? `${bills
           .map(
             (b) =>
               `<div class="statrow"><span><b>${esc(accountName(b.accountId) || "Cartão")}</b> · fatura de ${monthName(b.month)}<br><small>vence ${fmtDate(b.due)} · ${b.items.map(({ t, c, i }) => `${esc(t.title)} ${i.n}/${c.installments.length}`).join(", ")}</small></span><span class="nowrap"><b>${money(b.total)}</b> <button class="btn small" onclick="payBill('${b.accountId}','${b.month}')">Pagar fatura</button></span></div>`,
           )
           .join("")}`
-      : `<p class="sub">${data.accounts.length ? "Nenhuma fatura em aberto." : "Cadastre seus cartões e contas por apelido (ex.: C6, XP, Inter). Não informe número, validade ou código de segurança."}</p>`
+      : `<p class="sub">${data.accounts.length ? "Nenhuma fatura em aberto." : "Nenhum cartão cadastrado."}</p>`
   }</section>`;
 }
 function incomeTable() {

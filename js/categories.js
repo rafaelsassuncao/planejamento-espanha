@@ -2,7 +2,7 @@
 function manageCategories() {
   const form = $("#form");
   form.innerHTML =
-    '<h3>Categorias de pendências</h3><p class="sub">Crie, renomeie ou exclua categorias. Alterações também atualizam as pendências.</p><div id="categorylist"></div><label>Nova categoria<input name="newcategory" required maxlength="70" placeholder="Ex.: Documentos do visto"></label><div class="actions"><button type="button" class="btn" onclick="closeCategories()">Fechar</button><button class="btn primary">Adicionar</button></div>';
+    '<h3>Categorias de pendências</h3><div id="categorylist"></div><label>Nova categoria<input name="newcategory" required maxlength="70" placeholder="Ex.: Documentos do visto"></label><div class="actions"><button type="button" class="btn" onclick="closeCategories()">Fechar</button><button class="btn primary">Adicionar</button></div>';
   categoryList();
   form.onsubmit = (e) => {
     e.preventDefault();

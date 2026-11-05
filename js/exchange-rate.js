@@ -13,9 +13,10 @@ function rateInfo() {
         (data.rateAt
           ? "Cotação de " +
             new Date(data.rateAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) +
-            " • AwesomeAPI (venda)"
+            ""
           : "Aguardando cotação automática; valor inicial de referência.")) +
-    "<br>Câmbio comercial de referência, sem taxas. Em dias sem negociação, usamos a última cotação disponível."
+    " " +
+    tip("Câmbio comercial de referência, sem taxas. Sem negociação, vale a última cotação.")
   );
 }
 async function refreshRate(manual = false) {

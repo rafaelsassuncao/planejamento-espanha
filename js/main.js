@@ -21,3 +21,12 @@ document.addEventListener("click", (e) => {
     .querySelectorAll("details.rowmenu[open]")
     .forEach((d) => !d.contains(e.target) && (d.open = false));
 });
+// Dica ⓘ: abre e fecha com um toque (no celular nem sempre há "passar o mouse")
+document.addEventListener("click", (e) => {
+  const t = e.target.closest(".tip");
+  document.querySelectorAll(".tip.show").forEach((x) => x !== t && x.classList.remove("show"));
+  if (t) {
+    e.preventDefault();
+    t.classList.toggle("show");
+  }
+});

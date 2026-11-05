@@ -48,7 +48,7 @@ function pickSource(select) {
 
 function manageSources() {
   showForm(
-    '<h3>Fontes de dinheiro</h3><p class="sub">Use fontes para separar, por exemplo, o dinheiro da venda do apartamento da reserva pessoal. Só é possível excluir fontes sem entradas, reservas ou pagamentos.</p><div id="sourcelist"></div><label>Nova fonte<input name="newsource" required maxlength="70" placeholder="Ex.: Venda do carro"></label><div class="actions"><button type="button" class="btn" onclick="$(\'#modal\').close()">Fechar</button><button class="btn primary">Adicionar</button></div>',
+    '<h3>Fontes de dinheiro</h3><div id="sourcelist"></div><label>Nova fonte<input name="newsource" required maxlength="70" placeholder="Ex.: Venda do carro"></label><div class="actions"><button type="button" class="btn" onclick="$(\'#modal\').close()">Fechar</button><button class="btn primary">Adicionar</button></div>',
     (f) => {
       if (addSource(f.get("newsource"))) {
         $("#form").elements.newsource.value = "";
@@ -166,7 +166,7 @@ function pickAccount(select) {
 }
 function manageAccounts() {
   showForm(
-    `<h3>Cartões e contas</h3><p class="sub">Cadastre só um apelido, como “C6”, “XP” ou “Inter”. Não informe número do cartão, validade nem código de segurança.</p><div id="accountlist"></div><div class="twocol"><label>Apelido<input name="newaccount" required maxlength="40" placeholder="Ex.: C6"></label><label>Tipo<select name="type"><option value="cartao">Cartão</option><option value="conta">Conta bancária</option></select></label></div><div class="actions"><button type="button" class="btn" onclick="$('#modal').close()">Fechar</button><button class="btn primary">Adicionar</button></div>`,
+    `<h3>Cartões e contas</h3><p class="sub">Só o apelido (ex.: C6). Nunca o número do cartão.</p><div id="accountlist"></div><div class="twocol"><label>Apelido<input name="newaccount" required maxlength="40" placeholder="Ex.: C6"></label><label>Tipo<select name="type"><option value="cartao">Cartão</option><option value="conta">Conta bancária</option></select></label></div><div class="actions"><button type="button" class="btn" onclick="$('#modal').close()">Fechar</button><button class="btn primary">Adicionar</button></div>`,
     (f) => {
       if (addAccount(f.get("newaccount"), f.get("type"))) {
         $("#form").elements.newaccount.value = "";
@@ -226,7 +226,7 @@ function payBill(accountId, month) {
       )
       .join(
         "",
-      )}<div class="statrow"><span><b>Total da fatura</b></span><b>${money(total)}</b></div>${field("Data do pagamento", "payDate", todayStr(), "date", "required")}<small>Origem do dinheiro</small><div id="splitrows">${splitRow(planned.length === 1 ? planned[0] : "", null, true)}</div><button type="button" class="link" onclick="addSplitRow(true)">+ Dividir entre fontes</button><p class="sub">O pagamento quita as parcelas desta fatura; elas não são contadas de novo.</p><p id="paywarn" class="flag"></p><div class="actions"><button type="button" class="btn" onclick="$('#modal').close()">Cancelar</button><button class="btn primary">Pagar fatura</button></div>`,
+      )}<div class="statrow"><span><b>Total da fatura</b> ${tip("Quita as parcelas desta fatura, sem contar de novo.")}</span><b>${money(total)}</b></div>${field("Data do pagamento", "payDate", todayStr(), "date", "required")}<small>Origem do dinheiro</small><div id="splitrows">${splitRow(planned.length === 1 ? planned[0] : "", null, true)}</div><button type="button" class="link" onclick="addSplitRow(true)">+ Dividir entre fontes</button><p id="paywarn" class="flag"></p><div class="actions"><button type="button" class="btn" onclick="$('#modal').close()">Cancelar</button><button class="btn primary">Pagar fatura</button></div>`,
     (f) => {
       const r = resolveSplit(readSplitRows(), total);
       if (r.error) return toast(r.error);
@@ -354,7 +354,7 @@ function editFolder() {
         )
         .join("") || '<p class="sub">Nenhuma pendência nesta categoria ainda.</p>';
   showForm(
-    `<h3>Configurar pasta</h3><label>Categoria da pasta<select name="category" onchange="document.querySelector('#reqlist').innerHTML=folderItems(this.value)">${opts(categories, f.category)}</select></label>${field("Data limite geral (entrega à consultoria)", "deadline", f.deadline, "date")}<p class="sub">Itens sem prazo próprio seguem esta data. Prazos definidos em cada item são mantidos.</p><fieldset class="sec"><legend>Itens obrigatórios para concluir a pasta</legend><div id="reqlist">${items(f.category)}</div></fieldset><fieldset class="sec"><legend>Adicionar vários itens</legend><label>Cole a lista do checklist, um item por linha<textarea name="bulk" rows="8" placeholder="Passaporte válido&#10;Formulário de solicitação do visto&#10;Comprovante de matrícula"></textarea></label><p class="sub">Entram na ordem da lista, como “Só checklist” e obrigatórios. Use “Título | observação” para incluir uma observação. Itens com o mesmo nome não são repetidos.</p></fieldset><div class="actions"><button type="button" class="btn" onclick="$('#modal').close()">Cancelar</button><button class="btn primary">Salvar</button></div>`,
+    `<h3>Configurar pasta</h3><label>Categoria da pasta<select name="category" onchange="document.querySelector('#reqlist').innerHTML=folderItems(this.value)">${opts(categories, f.category)}</select></label>${field(`Entrega à consultoria ${tip("Itens sem prazo próprio seguem esta data.")}`, "deadline", f.deadline, "date")}<fieldset class="sec"><legend>Itens obrigatórios para concluir a pasta</legend><div id="reqlist">${items(f.category)}</div></fieldset><fieldset class="sec"><legend>Adicionar vários itens</legend><label>Um item por linha ${tip("Use “Título | observação” para incluir uma observação. Nomes repetidos são ignorados.")}<textarea name="bulk" rows="8" placeholder="Passaporte válido&#10;Formulário de solicitação do visto&#10;Comprovante de matrícula"></textarea></label></fieldset><div class="actions"><button type="button" class="btn" onclick="$('#modal').close()">Cancelar</button><button class="btn primary">Salvar</button></div>`,
     (fd) => {
       const category = fd.get("category"),
         req = new Set(fd.getAll("req"));

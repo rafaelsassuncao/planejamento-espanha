@@ -2427,3 +2427,73 @@ tr.has-sub > td {
     display: none;
   }
 }
+/* Dica ⓘ: texto só ao passar o mouse ou tocar */
+.tip {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 2px;
+  border-radius: 50%;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1;
+  vertical-align: middle;
+  cursor: help;
+}
+.tip:hover,
+.tip:focus {
+  color: var(--green);
+  outline: none;
+}
+.tiptext {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  z-index: 40;
+  width: max-content;
+  max-width: min(260px, 70vw);
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #133d32;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: normal;
+  box-shadow: 0 8px 20px #14372d33;
+  transform: translateX(-50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s;
+}
+.tip:hover .tiptext,
+.tip:focus .tiptext {
+  opacity: 1;
+}
+.tiptext {
+  display: none;
+}
+.tip:hover .tiptext,
+.tip:focus .tiptext {
+  display: block;
+}
+@media (max-width: 700px) {
+  .tiptext {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    width: auto;
+    max-width: none;
+    transform: none;
+  }
+}
+.tip.show .tiptext {
+  display: block;
+}

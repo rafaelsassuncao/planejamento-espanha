@@ -197,7 +197,7 @@
     listTasks();
     check(
       "E sem prazo próprio não repete o prazo da pasta",
-      row(folderItem()).querySelector(".c-due").textContent.includes("Sem prazo próprio"),
+      row(folderItem()).querySelector(".c-due").textContent.trim() === "—",
     );
     check("E prazo da pasta vale por trás", dueDate(folderItem()) === "2026-11-15");
     const hf = document.querySelector('thead [data-f="costf"]');
@@ -219,7 +219,7 @@
     check(
       "E soma só as marcadas",
       sumText().includes(moneyFmt(totals(pick).total)) &&
-        document.querySelector(".sumnote").textContent.includes("Somando 2"),
+        document.querySelector(".sumnote").textContent.includes("2 de"),
     );
     setFilter("cat", "Consulado");
     check(
@@ -323,6 +323,12 @@
       "H clicar leva para pendências e destaca",
       page === "tasks" && !!document.querySelector("#rows tr.flash"),
     );
+
+    const tp = document.querySelector(".tip");
+    tp.click();
+    check("H dica ⓘ abre ao tocar", getComputedStyle(tp.querySelector(".tiptext")).display === "block");
+    document.body.click();
+    check("H dica fecha ao tocar fora", getComputedStyle(tp.querySelector(".tiptext")).display === "none");
 
     // ---------- I. Robustez ----------
     data.tasks.push({
