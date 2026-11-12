@@ -9,7 +9,9 @@ Não é necessário instalar dependências ou executar um build. O projeto usa H
 
 ## Estrutura
 ```
-index.html            Estrutura da página (menu, cabeçalho, modal)
+index.html            Estrutura da página (menu, cabeçalho, modal); arquivos carregados com ?v= (troque a cada publicação)
+manifest.webmanifest  Dados para instalar o app no celular
+icons/                Ícones do app
 css/styles.css        Todos os estilos
 js/state.js           Constantes, estado, migração de dados antigos e utilitários (salvar, datas, toast)
 js/finance.js         Cálculos: previsão, pagamentos, crédito parcelado, faturas, reservas e saldos, prazos, pasta
@@ -31,7 +33,9 @@ Os scripts são carregados em ordem no `index.html` e compartilham variáveis gl
 ## Funcionalidades
 - Visão geral com entradas, custos e saldo.
 - Pendências editáveis, pagamento, prazos e observações.
-- Reordenação por arraste e setas.
+- Menu com submenus (categorias em Pendências; Fontes, Entradas e Cartões em Entradas), recolhível no computador e com barra de abas embaixo no celular.
+- Pode ser instalado na tela inicial do celular (manifest.webmanifest e icons/).
+- Reordenação por arraste.
 - Categorias personalizáveis e filtros.
 - Cotação EUR/BRL automática ao abrir e a cada hora (AwesomeAPI).
 - Exportação e importação de backup JSON.

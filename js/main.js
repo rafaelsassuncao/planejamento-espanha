@@ -5,6 +5,43 @@ window.addEventListener("error", (e) => toast("Algo deu errado: " + (e.message |
 window.addEventListener("unhandledrejection", (e) =>
   toast("Algo deu errado: " + (e.reason?.message || e.reason)),
 );
+// Volta para onde estava quando o celular recarrega a página (vale por 30 minutos)
+const SPOT = KEY + "-tela";
+try {
+  const s = JSON.parse(localStorage.getItem(SPOT));
+  if (s && Date.now() - s.at < 30 * 60 * 1000 && ["overview", "tasks", "income", "settings"].includes(s.page)) {
+    page = s.page;
+    if (categories.includes(s.cat)) cat = s.cat;
+    if (["fontes", "entradas", "cartoes"].includes(s.incomePart)) incomePart = s.incomePart;
+  }
+} catch {}
+addEventListener("pagehide", () => {
+  try {
+    localStorage.setItem(SPOT, JSON.stringify({ page, cat, incomePart, at: Date.now() }));
+  } catch {}
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden)
+    try {
+      localStorage.setItem(SPOT, JSON.stringify({ page, cat, incomePart, at: Date.now() }));
+    } catch {}
+});
+// Menu recolhido (só ícones) no computador, lembrado neste aparelho
+function toggleNav(force) {
+  const on = force ?? !document.body.classList.contains("nav-collapsed"),
+    b = $(".navtoggle");
+  document.body.classList.toggle("nav-collapsed", on);
+  b.setAttribute("aria-label", on ? "Expandir menu" : "Recolher menu");
+  b.title = b.getAttribute("aria-label");
+  if (force === undefined)
+    try {
+      localStorage.setItem(KEY + "-menu", on ? "1" : "0");
+    } catch {}
+  placePill();
+}
+try {
+  if (localStorage.getItem(KEY + "-menu") === "1") toggleNav(true);
+} catch {}
 render();
 refreshRate();
 setInterval(() => refreshRate(), 60 * 60 * 1000);
