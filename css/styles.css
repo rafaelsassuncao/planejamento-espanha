@@ -3054,3 +3054,199 @@ tr.has-sub > td {
     justify-content: flex-start;
   }
 }
+/* ===== Menu com submenus e destaque deslizante ===== */
+aside nav {
+  position: relative;
+}
+.navpill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  border-radius: 10px;
+  background: #dcebd9;
+  pointer-events: none;
+  transition:
+    transform 0.28s cubic-bezier(0.3, 0.7, 0.2, 1),
+    height 0.28s,
+    width 0.28s,
+    opacity 0.2s;
+}
+aside nav > button {
+  position: relative;
+  z-index: 1;
+}
+aside nav > button.active,
+aside nav > button.active:hover {
+  background: transparent;
+  color: #133d32;
+}
+aside nav .sm {
+  display: none;
+}
+aside nav .lg {
+  flex: 1;
+}
+aside nav .chev {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  opacity: 0.7;
+  transition: transform 0.2s;
+}
+aside nav > button[aria-expanded="true"] .chev {
+  transform: rotate(180deg);
+}
+.submenu {
+  display: grid;
+  gap: 2px;
+  margin: -4px 0 6px 22px;
+  padding-left: 12px;
+  border-left: 1px solid #2f5d50;
+  animation: subopen 0.2s ease-out;
+}
+@keyframes subopen {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+aside nav .submenu button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 36px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  color: #b9cfc2;
+  font-size: 13px;
+  font-weight: 500;
+}
+aside nav .submenu button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+aside nav .submenu button small {
+  flex: none;
+  color: #8fae9f;
+  font-size: 12px;
+}
+aside nav .submenu button:hover {
+  background: #1d4c40;
+  color: #fff;
+}
+aside nav .submenu button.on {
+  background: #1f6656;
+  color: #fff;
+  font-weight: 700;
+}
+aside nav .submenu button.on small {
+  color: #cfe3d6;
+}
+nav.subnav {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .navpill,
+  .submenu,
+  aside nav .chev {
+    transition: none;
+    animation: none;
+  }
+}
+/* Celular: menu vira barra fixa embaixo; as partes da página viram botões no topo */
+@media (max-width: 700px) {
+  aside {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 40;
+    width: auto;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    box-shadow: 0 -6px 20px #0b221b33;
+  }
+  aside .brand {
+    display: none;
+  }
+  aside nav {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    margin: 0;
+    overflow: visible;
+  }
+  aside nav > button {
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    min-height: 54px;
+    padding: 6px 2px;
+    font-size: 11px;
+    text-align: center;
+    white-space: nowrap;
+  }
+  aside nav .lg,
+  aside nav .chev,
+  aside nav .submenu {
+    display: none;
+  }
+  aside nav .sm {
+    display: inline;
+  }
+  main {
+    padding-bottom: 96px;
+  }
+  nav.subnav {
+    display: flex;
+    gap: 6px;
+    margin: -6px -16px 16px;
+    padding: 0 16px 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  nav.subnav button {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 0 14px;
+    border: 1px solid #d6ded4;
+    border-radius: 99px;
+    background: #fff;
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  nav.subnav button small {
+    color: var(--muted);
+    font-weight: 500;
+  }
+  nav.subnav button.on {
+    border-color: #1f6656;
+    background: #1f6656;
+    color: #fff;
+  }
+  nav.subnav button.on small {
+    color: #cfe3d6;
+  }
+}
+.link.grouplink {
+  padding: 0;
+  font: inherit;
+  color: inherit;
+}
+.link.grouplink:hover {
+  color: var(--green);
+  text-decoration: underline;
+}
+@media (min-width: 701px) {
+  aside nav {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  aside nav .submenu button {
+    min-width: 0;
+  }
+}

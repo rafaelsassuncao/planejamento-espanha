@@ -165,10 +165,81 @@ function showTask(id) {
     setTimeout(() => row.classList.remove("flash"), 2200);
   }
 }
+// Partes de cada página: viram submenu no menu lateral e botões no topo da página no celular
+const PARTS = {
+  tasks: () => {
+    const open = (c) =>
+      data.tasks.filter((t) => (c === "Todas" || t.category === c) && t.status !== "Concluído").length;
+    return ["Todas", ...categories.filter((c) => c === cat || data.tasks.some((t) => t.category === c))].map(
+      (c) => ({ label: c, n: open(c), on: cat === c, pick: () => pickCat(c) }),
+    );
+  },
+  income: () =>
+    [
+      ["fontes", "Fontes e saldos"],
+      ["entradas", "Entradas"],
+      ["cartoes", "Cartões e faturas"],
+    ].map(([k, label]) => ({
+      label,
+      on: incomePart === k,
+      pick: () => {
+        incomePart = k;
+        render();
+        scrollTo(0, 0);
+      },
+    })),
+};
+function pickCat(c) {
+  page = "tasks";
+  cat = c;
+  costF = "Todos";
+  selected.clear();
+  render();
+  scrollTo(0, 0);
+}
+function pickPart(p, i) {
+  PARTS[p]()[i]?.pick();
+}
+const partButtons = (p) =>
+  PARTS[p]()
+    .map(
+      (it, i) =>
+        `<button type="button" title="${esc(it.label)}" class="${it.on ? "on" : ""}"${it.on ? ' aria-current="page"' : ""} onclick="pickPart('${p}',${i})"><span>${esc(it.label)}</span>${it.n !== undefined ? `<small>${it.n}</small>` : ""}</button>`,
+    )
+    .join("");
+// Menu lateral: grupo ativo, submenu aberto (um por vez) e destaque que desliza até o grupo
+function renderNav() {
+  if (page !== navPage) navOpen = navPage = page;
+  const nav = document.querySelector("aside nav");
+  nav.querySelector(".submenu")?.remove();
+  nav.querySelectorAll(":scope > button[data-page]").forEach((b) => {
+    const on = b.dataset.page === page;
+    b.classList.toggle("active", on);
+    on ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current");
+    if (PARTS[b.dataset.page]) b.setAttribute("aria-expanded", navOpen === b.dataset.page);
+    if (navOpen === b.dataset.page && PARTS[navOpen])
+      b.insertAdjacentHTML("afterend", `<div class="submenu">${partButtons(navOpen)}</div>`);
+  });
+  placePill();
+}
+function placePill() {
+  const pill = document.querySelector(".navpill"),
+    b = document.querySelector("aside nav > button.active");
+  if (!pill) return;
+  pill.style.opacity = b ? 1 : 0;
+  if (b)
+    Object.assign(pill.style, {
+      width: b.offsetWidth + "px",
+      height: b.offsetHeight + "px",
+      transform: `translate(${b.offsetLeft}px, ${b.offsetTop}px)`,
+    });
+}
+addEventListener("resize", placePill);
+document.fonts?.ready.then(placePill);
+// No celular as partes da página aparecem como botões no topo
+const subnav = (p) => `<nav class="subnav" aria-label="Partes da página">${partButtons(p)}</nav>`;
 function render() {
-  document
-    .querySelectorAll("nav button")
-    .forEach((b) => b.classList.toggle("active", b.dataset.page === page));
+  renderNav();
   const done = data.tasks.filter((t) => t.status === "Concluído").length,
     pct = data.tasks.length ? Math.round((done / data.tasks.length) * 100) : 0;
   if (page === "overview") {
@@ -177,7 +248,7 @@ function render() {
   }
   if (page === "tasks") {
     $("#app").innerHTML =
-      `<div class="tpage"><div class="tphead"><h2>Pendências e custos</h2><div class="panelactions"><button class="btn" onclick="manageCategories()">Categorias</button><button class="btn primary big" onclick="editTask()">+ Nova pendência</button></div></div><div id="sum"></div><div class="tools2"><label class="searchbox">${icon("search")}<input id="search" type="search" aria-label="Buscar pendência" placeholder="Buscar pendência ou etapa" value="${esc(search)}"></label>${filterSelect("cat", "catsel")}<details class="morefilters"><summary>Filtros<span id="morecount"></span></summary><div class="menu">${["due", "costf", "sort"].map((k) => `<label>${FILTERS[k].label}${filterSelect(k)}</label>`).join("")}</div></details><div id="chips" class="chips"></div></div><div id="rows"></div></div>`;
+      `${subnav("tasks")}<div class="tpage"><div class="tphead"><h2>Pendências e custos</h2><div class="panelactions"><button class="btn" onclick="manageCategories()">Categorias</button><button class="btn primary big" onclick="editTask()">+ Nova pendência</button></div></div><div id="sum"></div><div class="tools2"><label class="searchbox">${icon("search")}<input id="search" type="search" aria-label="Buscar pendência" placeholder="Buscar pendência ou etapa" value="${esc(search)}"></label><details class="morefilters"><summary>Filtros<span id="morecount"></span></summary><div class="menu">${["due", "costf", "sort"].map((k) => `<label>${FILTERS[k].label}${filterSelect(k)}</label>`).join("")}</div></details><div id="chips" class="chips"></div></div><div id="rows"></div></div>`;
     updateRows();
     $("#search").oninput = (e) => {
       search = e.target.value;
@@ -185,7 +256,10 @@ function render() {
       updateRows();
     };
   }
-  if (page === "income") $("#app").innerHTML = sourcesPanel() + cardsPanel() + incomeTable();
+  if (page === "income")
+    $("#app").innerHTML =
+      subnav("income") +
+      (incomePart === "entradas" ? incomeTable() : incomePart === "cartoes" ? cardsPanel() : sourcesPanel());
   if (page === "settings")
     $("#app").innerHTML =
       `<div class="grid"><section class="panel"><h3>Cotação do euro ${tip("Atualiza sozinha a cada hora. Pagamentos já feitos mantêm a cotação registrada.")}</h3><label>1 euro = R$ <b>${fmtRate(data.rate)}</b></label><p class="notice">${rateInfo()}</p></section><section class="panel"><h3 style="margin-bottom:20px">Backup</h3><button class="btn primary" onclick="backup()">↓ Exportar backup</button> <button class="btn" onclick="$('#import').click()">↑ Importar backup</button><input hidden id="import" type="file" accept="application/json" onchange="restore(this)"></section><section class="panel"><h3>Cartões e contas</h3><button class="btn" onclick="manageAccounts()">Gerenciar cartões e contas</button></section><section class="panel"><h3>Conta</h3><p class="muted">${esc(window.currentEmail)}</p><button class="btn" onclick="if(confirm('Sair desta conta?'))logout()">Sair</button></section></div>`;
@@ -366,7 +440,7 @@ function taskGroup(c, a, head) {
     info = [folder ? "prazo da pasta " + fmtDate(data.folder.deadline).slice(0, 5) : "", open > 0.005 ? "falta " + money(open) : ""]
       .filter(Boolean)
       .join(" · ");
-  return `<section class="tgroup">${head ? `<div class="tghead"><h3>${esc(c)} <small>· ${a.length} ${a.length === 1 ? "item" : "itens"}</small></h3>${info ? `<small>${info}</small>` : ""}</div>` : ""}${taskTable(a, sort === "manual", true)}</section>`;
+  return `<section class="tgroup">${head ? `<div class="tghead"><h3><button type="button" class="link grouplink" onclick="pickCat(${esc(JSON.stringify(c))})">${esc(c)}</button> <small>· ${a.length} ${a.length === 1 ? "item" : "itens"}</small></h3>${info ? `<small>${info}</small>` : ""}</div>` : ""}${taskTable(a, sort === "manual", true)}</section>`;
 }
 // Totais das pendências marcadas entre as exibidas (respeita busca e filtros)
 function summary(list) {
@@ -520,7 +594,7 @@ function cardsPanel() {
   }</section>`;
 }
 function incomeTable() {
-  return `<section class="panel"><div class="paneltop"><h3>Histórico de entradas</h3></div>${
+  return `<section class="panel"><div class="paneltop"><h3>Entradas</h3><button class="btn primary" onclick="editIncome()">+ Nova entrada</button></div>${
     data.income.length
       ? `<div class="tablewrap"><table class="cardtable"><thead><tr><th>Fonte / descrição</th><th>Data</th><th>Valor</th><th>Situação</th><th>Observações</th><th></th></tr></thead><tbody>${data.income
           .map(

@@ -1,11 +1,17 @@
 // Navegação e formulários de pendências e entradas
+// Menu: tocar no grupo abre a página e o submenu; tocar de novo no grupo aberto fecha o submenu
 function go(p) {
-  page = p;
-  costF = "Todos";
-  selected.clear();
+  if (p === page && PARTS[p]) navOpen = navOpen === p ? null : p;
+  else {
+    page = p;
+    navOpen = p;
+    costF = "Todos";
+    selected.clear();
+    scrollTo(0, 0);
+  }
   render();
 }
-document.querySelectorAll("nav button").forEach((b) => (b.onclick = () => go(b.dataset.page)));
+document.querySelectorAll("aside nav > button[data-page]").forEach((b) => (b.onclick = () => go(b.dataset.page)));
 // Etapas no formulário: caixa de feita, texto, prazo opcional e remover
 const stepRow = (s = {}) =>
   `<div class="steprow2" data-id="${esc(s.id || "")}"><input type="checkbox" class="stepdone" aria-label="Etapa feita" ${s.done ? "checked" : ""}><input name="stepText" maxlength="160" placeholder="Ex.: autenticar no cartório" value="${esc(s.text || "")}"><input name="stepDate" type="date" aria-label="Prazo da etapa" value="${esc(s.date || "")}"><button type="button" class="link danger" aria-label="Remover etapa" onclick="this.parentElement.remove();formSync()">✕</button></div>`;

@@ -151,6 +151,10 @@ let page = "overview",
   due = "Todos",
   sort = "manual",
   costF = "Todos";
+// Parte escolhida em Entradas de dinheiro e grupo do menu com o submenu aberto
+let incomePart = "fontes",
+  navOpen = "overview",
+  navPage = "overview";
 // Pendências marcadas pelo usuário para somar (vazio = soma tudo o que está na lista)
 const selected = new Set();
 const $ = (s) => document.querySelector(s),

@@ -197,7 +197,7 @@
     listTasks();
     check(
       "E sem prazo próprio não repete o prazo da pasta",
-      row(folderItem()).querySelector(".c-due").textContent.trim() === "—",
+      !row(folderItem()).querySelector(".c-due .date"),
     );
     check("E prazo da pasta vale por trás", dueDate(folderItem()) === "2026-11-15");
     const hf = document.querySelector('.morefilters [data-f="costf"]');
