@@ -257,9 +257,25 @@
       !!row(owe) && [...document.querySelectorAll("#rows tbody tr[data-id]")].every((r) => outstandingBRL(data.tasks.find((t) => t.id === r.dataset.id)) > 0),
     );
     render();
+    const payState = row(owe).querySelector(".paystate"),
+      payButton = row(owe).querySelector(".paylink"),
+      payStateRect = payState.getBoundingClientRect(),
+      payButtonRect = payButton.getBoundingClientRect();
+    check(
+      "E2 status e ação de pagamento têm hierarquia visual",
+      getComputedStyle(row(owe).querySelector(".c-pay")).display === "flex" &&
+        (payStateRect.right <= payButtonRect.left + 1 || payStateRect.bottom <= payButtonRect.top + 1) &&
+        !!payButton.getAttribute("aria-label"),
+      {
+        display: getComputedStyle(row(owe).querySelector(".c-pay")).display,
+        state: payStateRect.toJSON(),
+        button: payButtonRect.toJSON(),
+        label: payButton.getAttribute("aria-label"),
+      },
+    );
     check(
       "E2 'Marcar pago' na linha abre o pagamento",
-      (row(owe).querySelector(".paylink").click(), $("#modal").open && $("#modal").textContent.includes("Registrar pagamento")),
+      (payButton.click(), $("#modal").open && $("#modal").textContent.includes("Registrar pagamento")),
     );
     $("#modal").close();
     owe.status = "Pendente";
@@ -368,6 +384,18 @@
     check("H dica ⓘ abre ao tocar", getComputedStyle(tp.querySelector(".tiptext")).display === "block");
     document.body.click();
     check("H dica fecha ao tocar fora", getComputedStyle(tp.querySelector(".tiptext")).display === "none");
+
+    // ---------- H2. Nome de categoria é dado, nunca código executável ----------
+    const hostileCat = "atacante');window.__xss=1;//",
+      holder = document.createElement("div");
+    window.__xss = 0;
+    holder.innerHTML = moreButton(hostileCat, 7, 6);
+    $("#app").append(holder);
+    holder.querySelector("button").click();
+    check("H2 categoria com apóstrofo não executa código", window.__xss === 0 && expanded.has(hostileCat));
+    holder.remove();
+    expanded.delete(hostileCat);
+    delete window.__xss;
 
     // ---------- I. Robustez ----------
     data.tasks.push({

@@ -1,0 +1,1157 @@
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Inter:wght@400;500;600;700&display=swap");
+/*
+ * Identidade visual “Noite em Madri”
+ * Fundo escuro com luz de pôr do sol em movimento, cartões de vidro e números em destaque.
+ * Só muda a aparência: o HTML e as interações continuam os mesmos. Movimentos em js/motion.js.
+ */
+:root {
+  color-scheme: dark;
+  --bg: #0b0b10;
+  --ink: #f4f1ec;
+  --muted: #a8a29a;
+  --paper: #0b0b10;
+  --line: rgba(255, 255, 255, 0.09);
+  --line-2: rgba(255, 255, 255, 0.16);
+  --glass: rgba(255, 255, 255, 0.045);
+  --glass-2: rgba(255, 255, 255, 0.075);
+  --solid: #18161c;
+  --solid-2: #221f27;
+  --green: #f7c96a;
+  --focus: #f5b841;
+  --saffron: #f5b841;
+  --terra: #e8643c;
+  --violet: #5b3fd9;
+  --grad: linear-gradient(135deg, #f5b841, #e8643c);
+  --on-grad: #1a0e06;
+  --success: #5ee6a0;
+  --success-soft: rgba(94, 230, 160, 0.13);
+  --warning: #f7c96a;
+  --warning-soft: rgba(245, 184, 65, 0.14);
+  --danger: #ff8a80;
+  --danger-soft: rgba(255, 107, 107, 0.15);
+  --info-soft: rgba(139, 120, 255, 0.16);
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+  --spring: cubic-bezier(0.34, 1.45, 0.64, 1);
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --sheet: cubic-bezier(0.32, 0.72, 0, 1);
+  --display: "Bricolage Grotesque", Inter, system-ui, sans-serif;
+}
+
+/* Fundo: três luzes de pôr do sol que se movem devagar */
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Inter, system-ui, sans-serif;
+}
+body::before,
+body::after {
+  position: fixed;
+  z-index: -1;
+  width: 70vmax;
+  height: 70vmax;
+  border-radius: 50%;
+  pointer-events: none;
+  content: "";
+  animation: aurora 26s ease-in-out infinite alternate;
+}
+body::before {
+  top: -30vmax;
+  left: -20vmax;
+  background: radial-gradient(closest-side, rgba(232, 100, 60, 0.42), transparent);
+}
+body::after {
+  right: -28vmax;
+  bottom: -32vmax;
+  background:
+    radial-gradient(closest-side at 30% 40%, rgba(91, 63, 217, 0.4), transparent),
+    radial-gradient(closest-side at 70% 70%, rgba(245, 184, 65, 0.22), transparent);
+  animation-duration: 34s;
+  animation-delay: -10s;
+}
+@keyframes aurora {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(8vw, 6vh) scale(1.12);
+  }
+  100% {
+    transform: translate(-4vw, 12vh) scale(0.95);
+  }
+}
+
+/* Tipografia */
+h1,
+h2,
+h3,
+.panel h3,
+.tphead h1,
+.tghead h3,
+.pagehead h1 {
+  color: var(--ink);
+  font-family: var(--display);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+small,
+.muted,
+.meta,
+.sub {
+  color: var(--muted);
+}
+.amount,
+.amount-sm,
+.sumgrid b,
+.card.kpi .amount {
+  font-family: var(--display);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+::selection {
+  background: rgba(245, 184, 65, 0.35);
+  color: #fff;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+.draghandle:focus-visible {
+  outline: 2px solid var(--saffron);
+  outline-offset: 3px;
+}
+
+/* Menu lateral flutuante de vidro */
+aside {
+  inset: 12px auto 12px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: rgba(22, 20, 27, 0.72);
+  color: var(--ink);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(22px) saturate(1.3);
+  -webkit-backdrop-filter: blur(22px) saturate(1.3);
+}
+aside .brand,
+aside .brand span {
+  color: var(--ink);
+  font-family: var(--display);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+aside .brand .logo {
+  padding: 7px;
+  border-radius: 12px;
+  background: var(--grad);
+  color: var(--on-grad);
+  stroke-width: 3.6;
+}
+aside small,
+aside .sidefoot,
+aside .sidefoot small {
+  color: var(--muted);
+}
+aside nav > button {
+  border-radius: 14px;
+  color: var(--muted);
+  font-weight: 500;
+  transition: color 0.3s;
+}
+aside nav > button:hover {
+  background: transparent;
+  color: var(--ink);
+}
+aside nav > button.active,
+aside nav > button.active:hover {
+  background: transparent;
+  color: #0b0b10;
+  font-weight: 600;
+  box-shadow: none;
+}
+aside .navpill {
+  display: block;
+  border-radius: 14px;
+  background: var(--ink);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition:
+    transform 0.55s var(--spring),
+    height 0.45s var(--spring),
+    width 0.45s var(--spring),
+    opacity 0.2s;
+}
+aside nav .submenu {
+  border-left-color: var(--line-2);
+}
+aside nav .submenu button {
+  border-radius: 10px;
+  color: var(--muted);
+}
+aside nav .submenu button small {
+  color: var(--muted);
+}
+aside nav .submenu button:hover {
+  background: var(--glass-2);
+  color: var(--ink);
+}
+aside nav .submenu button.on {
+  background: var(--warning-soft);
+  color: var(--saffron);
+}
+aside nav .submenu button.on small {
+  color: var(--saffron);
+}
+.navtoggle {
+  color: var(--muted);
+}
+.navtoggle:hover {
+  background: var(--glass-2);
+  color: var(--ink);
+}
+
+/* Cabeçalhos das páginas: título grande, sem caixa */
+main {
+  background: transparent;
+}
+.pagehead,
+.tphead {
+  position: relative;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.pagehead {
+  margin-bottom: 22px;
+  padding: 4px 0 0;
+}
+.tphead {
+  padding: 4px 0 0;
+}
+.pagehead::before,
+.pagehead::after,
+.tphead::before,
+.tphead::after {
+  display: none;
+}
+.pagehead h1,
+.tphead h1 {
+  color: var(--ink);
+  font-size: clamp(28px, 3vw, 40px);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}
+.pagehead .eyebrow,
+.tphead .eyebrow {
+  color: var(--saffron);
+  letter-spacing: 0.14em;
+}
+.pagehead p:last-child {
+  color: var(--muted);
+}
+.datechip,
+.pagehead .datechip {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--glass);
+  color: var(--ink);
+}
+.tphead .btn:not(.primary) {
+  border-color: var(--line-2);
+  background: var(--glass-2);
+  color: var(--ink);
+}
+
+/* Superfícies de vidro, com brilho que segue o mouse (js/motion.js) */
+.card,
+.panel,
+.sumcard,
+.folder,
+.folder.warn,
+.folder.done,
+.folder.late,
+.tlist,
+.loginbox,
+.nextrow,
+.cardtable tr,
+.tlist tr[data-id],
+.tlist .subrow {
+  border-color: var(--line);
+  background-color: var(--glass);
+  color: var(--ink);
+}
+.card,
+.panel,
+.sumcard,
+.folder {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background-image: radial-gradient(
+    420px circle at var(--mx, -999px) var(--my, -999px),
+    rgba(255, 255, 255, 0.07),
+    transparent 60%
+  );
+  box-shadow: none;
+  transition:
+    transform 0.35s var(--ease-out),
+    border-color 0.35s,
+    box-shadow 0.35s;
+}
+@media (hover: hover) {
+  .card:hover,
+  .panel:hover,
+  .sumcard:hover {
+    border-color: var(--line-2);
+    box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.6);
+    transform: translateY(-3px);
+  }
+}
+.folder.warn {
+  border-left: 1px solid var(--line);
+  box-shadow: inset 3px 0 var(--saffron);
+}
+.folder.done {
+  border-left: 1px solid var(--line);
+  box-shadow: inset 3px 0 var(--success);
+}
+.folder.late {
+  border-left: 1px solid var(--line);
+  box-shadow: inset 3px 0 var(--danger);
+}
+
+/* Cartões de resumo: o saldo atual é o destaque */
+.card.kpi {
+  min-height: 150px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+.card.kpi::before {
+  display: none;
+}
+.card.kpi.green,
+.card.kpi.amber,
+.card.kpi.mint {
+  background-color: var(--glass);
+}
+.card.kpi.green {
+  border-color: rgba(245, 184, 65, 0.35);
+  background-color: rgba(245, 184, 65, 0.08);
+}
+.card.kpi label {
+  color: var(--muted);
+  font-weight: 500;
+}
+.card.kpi .amount {
+  color: var(--ink);
+  font-size: clamp(26px, 2.6vw, 36px);
+  font-weight: 600;
+}
+.card.kpi.green .amount {
+  color: var(--saffron);
+}
+.card.kpi.mint .amount {
+  color: var(--success);
+}
+.card.kpi .sub {
+  color: var(--muted);
+}
+.iconcircle,
+.card.kpi .iconcircle,
+.card.kpi.mint .iconcircle {
+  background: var(--glass-2);
+  color: var(--ink);
+}
+.card.kpi.green .iconcircle {
+  background: var(--grad);
+  color: var(--on-grad);
+}
+.kpi.amber .iconcircle,
+.card.kpi.amber .iconcircle {
+  background: rgba(232, 100, 60, 0.18);
+  color: #ff9a76;
+}
+.amount-sm,
+.c-val .amount-sm,
+.tlist .c-val .amount-sm,
+.panel h3,
+.tghead h3,
+.sumgrid b,
+.steptext b,
+.loginbox .brand {
+  color: var(--ink);
+}
+.sumgrid .paid b,
+.paystate.done {
+  color: var(--success);
+}
+.sumgrid .open b,
+.tghead .owe,
+.link.novalue {
+  color: #ff9a76;
+}
+.neg,
+.neg b {
+  color: var(--danger);
+}
+
+/* Barras de progresso */
+.bar,
+.sumbar .bar {
+  background: rgba(255, 255, 255, 0.08);
+}
+.bar span,
+.sumbar .bar span {
+  background: var(--grad);
+}
+.folder.late .bar span {
+  background: var(--danger);
+}
+.dots i {
+  background: rgba(255, 255, 255, 0.14);
+}
+.dots i.on {
+  background: var(--success);
+}
+.dots i.next {
+  background: transparent;
+  box-shadow: 0 0 0 2px var(--saffron) inset;
+}
+
+/* Botões */
+.btn {
+  border: 1px solid var(--line-2);
+  border-radius: 14px;
+  background: var(--glass-2);
+  color: var(--ink);
+  box-shadow: none;
+}
+.btn:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.11);
+  box-shadow: none;
+}
+.btn:active {
+  transform: scale(0.96);
+}
+.btn.primary,
+.primary {
+  border-color: transparent;
+  background: var(--grad);
+  color: var(--on-grad);
+  box-shadow: 0 10px 30px -10px rgba(232, 100, 60, 0.8);
+}
+.btn.primary:hover {
+  border-color: transparent;
+  background: var(--grad);
+  box-shadow: 0 12px 40px -8px rgba(232, 100, 60, 0.95);
+}
+.btn.big {
+  box-shadow: 0 10px 30px -10px rgba(232, 100, 60, 0.8);
+}
+.btn.soft {
+  border-color: transparent;
+  background: var(--warning-soft);
+  color: var(--saffron);
+}
+.link,
+.btn.soft,
+.link.title:hover,
+.link.grouplink:hover {
+  color: var(--saffron);
+}
+.link:hover {
+  color: #ffd98a;
+}
+.link.danger,
+.link.danger:hover,
+.rowmenu .menu button.danger,
+.link.act.danger:hover {
+  color: var(--danger);
+}
+.link.act,
+.rowmenu > summary,
+.draghandle,
+.taskcell .draghandle {
+  color: var(--muted);
+}
+.link.act:hover,
+.rowmenu > summary:hover,
+.rowmenu[open] > summary,
+.tlist .rowmenu[open] > summary,
+.tlist .rowmenu > summary:hover {
+  background: var(--glass-2);
+  color: var(--ink);
+}
+.link.act.danger:hover,
+.rowmenu .menu button:hover {
+  background: var(--danger-soft);
+}
+.act2,
+.hfilter:hover,
+.hfilter:focus {
+  border-color: var(--line);
+  background: var(--glass);
+}
+.act2:hover {
+  border-color: var(--line-2);
+  background: var(--glass-2);
+}
+
+/* Etiquetas e avisos */
+.badge,
+.badge.warn,
+.statussel.pend,
+.vtag {
+  border-color: rgba(245, 184, 65, 0.4);
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.badge.done,
+.badge.status.done {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.badge.prog,
+.badge.status.prog {
+  background: var(--info-soft);
+  color: #b9adff;
+}
+.badge.late {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.badge.muted,
+.catpill,
+.tlist .paystate {
+  background: var(--glass-2);
+  color: var(--muted);
+}
+.tlist .paystate.done {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.vtag.ok {
+  border-color: rgba(94, 230, 160, 0.4);
+  color: var(--success);
+}
+.flag,
+.link.paylink.late,
+.ontime {
+  color: var(--warning);
+}
+.ontime {
+  color: var(--success);
+}
+.pnote {
+  color: #b9adff;
+}
+.statussel {
+  border-color: transparent;
+}
+.statussel.prog {
+  background-color: var(--info-soft);
+  color: #d4ccff;
+}
+.statussel.done {
+  background-color: var(--success-soft);
+  color: var(--success);
+}
+.statussel option,
+option {
+  background: var(--solid);
+  color: var(--ink);
+}
+.alert,
+.alert.info,
+.notice {
+  border: 1px solid var(--line);
+  background: var(--glass);
+  color: var(--ink);
+}
+.alert.warn {
+  border-color: rgba(245, 184, 65, 0.3);
+  background: var(--warning-soft);
+  color: #ffdf9e;
+}
+.alert.done {
+  border-color: rgba(94, 230, 160, 0.3);
+  background: var(--success-soft);
+  color: #a9f5cc;
+}
+.alert.late {
+  border-color: rgba(255, 107, 107, 0.3);
+  background: var(--danger-soft);
+  color: #ffb4ad;
+}
+.summary div,
+.step,
+th,
+.cardtable.tasks th {
+  background: var(--glass);
+}
+.summary div:last-child {
+  background: var(--warning-soft);
+}
+.step.done {
+  border-color: rgba(94, 230, 160, 0.3);
+  background: var(--success-soft);
+}
+.stepicon {
+  background: var(--success);
+  color: #06281a;
+}
+.dot {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Formulários e busca */
+input,
+select,
+textarea,
+.searchbox,
+.morefilters > summary {
+  border-color: var(--line-2);
+  border-radius: var(--radius-sm);
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--ink);
+}
+input::placeholder,
+textarea::placeholder {
+  color: #7f7a73;
+}
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+}
+input:focus,
+select:focus,
+textarea:focus,
+.searchbox:focus-within {
+  border-color: var(--saffron);
+  box-shadow: 0 0 0 4px rgba(245, 184, 65, 0.18);
+}
+.searchbox input,
+.searchbox input:focus {
+  background: transparent;
+  box-shadow: none;
+}
+.searchbox .ic {
+  color: var(--muted);
+}
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--saffron);
+}
+form label {
+  color: var(--muted);
+  font-weight: 500;
+}
+.sec {
+  border-color: var(--line);
+  border-radius: var(--radius-md);
+  background: var(--glass);
+}
+.sec legend {
+  color: var(--ink);
+}
+.choice {
+  border-color: var(--line-2);
+  border-radius: var(--radius-sm);
+}
+.choice:has(input:checked) {
+  border-color: rgba(245, 184, 65, 0.6);
+  background: var(--warning-soft);
+}
+#form > h3,
+dialog h3 {
+  font-family: var(--display);
+  font-size: 24px;
+}
+
+/* Janela de edição: painel que entra pela direita (de baixo no celular) */
+dialog {
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background: var(--solid);
+  color: var(--ink);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.6);
+}
+dialog::backdrop {
+  background: rgba(5, 5, 8, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+dialog[open] {
+  animation: sheetin 0.6s var(--sheet) both;
+}
+dialog[open]::backdrop {
+  animation: fadein 0.35s ease both;
+}
+@media (min-width: 701px) {
+  dialog {
+    width: min(560px, calc(100vw - 24px));
+    height: calc(100vh - 24px);
+    max-height: none;
+    margin: 12px 12px 12px auto;
+  }
+}
+@keyframes sheetin {
+  from {
+    transform: translateX(105%);
+  }
+}
+@keyframes sheetup {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes fadein {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Lista de pendências */
+.tasks-wrap,
+.tlist {
+  border-color: var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+}
+.tlist td,
+td,
+.cardtable td,
+.cardtable.tasks td,
+.subrow > td,
+.checkrow,
+.statrow {
+  border-color: rgba(255, 255, 255, 0.06);
+}
+.cardtable tr,
+.tlist tr[data-id],
+.tlist .subrow,
+.dragfloat,
+.dragfloat td {
+  background-color: transparent;
+}
+.cardtable.tasks tr {
+  box-shadow: none;
+}
+.cardtable tbody tr:hover > td,
+.cardtable.tasks tbody tr:hover > td,
+.tlist tr[data-id]:hover > td,
+tr.picked > td {
+  background: rgba(255, 255, 255, 0.035);
+}
+tr.st-prog > td,
+.cardtable tr.st-prog {
+  background: rgba(139, 120, 255, 0.05);
+}
+tr.st-prog > td:first-child,
+.tlist tr.st-prog[data-id] {
+  box-shadow: inset 3px 0 #8b78ff;
+}
+tr.st-done > td:first-child,
+.tlist tr.st-done[data-id] {
+  box-shadow: inset 3px 0 var(--success);
+}
+.cardtable tr.st-prog {
+  border-left-color: #8b78ff;
+}
+.cardtable tr.st-done {
+  border-left-color: var(--success);
+}
+.nextrow.st-prog {
+  border-left: 1px solid var(--line);
+  box-shadow: inset 3px 0 #8b78ff;
+}
+.dragfloat {
+  background: var(--solid-2);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+}
+tr.placeholder,
+.drop-target {
+  outline: 2px dashed rgba(245, 184, 65, 0.5);
+  background: var(--warning-soft);
+}
+.tghead {
+  border-color: var(--line);
+}
+.tghead h3 {
+  font-size: 20px;
+}
+.nextrow {
+  border-color: var(--line);
+  border-radius: var(--radius-md);
+  transition:
+    background 0.25s,
+    border-color 0.25s,
+    transform 0.25s var(--ease-out);
+}
+.nextrow:hover {
+  border-color: var(--line-2);
+  background: var(--glass-2);
+}
+.tlist .stepbar,
+.stepbar,
+.stepline {
+  border-color: var(--line);
+  background: var(--glass);
+  color: var(--ink);
+}
+.stepline:hover {
+  border-color: var(--line-2);
+}
+.tlist .stepbar.alldone,
+.stepbar.alldone,
+.stepline.alldone {
+  border-color: rgba(94, 230, 160, 0.3);
+  background: var(--success-soft);
+  color: var(--success);
+}
+.stepcount {
+  background: var(--glass-2);
+  color: var(--ink);
+}
+.stepline.alldone .stepcount {
+  background: var(--success);
+  color: #06281a;
+}
+.stepdo,
+.tlist .stepdo {
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: var(--grad);
+  color: var(--on-grad);
+}
+.stepdo:hover,
+.tlist .stepdo:hover {
+  background: var(--grad);
+  filter: brightness(1.08);
+}
+.stepsopen,
+.tlist .stepsopen {
+  border-color: var(--line);
+  background: rgba(255, 255, 255, 0.03);
+}
+.steprowi:hover {
+  background: var(--glass);
+}
+.inst {
+  border-top-color: var(--line);
+}
+details.more {
+  border-color: var(--line-2);
+}
+.tlist .link.paylink {
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: var(--grad);
+  color: var(--on-grad);
+  box-shadow: none;
+}
+.tlist .link.paylink:hover {
+  border-color: transparent;
+  background: var(--grad);
+  filter: brightness(1.08);
+}
+.tlist .link.paylink.late {
+  border-color: rgba(245, 184, 65, 0.4);
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+/* Menus suspensos e dicas */
+.rowmenu .menu,
+.morefilters .menu,
+.tlist .rowmenu .menu {
+  border: 1px solid var(--line-2);
+  border-radius: 16px;
+  background: var(--solid-2);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+  animation: popin 0.28s var(--spring) both;
+  transform-origin: top right;
+}
+@keyframes popin {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(-6px);
+  }
+}
+.tip {
+  color: var(--muted);
+}
+.tip:hover,
+.tip:focus {
+  color: var(--saffron);
+}
+.tiptext {
+  border: 1px solid var(--line-2);
+  background: var(--solid-2);
+  color: var(--ink);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+}
+#toast {
+  border: 1px solid var(--line-2);
+  border-radius: 16px;
+  background: var(--solid-2);
+  color: var(--ink);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+}
+#toast:popover-open {
+  animation: toastin 0.5s var(--spring) both;
+}
+@keyframes toastin {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+}
+.toastbtn {
+  border-color: rgba(245, 184, 65, 0.5);
+  color: var(--saffron);
+}
+
+/* Filtros em botões e partes da página */
+.chip,
+nav.subnav button {
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: var(--glass);
+  color: var(--ink);
+  transition:
+    background 0.3s,
+    color 0.3s,
+    border-color 0.3s,
+    transform 0.2s;
+}
+.chip:hover:not(.on) {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+.chip:active,
+nav.subnav button:active {
+  transform: scale(0.95);
+}
+.chip.on,
+.chips .on,
+.filterchip.on,
+nav.subnav button.on {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #0b0b10;
+}
+.chip.warn {
+  border-color: rgba(245, 184, 65, 0.4);
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.chip.warn.on {
+  border-color: var(--saffron);
+  background: var(--saffron);
+  color: var(--on-grad);
+}
+nav.subnav button small {
+  color: var(--muted);
+}
+nav.subnav button.on small {
+  color: #4a4640;
+}
+
+/* Botão de concluir com estouro verde (js/motion.js) */
+.donebtn {
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: transparent;
+  color: transparent;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+.donebtn:hover {
+  border-color: var(--success);
+  color: var(--success);
+}
+.donebtn.on,
+.donebtn.popping {
+  border-color: var(--success);
+  background: var(--success);
+  color: #06281a;
+}
+.donebtn.popping {
+  animation: pop 0.38s var(--spring);
+}
+.leaving {
+  animation: leave 0.45s cubic-bezier(0.6, 0, 0.4, 1) 0.18s forwards;
+}
+.leaving .link {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+@keyframes pop {
+  0% {
+    transform: scale(0.6);
+  }
+  60% {
+    transform: scale(1.18);
+  }
+}
+@keyframes leave {
+  to {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+}
+
+/* Entrada da página: blocos sobem em cascata, barras se enchem */
+.entering > *,
+.entering .cards > *,
+.entering #rows > * {
+  animation: rise 0.7s var(--ease-out) both;
+}
+.entering > :nth-child(2),
+.entering .cards > :nth-child(1) {
+  animation-delay: 60ms;
+}
+.entering > :nth-child(3),
+.entering .cards > :nth-child(2) {
+  animation-delay: 120ms;
+}
+.entering > :nth-child(4),
+.entering .cards > :nth-child(3) {
+  animation-delay: 180ms;
+}
+.entering > :nth-child(5),
+.entering #rows > :nth-child(1) {
+  animation-delay: 240ms;
+}
+.entering > :nth-child(n + 6),
+.entering #rows > :nth-child(n + 2) {
+  animation-delay: 300ms;
+}
+.entering .bar span {
+  transform-origin: left;
+  animation: grow 1.2s var(--ease-out) 0.35s both;
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+  }
+}
+@keyframes grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* Tela de login */
+.login {
+  background: var(--bg);
+}
+.loginbox {
+  border-radius: 28px;
+  background: rgba(24, 22, 28, 0.8);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.loginbox .brand .logo {
+  padding: 7px;
+  border-radius: 12px;
+  background: var(--grad);
+  color: var(--on-grad);
+}
+
+@media (min-width: 701px) and (max-width: 1100px) {
+  .cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Celular: barra de abas flutuante e partes da página que quebram linha */
+@media (max-width: 700px) {
+  aside {
+    inset: auto 10px calc(10px + env(safe-area-inset-bottom)) 10px;
+    padding: 6px;
+    border: 1px solid var(--line-2);
+    border-radius: 26px;
+    background: rgba(28, 26, 32, 0.82);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  }
+  aside nav > button {
+    min-height: 56px;
+    border-radius: 20px;
+  }
+  aside .navpill {
+    border-radius: 20px;
+  }
+  main {
+    padding: 20px 16px calc(104px + env(safe-area-inset-bottom));
+  }
+  nav.subnav {
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+  nav.subnav button {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 100%;
+  }
+  nav.subnav button span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  dialog {
+    border-radius: 28px 28px 0 0;
+    border-bottom: 0;
+  }
+  dialog[open] {
+    animation: sheetup 0.55s var(--sheet) both;
+  }
+  .card,
+  .panel,
+  .sumcard,
+  .folder,
+  .card.kpi,
+  .tlist tr[data-id] {
+    border-radius: 20px;
+  }
+  .card:hover,
+  .panel:hover,
+  .sumcard:hover {
+    transform: none;
+  }
+  .card.kpi {
+    min-height: 0;
+  }
+  .pagehead h1,
+  .tphead h1 {
+    font-size: 30px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before,
+  body::after,
+  dialog[open],
+  #toast:popover-open,
+  .entering > *,
+  .entering .cards > *,
+  .entering #rows > *,
+  .entering .bar span,
+  .donebtn.popping,
+  .leaving,
+  .rowmenu .menu,
+  .morefilters .menu {
+    animation: none !important;
+  }
+  .card:hover,
+  .panel:hover,
+  .sumcard:hover {
+    transform: none;
+  }
+}

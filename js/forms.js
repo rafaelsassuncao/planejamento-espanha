@@ -148,9 +148,9 @@ function removeStep(id, stepId) {
 
 // Muda a situação direto da lista; ao concluir (e a lista esconder concluídas), oferece desfazer
 function setStatus(id, status) {
-  const t = data.tasks.find((t) => t.id === id),
-    prev = t.status;
-  if (!t || prev === status) return;
+  const t = data.tasks.find((t) => t.id === id);
+  if (!t || t.status === status) return;
+  const prev = t.status;
   t.status = status;
   save();
   render();

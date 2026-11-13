@@ -12,7 +12,8 @@ Não é necessário instalar dependências ou executar um build. O projeto usa H
 index.html            Estrutura da página (menu, cabeçalho, modal); arquivos carregados com ?v= (troque a cada publicação)
 manifest.webmanifest  Dados para instalar o app no celular
 icons/                Ícones do app
-css/styles.css        Todos os estilos
+css/styles.css        Estrutura e estilos funcionais
+css/theme.css         Identidade visual “Noite em Madri” (tema escuro, cores, fontes e animações)
 js/state.js           Constantes, estado, migração de dados antigos e utilitários (salvar, datas, toast)
 js/finance.js         Cálculos: previsão, pagamentos, crédito parcelado, faturas, reservas e saldos, prazos, pasta
 js/views.js           Renderização das páginas, listas e resumos
@@ -23,6 +24,7 @@ js/backup.js          Exportar/importar backup JSON
 js/exchange-rate.js   Cotação EUR/BRL (AwesomeAPI)
 js/reorder.js         Reordenar pendências (arrastar como bloco flutuante)
 js/categories.js      Gerenciar categorias
+js/motion.js          Movimentos: entrada em cascata, valores que contam, brilho no mouse, concluir animado
 js/main.js            Inicialização
 js/cloud.js           Login com Google e sincronização com o Firestore (módulo, carregado por último)
 firestore.rules       Regras de acesso ao banco (colar no console do Firebase)
@@ -32,6 +34,7 @@ Os scripts são carregados em ordem no `index.html` e compartilham variáveis gl
 
 ## Funcionalidades
 - Visão geral com entradas, custos e saldo.
+- Visual escuro com movimento; quem ativa “reduzir movimento” no aparelho vê tudo parado.
 - Pendências editáveis, pagamento, prazos e observações.
 - Menu com submenus (categorias em Pendências; Fontes, Entradas e Cartões em Entradas), recolhível no computador e com barra de abas embaixo no celular.
 - Pode ser instalado na tela inicial do celular (manifest.webmanifest e icons/).

@@ -30,6 +30,21 @@ const uid = () => crypto.randomUUID(),
 
 // Atualiza dados de versões anteriores sem perder informações; pode rodar mais de uma vez
 function migrate(d) {
+  // IDs aparecem em ações da interface. Aceitamos os IDs legados (ex.: "t1"),
+  // mas removemos caracteres que poderiam alterar os handlers inline.
+  const safeId = (value) => typeof value === "string" && /^[a-zA-Z0-9_-]{1,80}$/.test(value);
+  const cleanIds = (value) => {
+    if (!value || typeof value !== "object") return;
+    if (Array.isArray(value)) return value.forEach(cleanIds);
+    for (const [key, child] of Object.entries(value)) {
+      if (key === "id") {
+        if (!safeId(child)) value[key] = uid();
+      } else if (key.endsWith("Id") && child && !safeId(child)) {
+        value[key] = "";
+      } else cleanIds(child);
+    }
+  };
+  cleanIds(d);
   const old = d.schema;
   // Guarda neste navegador uma cópia intacta dos dados anteriores à atualização
   if (old !== SCHEMA && (d.tasks?.length || d.income?.length))
@@ -163,6 +178,8 @@ const $ = (s) => document.querySelector(s),
       /[&<>"']/g,
       (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
     );
+// Serializa texto como literal JavaScript e também o protege no atributo HTML.
+const jsArg = (s) => esc(JSON.stringify(String(s ?? "")));
 const money = (v, c = "BRL") => new Intl.NumberFormat("pt-BR", { style: "currency", currency: c }).format(v),
   sum = (a) => a.reduce((s, n) => s + n, 0);
 

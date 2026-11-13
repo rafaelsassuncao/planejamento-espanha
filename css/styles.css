@@ -1815,7 +1815,7 @@ tr.flash > td {
 .cardtable.tasks .c-due {
   min-width: 110px;
 }
-.cardtable.tasks .c-pay {
+.tlist .c-pay {
   min-width: 120px;
 }
 .stack {
@@ -2442,6 +2442,10 @@ tr.has-sub > td {
   line-height: 1;
   vertical-align: middle;
   cursor: help;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font-family: inherit;
 }
 .tip:hover,
 .tip:focus {
@@ -2510,7 +2514,7 @@ tr.has-sub > td {
   justify-content: space-between;
   gap: 12px;
 }
-.tphead h2 {
+.tphead h1 {
   margin: 0;
   font:
     800 26px Manrope,
@@ -2852,7 +2856,7 @@ tr.has-sub > td {
   .tpage {
     gap: 18px;
   }
-  .tphead h2 {
+  .tphead h1 {
     font-size: 22px;
   }
   .sumcard {
@@ -3156,6 +3160,76 @@ nav.subnav {
     animation: none;
   }
 }
+.pagehead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0 0 22px;
+  padding: 2px 0 19px;
+  border-bottom: 1px solid #e4e9e1;
+}
+.pagehead.compact {
+  margin-bottom: 20px;
+}
+.pagehead h1,
+.tphead h1 {
+  margin: 2px 0 4px;
+  font-size: clamp(25px, 2.5vw, 32px);
+  line-height: 1.2;
+  letter-spacing: -0.8px;
+  color: #133d32;
+}
+.pagehead p:last-child {
+  margin: 0;
+  color: var(--muted);
+}
+.pagehead .eyebrow,
+.tphead .eyebrow {
+  margin: 0;
+  color: #698475;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.15px;
+}
+.datechip {
+  flex: none;
+  padding: 9px 13px;
+  border: 1px solid #dbe5db;
+  border-radius: 999px;
+  background: #fff;
+  color: #416b56;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+.tip {
+  appearance: none;
+}
+.tip:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+@media (max-width: 700px) {
+  .pagehead {
+    align-items: flex-start;
+    margin-bottom: 18px;
+    padding-bottom: 15px;
+  }
+  .pagehead h1,
+  .tphead h1 {
+    font-size: 24px;
+  }
+  .pagehead > div > p:last-child {
+    max-width: 36ch;
+    font-size: 13px;
+  }
+  .datechip {
+    margin-top: 15px;
+    padding: 7px 9px;
+    font-size: 11px;
+  }
+}
 /* Celular: menu vira barra fixa embaixo; as partes da página viram botões no topo */
 @media (max-width: 700px) {
   aside {
@@ -3324,4 +3398,179 @@ nav.subnav {
 .tghead .owe {
   color: #7a5518;
   font-weight: 700;
+}
+
+/* Status e ação de pagamento aparecem como dois elementos distintos. */
+.tlist .c-pay {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 5px;
+}
+.tlist .paystate {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #f0f2ed;
+  color: #56675d;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: right;
+}
+.tlist .paystate.done {
+  background: #e8f3e8;
+  color: #326448;
+}
+.tlist .link.paylink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 4px 9px;
+  border: 1px solid #c7d9c9;
+  border-radius: 8px;
+  background: #f3f8f1;
+  color: #245f4e;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.tlist .link.paylink:hover {
+  border-color: #8eae94;
+  background: #e8f2e6;
+}
+.tlist .link.paylink.late {
+  border-color: #e4c88f;
+  background: #fff7e7;
+  color: #805b16;
+}
+
+/* Acabamento e estados de interação */
+:root {
+  --paper: #f5f6f1;
+  --line: #e1e7df;
+  --green: #245f4e;
+  --focus: #d9a94f;
+}
+body {
+  min-height: 100vh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+main {
+  min-height: 100vh;
+}
+button,
+a,
+input,
+select,
+textarea,
+summary {
+  -webkit-tap-highlight-color: transparent;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+.draghandle:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+.btn {
+  min-height: 42px;
+  font-weight: 600;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+.btn:hover {
+  border-color: #b8c9bb;
+  box-shadow: 0 3px 10px #183e3212;
+  transform: translateY(-1px);
+}
+.btn.primary:hover {
+  background: #194c3e;
+  border-color: #194c3e;
+}
+.card,
+.panel,
+.sumcard {
+  box-shadow: 0 2px 8px #183e3208;
+}
+.card,
+.panel {
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+.card:hover,
+.panel:hover {
+  border-color: #d2ddd2;
+  box-shadow: 0 7px 22px #183e320c;
+}
+input,
+select,
+textarea {
+  min-height: 42px;
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #6d9a7d;
+  box-shadow: 0 0 0 3px #6d9a7d22;
+}
+textarea {
+  resize: vertical;
+}
+nav button,
+.link {
+  transition:
+    color 140ms ease,
+    background-color 140ms ease;
+}
+nav button.active {
+  box-shadow: inset 3px 0 #c29c5a;
+}
+.badge {
+  line-height: 1.35;
+}
+::selection {
+  background: #dcebd9;
+  color: #133d32;
+}
+@media (max-width: 700px) {
+  .card:hover,
+  .panel:hover {
+    border-color: var(--line);
+    box-shadow: 0 2px 8px #183e3208;
+  }
+  aside nav > button {
+    min-height: 58px;
+  }
+  main {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

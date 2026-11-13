@@ -150,6 +150,10 @@ try {
     for (const [name, js] of Object.entries(views)) {
       await b.ev(`$("#modal").open && $("#modal").close(); { ${js} } scrollTo(0, 0)`);
       await wait(150);
+      // Espera os movimentos de entrada (painel deslizando, cascata) terminarem; o fundo animado não para
+      await b.ev(
+        `Promise.race([new Promise((r) => setTimeout(r, 1500)), Promise.all(document.getAnimations().filter((a) => a.effect?.getComputedTiming().iterations !== Infinity).map((a) => a.finished.catch(() => {})))])`,
+      );
       const r = await b.ev(audit);
       t.push(`${r ? "FAIL" : "PASS"}  ${w}px ${name}${r ? "  -> " + r : ""}`);
     }

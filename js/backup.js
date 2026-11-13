@@ -8,7 +8,10 @@ function backup() {
 }
 async function restore(input) {
   try {
-    const d = JSON.parse(await input.files[0].text());
+    const file = input.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) throw Error();
+    const d = JSON.parse(await file.text());
     // Aceita backups antigos e novos; a migração completa os campos que faltarem
     if (
       !d ||

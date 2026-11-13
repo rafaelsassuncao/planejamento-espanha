@@ -20,7 +20,7 @@ const ICONS = {
 };
 // Dica ⓘ: explicação que só aparece ao passar o mouse ou tocar
 const tip = (text) =>
-  `<span class="tip" tabindex="0" role="note" aria-label="${esc(text)}">ⓘ<span class="tiptext">${esc(text)}</span></span>`;
+  `<button type="button" class="tip" aria-label="Ajuda: ${esc(text)}" aria-expanded="false">ⓘ<span class="tiptext" aria-hidden="true">${esc(text)}</span></button>`;
 const icon = (n) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}</svg>`,
   badge = (label, cls = "") => `<span class="badge ${cls}">${esc(label)}</span>`,
   fmtQty = (n) => Number(n).toLocaleString("pt-BR", { maximumFractionDigits: 2 }),
@@ -48,7 +48,7 @@ function cards() {
     est = estimatedOpen(),
     card = (cls, ic, label, v, sub, help = "") =>
       `<div class="card kpi ${cls}"><span class="iconcircle">${icon(ic)}</span><div><label>${label} ${help ? tip(help) : ""}</label><div class="amount">${money(v)}</div><span class="sub">${sub}</span></div></div>`;
-  return `<div class="cards">${card("green", "wallet", "Saldo atual", o.current, "", `Recebido ${money(o.received)} − pago ${money(o.paid)}`)}${card("amber", "file", "Custo total", o.total, `Pago ${money(o.paid)} · falta ${money(o.open)}${e ? `<br>${money(e, "EUR")} em euro` : ""}${o.unknown ? "<br>" + incomplete(o.unknown) : ""}`, est > 0.005 ? `${money(est)} são estimativas` : "")}${card("mint", "chart", "Saldo previsto", o.projected, `${o.expected ? `+ ${money(o.expected)} a receber` : ""}`, "Saldo atual menos o que falta pagar")}</div>`;
+  return `<div class="cards">${card("green", "wallet", "Saldo atual", o.current, "", `Recebido ${money(o.received)} − pago ${money(o.paid)}`)}${card("amber", "file", "Custo total", o.total, `Pago ${money(o.paid)} · falta ${money(o.open)}${e ? `<br>${money(e, "EUR")} em euro` : ""}${o.unknown ? "<br>" + incomplete(o.unknown) : ""}`, est > 0.005 ? `${money(est)} em estimativas` : "")}${card("mint", "chart", "Saldo previsto", o.projected, `${o.expected ? `+ ${money(o.expected)} a receber` : ""}`, "Saldo atual menos o que falta pagar")}</div>`;
 }
 
 function folderCard() {
@@ -124,7 +124,7 @@ function categoryCard(c) {
 const expanded = new Set(),
   moreButton = (c, n, limit) =>
     n > limit
-      ? `<button type="button" class="link" onclick="toggleExpand('${esc(c)}')">${expanded.has(c) ? "Mostrar menos" : `+ ${n - limit} ${n - limit === 1 ? "item" : "itens"} · ver todos`}</button>`
+      ? `<button type="button" class="link" onclick="toggleExpand(${jsArg(c)})">${expanded.has(c) ? "Mostrar menos" : `+ ${n - limit} ${n - limit === 1 ? "item" : "itens"} · ver todos`}</button>`
       : "";
 function toggleExpand(c) {
   expanded.has(c) ? expanded.delete(c) : expanded.add(c);
@@ -244,11 +244,11 @@ function render() {
     pct = data.tasks.length ? Math.round((done / data.tasks.length) * 100) : 0;
   if (page === "overview") {
     $("#app").innerHTML =
-      `${cards()}<section class="panel"><div class="paneltop"><h3>Como está o planejamento?</h3><span class="badge done">${pct}% concluído</span></div><div class="bar"><span style="width:${pct}%"></span></div><p class="muted">${done} de ${data.tasks.length} concluídas</p>${nextTasks()}<button class="link" onclick="go('tasks')">Ver todas as pendências →</button></section>${folderCard()}`;
+      `<header class="pagehead"><div><p class="eyebrow">PLANO DA FAMÍLIA</p><h1>Rumo à Espanha</h1><p>Custos e próximas tarefas.</p></div><span class="datechip">${new Intl.DateTimeFormat("pt-BR", { weekday: "short", day: "numeric", month: "short" }).format(new Date())}</span></header>${cards()}<section class="panel"><div class="paneltop"><h3>Progresso</h3><span class="badge done">${pct}%</span></div><div class="bar"><span style="width:${pct}%"></span></div><p class="muted">${data.tasks.length ? `${done} de ${data.tasks.length} concluídas` : "Adicione uma pendência para começar."}</p>${nextTasks()}${data.tasks.length ? `<button class="link" onclick="go('tasks')">Ver pendências →</button>` : `<button class="btn primary" onclick="editTask()">+ Criar pendência</button>`}</section>${folderCard()}`;
   }
   if (page === "tasks") {
     $("#app").innerHTML =
-      `${subnav("tasks")}<div class="tpage"><div class="tphead"><h2>Pendências e custos</h2><div class="panelactions"><button class="btn" onclick="manageCategories()">Categorias</button><button class="btn primary big" onclick="editTask()">+ Nova pendência</button></div></div><div id="sum"></div><div class="tools2"><label class="searchbox">${icon("search")}<input id="search" type="search" aria-label="Buscar pendência" placeholder="Buscar pendência ou etapa" value="${esc(search)}"></label><details class="morefilters"><summary>Filtros<span id="morecount"></span></summary><div class="menu">${["due", "costf", "sort"].map((k) => `<label>${FILTERS[k].label}${filterSelect(k)}</label>`).join("")}</div></details><div id="chips" class="chips"></div></div><div id="rows"></div></div>`;
+      `${subnav("tasks")}<div class="tpage"><div class="tphead"><div><p class="eyebrow">ORGANIZE SUA MUDANÇA</p><h1>Pendências e custos</h1></div><div class="panelactions"><button class="btn" onclick="manageCategories()">Categorias</button><button class="btn primary big" onclick="editTask()">+ Nova pendência</button></div></div><div id="sum"></div><div class="tools2"><label class="searchbox">${icon("search")}<input id="search" type="search" aria-label="Buscar pendência" placeholder="Buscar pendência ou etapa" value="${esc(search)}"></label><details class="morefilters"><summary>Filtros<span id="morecount"></span></summary><div class="menu">${["due", "costf", "sort"].map((k) => `<label>${FILTERS[k].label}${filterSelect(k)}</label>`).join("")}</div></details><div id="chips" class="chips"></div></div><div id="rows"></div></div>`;
     updateRows();
     $("#search").oninput = (e) => {
       search = e.target.value;
@@ -256,13 +256,21 @@ function render() {
       updateRows();
     };
   }
-  if (page === "income")
+  if (page === "income") {
+    const titles = {
+        fontes: ["Fontes e saldos", "Entradas, uso e reservas."],
+        entradas: ["Entradas", "Valores recebidos ou previstos."],
+        cartoes: ["Cartões e faturas", "Parcelas e faturas."],
+      },
+      [title, description] = titles[incomePart] || titles.fontes;
     $("#app").innerHTML =
       subnav("income") +
+      `<header class="pagehead compact"><div><p class="eyebrow">CONTROLE FINANCEIRO</p><h1>${title}</h1><p>${description}</p></div></header>` +
       (incomePart === "entradas" ? incomeTable() : incomePart === "cartoes" ? cardsPanel() : sourcesPanel());
+  }
   if (page === "settings")
     $("#app").innerHTML =
-      `<div class="grid"><section class="panel"><h3>Cotação do euro ${tip("Atualiza sozinha a cada hora. Pagamentos já feitos mantêm a cotação registrada.")}</h3><label>1 euro = R$ <b>${fmtRate(data.rate)}</b></label><p class="notice">${rateInfo()}</p></section><section class="panel"><h3 style="margin-bottom:20px">Backup</h3><button class="btn primary" onclick="backup()">↓ Exportar backup</button> <button class="btn" onclick="$('#import').click()">↑ Importar backup</button><input hidden id="import" type="file" accept="application/json" onchange="restore(this)"></section><section class="panel"><h3>Cartões e contas</h3><button class="btn" onclick="manageAccounts()">Gerenciar cartões e contas</button></section><section class="panel"><h3>Conta</h3><p class="muted">${esc(window.currentEmail)}</p><button class="btn" onclick="if(confirm('Sair desta conta?'))logout()">Sair</button></section></div>`;
+      `<header class="pagehead compact"><div><p class="eyebrow">PREFERÊNCIAS</p><h1>Ajustes</h1><p>Cotação, backup e conta.</p></div></header><div class="grid"><section class="panel"><h3>Cotação do euro ${tip("Atualiza sozinha a cada hora. Pagamentos já feitos mantêm a cotação registrada.")}</h3><label>1 euro = R$ <b>${fmtRate(data.rate)}</b></label><p class="notice">${rateInfo()}</p></section><section class="panel"><h3 style="margin-bottom:20px">Backup</h3><button class="btn primary" onclick="backup()">↓ Exportar backup</button> <button class="btn" onclick="$('#import').click()">↑ Importar backup</button><input hidden id="import" type="file" accept="application/json" onchange="restore(this)"></section><section class="panel"><h3>Cartões e contas</h3><button class="btn" onclick="manageAccounts()">Gerenciar cartões e contas</button></section><section class="panel"><h3>Conta</h3><p class="muted">${esc(window.currentEmail)}</p><button class="btn" onclick="if(confirm('Sair desta conta?'))logout()">Sair</button></section></div>`;
 }
 
 const byDue = (a, b) =>
@@ -457,7 +465,7 @@ function taskGroup(c, a, head, scope = a) {
     ]
       .filter(Boolean)
       .join(" · ");
-  return `<section class="tgroup">${head ? `<div class="tghead"><h3><button type="button" class="link grouplink" onclick="pickCat(${esc(JSON.stringify(c))})">${esc(c)}</button> <small>· ${a.length} ${a.length === 1 ? "item" : "itens"}</small></h3>${info ? `<small>${info}</small>` : ""}</div>` : ""}${taskTable(a, sort === "manual", true)}</section>`;
+  return `<section class="tgroup">${head ? `<div class="tghead"><h3><button type="button" class="link grouplink" onclick="pickCat(${jsArg(c)})">${esc(c)}</button> <small>· ${a.length} ${a.length === 1 ? "item" : "itens"}</small></h3>${info ? `<small>${info}</small>` : ""}</div>` : ""}${taskTable(a, sort === "manual", true)}</section>`;
 }
 // Totais: as marcadas para somar ou, sem marcação, tudo da categoria/busca (inclusive as concluídas)
 function summary(scope, list = scope) {
@@ -535,7 +543,7 @@ function payCell(t) {
   return (
     (parts.length ? `<small class="paystate ${ps.cls}">${parts.join(" · ")}</small>` : "") +
     (owe
-      ? `<button type="button" class="link paylink${isClosed(t) ? " late" : ""}" onclick="editPayment('${t.id}')">${coveredCur(t) > 0.005 ? "Pagar o resto" : "Marcar pago"}</button>`
+      ? `<button type="button" class="link paylink${isClosed(t) ? " late" : ""}" aria-label="${coveredCur(t) > 0.005 ? "Pagar o restante" : "Registrar pagamento"}" onclick="editPayment('${t.id}')">${coveredCur(t) > 0.005 ? "Pagar restante" : "Marcar pago"}</button>`
       : "")
   );
 }
@@ -593,7 +601,7 @@ function sourcesPanel() {
     rows = [...data.sources.map((s) => [s.id, s.name]), ["", "Fonte não definida"]].filter(
       ([id]) => id || Object.values(st[""]).some((v) => Math.abs(v) > 0.005),
     );
-  return `<section class="panel"><div class="paneltop"><h3>Fontes de dinheiro ${tip("Saldo atual = recebido − utilizado. Reservado = separado para despesas futuras.")}</h3><div class="panelactions"><button class="btn" onclick="manageSources()">Fontes</button><button class="btn primary" onclick="editIncome()">+ Nova entrada</button></div></div><div class="tablewrap"><table class="cardtable"><thead><tr><th>Fonte</th><th>Recebido</th><th>Utilizado</th><th>Saldo atual</th><th>Reservado</th><th>Saldo livre</th><th></th></tr></thead><tbody>${rows
+  return `<section class="panel"><div class="paneltop"><h3>Fontes ${tip("Saldo atual: recebido menos usado. Reservado: previsto para despesas.")}</h3><div class="panelactions"><button class="btn" onclick="manageSources()">Editar fontes</button><button class="btn primary" onclick="editIncome()">+ Entrada</button></div></div><div class="tablewrap"><table class="cardtable"><thead><tr><th>Fonte</th><th>Recebido</th><th>Utilizado</th><th>Saldo atual</th><th>Reservado</th><th>Saldo livre</th><th></th></tr></thead><tbody>${rows
     .map(([id, name]) => {
       const s = st[id],
         noBalance = !id && !s.received && !s.expected,
@@ -605,12 +613,12 @@ function sourcesPanel() {
 // Faturas em aberto por cartão; pagar a fatura quita as parcelas vinculadas
 function cardsPanel() {
   const bills = openBills();
-  return `<section class="panel"><div class="paneltop"><div class="titleicon"><span class="iconcircle small">${icon("card")}</span><h3>Cartões e faturas ${tip("O saldo da fonte só diminui quando a parcela ou a fatura é paga.")}</h3></div><button class="btn" onclick="manageAccounts()">Cartões e contas</button></div>${
+  return `<section class="panel"><div class="paneltop"><div class="titleicon"><span class="iconcircle small">${icon("card")}</span><h3>Cartões e faturas ${tip("O saldo muda quando pagar a parcela ou fatura.")}</h3></div><button class="btn" onclick="manageAccounts()">Editar cartões</button></div>${
     bills.length
       ? `${bills
           .map(
             (b) =>
-              `<div class="statrow"><span><b>${esc(accountName(b.accountId) || "Cartão")}</b> · fatura de ${monthName(b.month)}<br><small>vence ${fmtDate(b.due)} · ${b.items.map(({ t, c, i }) => `${esc(t.title)} ${i.n}/${c.installments.length}`).join(", ")}</small></span><span class="nowrap"><b>${money(b.total)}</b> <button class="btn small" onclick="payBill('${b.accountId}','${b.month}')">Pagar fatura</button></span></div>`,
+              `<div class="statrow"><span><b>${esc(accountName(b.accountId) || "Cartão")}</b> · fatura de ${monthName(b.month)}<br><small>vence ${fmtDate(b.due)} · ${b.items.map(({ t, c, i }) => `${esc(t.title)} ${i.n}/${c.installments.length}`).join(", ")}</small></span><span class="nowrap"><b>${money(b.total)}</b> <button class="btn small" onclick="payBill(${jsArg(b.accountId)},${jsArg(b.month)})">Pagar fatura</button></span></div>`,
           )
           .join("")}`
       : `<p class="sub">${data.accounts.length ? "Nenhuma fatura em aberto." : "Nenhum cartão cadastrado."}</p>`

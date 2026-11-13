@@ -61,9 +61,23 @@ document.addEventListener("click", (e) => {
 // Dica ⓘ: abre e fecha com um toque (no celular nem sempre há "passar o mouse")
 document.addEventListener("click", (e) => {
   const t = e.target.closest(".tip");
-  document.querySelectorAll(".tip.show").forEach((x) => x !== t && x.classList.remove("show"));
+  document.querySelectorAll(".tip.show").forEach((x) => {
+    if (x !== t) {
+      x.classList.remove("show");
+      x.setAttribute("aria-expanded", "false");
+    }
+  });
   if (t) {
     e.preventDefault();
-    t.classList.toggle("show");
+    const open = !t.classList.contains("show");
+    t.classList.toggle("show", open);
+    t.setAttribute("aria-expanded", String(open));
   }
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  document.querySelectorAll(".tip.show").forEach((t) => {
+    t.classList.remove("show");
+    t.setAttribute("aria-expanded", "false");
+  });
 });
