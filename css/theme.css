@@ -1128,6 +1128,64 @@ nav.subnav button.on small {
   .card.kpi {
     min-height: 0;
   }
+  /* Fontes no celular: nome e saldo livre em destaque, o resto numa linha pequena */
+  .cardtable.sources tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 12px;
+    padding: 14px 16px;
+  }
+  .cardtable.sources td {
+    display: inline-flex;
+    order: 2;
+    flex: none;
+    width: auto;
+    gap: 4px;
+    padding: 2px 0;
+    border: 0;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .cardtable.sources td::before {
+    font-size: 12px;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .cardtable.sources td:first-child {
+    display: block;
+    order: 0;
+    flex: 1 1 40%;
+    color: var(--ink);
+    font-size: 15px;
+  }
+  .cardtable.sources td[data-label="Saldo livre"] {
+    display: block;
+    order: 1;
+    flex: none;
+    margin-left: auto;
+    color: var(--ink);
+    font-family: var(--display);
+    font-size: 22px;
+    letter-spacing: -0.03em;
+  }
+  .cardtable.sources td[data-label="Saldo livre"]::before {
+    content: none;
+  }
+  .cardtable.sources td[data-label="Saldo livre"] small {
+    display: block;
+    font: 12px Inter, sans-serif;
+    letter-spacing: 0;
+  }
+  .cardtable.sources td.rowactions {
+    order: 3;
+    flex: 1 1 100%;
+    justify-content: flex-start;
+    padding-top: 6px;
+  }
+  .cardtable.sources td.rowactions .link {
+    padding-left: 0;
+  }
   .pagehead h1,
   .tphead h1 {
     font-size: 30px;

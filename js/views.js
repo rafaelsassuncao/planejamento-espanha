@@ -602,7 +602,7 @@ function sourcesPanel() {
     rows = [...data.sources.map((s) => [s.id, s.name]), ["", "Fonte não definida"]].filter(
       ([id]) => id || Object.values(st[""]).some((v) => Math.abs(v) > 0.005),
     );
-  return `<section class="panel"><div class="paneltop"><div><h3>Fontes</h3><p class="sub">Saldo livre = recebido − usado − reservado para pendências.</p></div><div class="panelactions"><button class="btn" onclick="manageSources()">Editar fontes</button><button class="btn primary" onclick="editIncome()">+ Entrada</button></div></div><div class="tablewrap"><table class="cardtable"><thead><tr><th>Fonte</th><th>Recebido</th><th>Utilizado</th><th>Saldo atual</th><th>Reservado</th><th>Saldo livre</th><th></th></tr></thead><tbody>${rows
+  return `<section class="panel"><div class="paneltop"><div><h3>Fontes</h3><p class="sub">Saldo livre = recebido − usado − reservado para pendências.</p></div><div class="panelactions"><button class="btn" onclick="manageSources()">Editar fontes</button><button class="btn primary" onclick="editIncome()">+ Entrada</button></div></div><div class="tablewrap"><table class="cardtable sources"><thead><tr><th>Fonte</th><th>Recebido</th><th>Utilizado</th><th>Saldo atual</th><th>Reservado</th><th>Saldo livre</th><th></th></tr></thead><tbody>${rows
     .map(([id, name]) => {
       const s = st[id],
         noBalance = !id && !s.received && !s.expected,
