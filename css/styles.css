@@ -3311,3 +3311,17 @@ nav.subnav {
     display: none;
   }
 }
+/* Pagamento direto na linha e quanto falta em cada categoria */
+.link.paylink {
+  padding: 2px 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--green);
+}
+.link.paylink.late {
+  color: #8a6420;
+}
+.tghead .owe {
+  color: #7a5518;
+  font-weight: 700;
+}

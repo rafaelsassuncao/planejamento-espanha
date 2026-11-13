@@ -210,20 +210,21 @@ function setData(d) {
 function toast(s, action) {
   const el = $("#toast");
   el.textContent = s;
-  if (action) {
+  // Aceita um botão ({label, fn}) ou vários ([{...}, {...}])
+  [action || []].flat().forEach((a) => {
     const b = document.createElement("button");
     b.className = "toastbtn";
-    b.textContent = action.label;
+    b.textContent = a.label;
     b.onclick = () => {
       el.hidePopover?.();
-      action.fn();
+      a.fn();
     };
     el.append(" ", b);
-  }
+  });
   try {
     el.hidePopover();
     el.showPopover();
   } catch {}
   clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => el.hidePopover?.(), action ? 6000 : 3500);
+  toast.timer = setTimeout(() => el.hidePopover?.(), action ? ([action].flat().length > 1 ? 9000 : 6000) : 3500);
 }

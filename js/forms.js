@@ -39,16 +39,29 @@ function applySteps(t) {
   else if (d > 0) t.status = "Em andamento";
   else if (prev === "Concluído") t.status = "Pendente";
   if (t.status === "Concluído" && prev !== "Concluído")
-    toast("Todas as etapas feitas: pendência concluída", {
-      label: "Desfazer",
-      fn: () => {
-        const again = data.tasks.find((x) => x.id === t.id);
-        if (again) again.status = prev;
-        save();
-        render();
+    toast("Todas as etapas feitas: pendência concluída" + owed(t), [
+      {
+        label: "Desfazer",
+        fn: () => {
+          const again = data.tasks.find((x) => x.id === t.id);
+          if (again) again.status = prev;
+          save();
+          render();
+        },
       },
-    });
+      ...payAction(t),
+    ]);
 }
+// Ao concluir algo que tem custo ainda não pago, o aviso lembra e oferece registrar o pagamento
+const unpaid = (t) => {
+    try {
+      return isCost(t) && !forecast(t).unknown ? uncoveredCur(t) : 0;
+    } catch {
+      return 0;
+    }
+  },
+  owed = (t) => (unpaid(t) > 0.005 ? `. Falta pagar ${money(unpaid(t), t.currency)}` : ""),
+  payAction = (t) => (unpaid(t) > 0.005 ? [{ label: "Registrar pagamento", fn: () => editPayment(t.id) }] : []);
 // Etapas direto na lista: abrir/fechar, marcar, concluir a próxima e adicionar, sem janela
 const openSteps = new Set();
 // Redesenha a lista mantendo a posição da página e, se pedido, o foco no campo de nova etapa
@@ -142,15 +155,21 @@ function setStatus(id, status) {
   save();
   render();
   if (status === "Concluído")
-    toast(page === "tasks" && filter === "Não concluídos" ? "Concluída e ocultada da lista" : "Concluída", {
-      label: "Desfazer",
-      fn: () => {
-        const again = data.tasks.find((x) => x.id === id);
-        if (again) again.status = prev;
-        save();
-        render();
-      },
-    });
+    toast(
+      (page === "tasks" && filter === "Não concluídos" ? "Concluída e ocultada da lista" : "Concluída") + owed(t),
+      [
+        {
+          label: "Desfazer",
+          fn: () => {
+            const again = data.tasks.find((x) => x.id === id);
+            if (again) again.status = prev;
+            save();
+            render();
+          },
+        },
+        ...payAction(t),
+      ],
+    );
 }
 const toggle = (id, v) => setStatus(id, v ? "Concluído" : "Pendente");
 const field = (label, name, val = "", type = "text", extra = "") =>

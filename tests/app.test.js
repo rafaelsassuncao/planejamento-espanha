@@ -227,6 +227,45 @@
       document.querySelector("#sum .folder h3").textContent.includes("Consulado"),
     );
 
+    // ---------- E2. Concluídas continuam nas contas ----------
+    listTasks();
+    const owe = data.tasks.find((t) => isCost(t) && !forecast(t).unknown && uncoveredCur(t) > 0 && t.status !== "Concluído");
+    filter = "Não concluídos";
+    render();
+    const before = totals(data.tasks.filter((t) => t.category === owe.category)).total;
+    const sel2 = row(owe).querySelector(".statussel");
+    sel2.value = "Concluído";
+    sel2.dispatchEvent(new Event("change"));
+    check(
+      "E2 concluir avisa o que falta pagar",
+      $("#toast").textContent.includes("Falta pagar") &&
+        [...$("#toast").querySelectorAll(".toastbtn")].some((x) => x.textContent === "Registrar pagamento"),
+    );
+    check(
+      "E2 concluída oculta continua no total do topo",
+      !row(owe) && document.querySelector("#sum .sumcard").textContent.replace(/\s/g, " ").includes(moneyFmt(totals(data.tasks.filter((t) => cat === "Todas" || t.category === cat)).total)),
+    );
+    check(
+      "E2 categoria mostra pago de total",
+      [...document.querySelectorAll(".tghead")].some((h) => h.textContent.includes(owe.category) && h.textContent.replace(/\s/g, " ").includes(moneyFmt(before))),
+    );
+    setFilter("costf", "A pagar");
+    filter = "Todos";
+    render();
+    check(
+      "E2 botão A pagar mostra a concluída sem pagamento",
+      !!row(owe) && [...document.querySelectorAll("#rows tbody tr[data-id]")].every((r) => outstandingBRL(data.tasks.find((t) => t.id === r.dataset.id)) > 0),
+    );
+    render();
+    check(
+      "E2 'Marcar pago' na linha abre o pagamento",
+      (row(owe).querySelector(".paylink").click(), $("#modal").open && $("#modal").textContent.includes("Registrar pagamento")),
+    );
+    $("#modal").close();
+    owe.status = "Pendente";
+    costF = "Todos";
+    save();
+
     // ---------- F. Pagamentos ----------
     listTasks();
     const sal = S("Salário") || addSource("Salário");

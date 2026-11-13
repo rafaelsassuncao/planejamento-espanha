@@ -376,13 +376,21 @@ function updateRows() {
       f === "Todos" || (f === "Não concluídos" ? t.status !== "Concluído" : t.status === f),
     hiddenDone =
       filter === "Não concluídos" ? data.tasks.filter((t) => base(t) && t.status === "Concluído").length : 0;
-  let list = data.tasks.filter((t) => base(t) && byStatus(t));
+  const scope = data.tasks.filter(base);
+  let list = scope.filter((t) => byStatus(t));
   if (sort === "prazo") list = [...list].sort(byDue);
   // Botões de andamento com a contagem de cada um; "Sem valor" liga e desliga o filtro de custo
   const count = (f) => data.tasks.filter((t) => base(t) && byStatus(t, f)).length,
     noValue = data.tasks.filter((t) => {
       try {
         return text(t) && byStatus(t) && isCost(t) && forecast(t).unknown;
+      } catch {
+        return false;
+      }
+    }).length,
+    toPay = data.tasks.filter((t) => {
+      try {
+        return text(t) && isCost(t) && outstandingBRL(t) > 0.005;
       } catch {
         return false;
       }
@@ -398,6 +406,15 @@ function updateRows() {
     ]
       .map(([f, label]) => chip(label, count(f), filter === f, `setFilter('filter','${f}')`))
       .join("") +
+    (toPay || costF === "A pagar"
+      ? chip(
+          "A pagar",
+          toPay,
+          costF === "A pagar",
+          `setFilter('costf','${costF === "A pagar" ? "Todos" : "A pagar"}')`,
+          " warn",
+        )
+      : "") +
     (noValue || costF === "Sem valor"
       ? chip(
           "Sem valor",
@@ -407,10 +424,10 @@ function updateRows() {
           " warn",
         )
       : "");
-  const more = (due !== "Todos") + (costF !== "Todos" && costF !== "Sem valor") + (sort !== "manual");
+  const more = (due !== "Todos") + !["Todos", "Sem valor", "A pagar"].includes(costF) + (sort !== "manual");
   $("#morecount").textContent = more ? ` · ${more}` : "";
   $("#sum").innerHTML =
-    (cat !== "Todas" && costF === "Todos" ? safe(() => categoryCard(cat)) : "") + safe(() => summary(list));
+    (cat !== "Todas" && costF === "Todos" ? safe(() => categoryCard(cat)) : "") + safe(() => summary(scope, list));
   const groups =
     cat === "Todas"
       ? [...new Set([...categories, ...list.map((t) => t.category)])]
@@ -419,33 +436,33 @@ function updateRows() {
       : [[cat, list]];
   $("#rows").innerHTML =
     (list.length
-      ? groups.map(([c, a]) => safe(() => taskGroup(c, a, cat === "Todas"))).join("")
+      ? groups.map(([c, a]) => safe(() => taskGroup(c, a, cat === "Todas", scope))).join("")
       : '<div class="empty">Nenhuma pendência por aqui.</div>') +
     (hiddenDone
       ? `<p class="donenote">${hiddenDone} ${hiddenDone === 1 ? "concluída oculta" : "concluídas ocultas"} · <button type="button" class="link" onclick="setFilter('filter','Todos')">mostrar</button></p>`
       : "");
 }
 // Grupo de uma categoria: título com quantidade e quanto falta pagar, depois a lista
-function taskGroup(c, a, head) {
-  const open = sum(
-      a.map((t) => {
-        try {
-          return isCost(t) ? outstandingBRL(t) : 0;
-        } catch {
-          return 0;
-        }
-      }),
-    ),
-    folder = data.folder && c === data.folder.category && data.folder.deadline,
-    info = [folder ? "prazo da pasta " + fmtDate(data.folder.deadline).slice(0, 5) : "", open > 0.005 ? "falta " + money(open) : ""]
+// Os valores da categoria contam também as concluídas, mesmo que estejam ocultas na lista
+function taskGroup(c, a, head, scope = a) {
+  let s = { paid: 0, open: 0, total: 0 };
+  try {
+    s = totals(scope.filter((t) => t.category === c));
+  } catch {}
+  const folder = data.folder && c === data.folder.category && data.folder.deadline,
+    info = [
+      folder ? "prazo da pasta " + fmtDate(data.folder.deadline).slice(0, 5) : "",
+      s.total > 0.005 ? `pago ${money(s.paid)} de ${money(s.total)}` : "",
+      s.open > 0.005 ? `<b class="owe">falta ${money(s.open)}</b>` : "",
+    ]
       .filter(Boolean)
       .join(" · ");
   return `<section class="tgroup">${head ? `<div class="tghead"><h3><button type="button" class="link grouplink" onclick="pickCat(${esc(JSON.stringify(c))})">${esc(c)}</button> <small>· ${a.length} ${a.length === 1 ? "item" : "itens"}</small></h3>${info ? `<small>${info}</small>` : ""}</div>` : ""}${taskTable(a, sort === "manual", true)}</section>`;
 }
-// Totais das pendências marcadas entre as exibidas (respeita busca e filtros)
-function summary(list) {
+// Totais: as marcadas para somar ou, sem marcação, tudo da categoria/busca (inclusive as concluídas)
+function summary(scope, list = scope) {
   const picked = list.filter((t) => selected.has(t.id)),
-    chosen = picked.length ? picked : list,
+    chosen = picked.length ? picked : scope,
     s = totals(chosen),
     e = eurLaunched(chosen),
     pct = s.total > 0 ? Math.round((s.paid / s.total) * 100) : 0,
@@ -514,7 +531,13 @@ function payCell(t) {
   });
   if (ps.label === "Parcialmente pago") parts.unshift(`pago ${money(paidBRL(t))}`);
   if (!parts.length && ps.label !== "Valor a definir") parts.push(ps.label.toLowerCase());
-  return parts.length ? `<small class="paystate ${ps.cls}">${parts.join(" · ")}</small>` : "";
+  const owe = !forecast(t).unknown && uncoveredCur(t) > 0.005;
+  return (
+    (parts.length ? `<small class="paystate ${ps.cls}">${parts.join(" · ")}</small>` : "") +
+    (owe
+      ? `<button type="button" class="link paylink${isClosed(t) ? " late" : ""}" onclick="editPayment('${t.id}')">${coveredCur(t) > 0.005 ? "Pagar o resto" : "Marcar pago"}</button>`
+      : "")
+  );
 }
 // Valor na moeda em que foi lançado, com o tipo (estimado/confirmado) em texto pequeno
 function valueCell(t) {
