@@ -86,7 +86,7 @@ function folderCard() {
 // Ao filtrar uma categoria, mostra um card de "pasta" com o progresso e o que falta
 const doneLink = (done) =>
   page === "tasks" && done
-    ? `<button type="button" class="link" onclick="setFilter('filter','${filter === "Concluído" ? "Não concluídos" : "Concluído"}')">${filter === "Concluído" ? "Voltar às pendentes" : `Ver ${done} ${done === 1 ? "concluída" : "concluídas"}`}</button>`
+    ? `<button type="button" class="link" onclick="setFilter('filter','${filter === "Concluído" ? "Não concluídos" : "Concluído"}')">${filter === "Concluído" ? "Voltar às não concluídas" : `Ver ${done} ${done === 1 ? "concluída" : "concluídas"}`}</button>`
     : "";
 // Abre a lista de pendências filtrada pela pasta
 function showFolderItems() {
@@ -327,7 +327,7 @@ const FILTERS = {
     label: "Andamento",
     opts: () => [
       ["Todos", "Andamento: todos"],
-      ["Não concluídos", "Não concluídos"],
+      ["Não concluídos", "Não concluídas"],
       ...STATUSES.map((s) => [s, s]),
     ],
     get: () => filter,
@@ -408,7 +408,8 @@ function updateRows() {
       `<button type="button" class="chip${on ? " on" : ""}${cls}" aria-pressed="${on}" onclick="${fn}">${label} <span>${n}</span></button>`;
   $("#chips").innerHTML =
     [
-      ["Não concluídos", "A fazer"],
+      ["Não concluídos", "Não concluídas"],
+      ["Pendente", "Pendentes"],
       ["Em andamento", "Em andamento"],
       ["Concluído", "Concluídas"],
       ["Todos", "Todas"],
