@@ -183,7 +183,7 @@ function accountList() {
         (a) =>
           `<div class="statrow"><span>${esc(a.name)} <small>${a.type === "cartao" ? "cartão" : "conta"}</small></span><span class="nowrap"><button type="button" class="link" onclick="renameAccount('${a.id}')">Renomear</button><button type="button" class="link danger" onclick="deleteAccount('${a.id}')">Excluir</button></span></div>`,
       )
-      .join("") || '<p class="sub">Nenhum cartão ou conta cadastrado.</p>';
+      .join("");
 }
 function renameAccount(id) {
   const a = data.accounts.find((x) => x.id === id),
@@ -226,7 +226,7 @@ function payBill(accountId, month) {
       )
       .join(
         "",
-      )}<div class="statrow"><span><b>Total da fatura</b> ${tip("Quita as parcelas desta fatura, sem contar de novo.")}</span><b>${money(total)}</b></div>${field("Data do pagamento", "payDate", todayStr(), "date", "required")}<small>Origem do dinheiro</small><div id="splitrows">${splitRow(planned.length === 1 ? planned[0] : "", null, true)}</div><button type="button" class="link" onclick="addSplitRow(true)">+ Dividir entre fontes</button><p id="paywarn" class="flag"></p><div class="actions"><button type="button" class="btn" onclick="$('#modal').close()">Cancelar</button><button class="btn primary">Pagar fatura</button></div>`,
+      )}<div class="statrow"><span><b>Total da fatura</b></span><b>${money(total)}</b></div>${field("Data do pagamento", "payDate", todayStr(), "date", "required")}<small>Origem do dinheiro</small><div id="splitrows">${splitRow(planned.length === 1 ? planned[0] : "", null, true)}</div><button type="button" class="link" onclick="addSplitRow(true)">+ Dividir entre fontes</button><p id="paywarn" class="flag"></p><div class="actions"><button type="button" class="btn" onclick="$('#modal').close()">Cancelar</button><button class="btn primary">Pagar fatura</button></div>`,
     (f) => {
       const r = resolveSplit(readSplitRows(), total);
       if (r.error) return toast(r.error);
@@ -273,7 +273,7 @@ function sourceLinks(id) {
       ),
     ),
     list = (title, items) =>
-      `<fieldset class="sec"><legend>${title}</legend>${items.join("") || '<p class="sub">Nada vinculado.</p>'}</fieldset>`,
+      `<fieldset class="sec"><legend>${title}</legend>${items.join("") || '<p class="sub">Nada por aqui.</p>'}</fieldset>`,
     open = (t) => `<button type="button" class="link" onclick="openTask('${t.id}')">${esc(t.title)}</button>`;
   showForm(
     `<h3>${esc(name)}</h3>${list(
@@ -354,7 +354,7 @@ function editFolder() {
         )
         .join("") || '<p class="sub">Nenhuma pendência nesta categoria ainda.</p>';
   showForm(
-    `<h3>Configurar pasta</h3><label>Categoria da pasta<select name="category" onchange="document.querySelector('#reqlist').innerHTML=folderItems(this.value)">${opts(categories, f.category)}</select></label>${field(`Entrega à consultoria ${tip("Itens sem prazo próprio seguem esta data.")}`, "deadline", f.deadline, "date")}<fieldset class="sec"><legend>Itens obrigatórios para concluir a pasta</legend><div id="reqlist">${items(f.category)}</div></fieldset><fieldset class="sec"><legend>Adicionar vários itens</legend><label>Um item por linha ${tip("Use “Título | observação” para incluir uma observação. Nomes repetidos são ignorados.")}<textarea name="bulk" rows="8" placeholder="Passaporte válido&#10;Formulário de solicitação do visto&#10;Comprovante de matrícula"></textarea></label></fieldset><div class="actions"><button type="button" class="btn" onclick="$('#modal').close()">Cancelar</button><button class="btn primary">Salvar</button></div>`,
+    `<h3>Configurar pasta</h3><label>Categoria da pasta<select name="category" onchange="document.querySelector('#reqlist').innerHTML=folderItems(this.value)">${opts(categories, f.category)}</select></label>${field("Data de entrega (vale para itens sem prazo próprio)", "deadline", f.deadline, "date")}<fieldset class="sec"><legend>Itens obrigatórios para concluir a pasta</legend><div id="reqlist">${items(f.category)}</div></fieldset><fieldset class="sec"><legend>Adicionar vários itens</legend><label>Um item por linha<textarea name="bulk" rows="8" placeholder="Passaporte válido&#10;Formulário de solicitação do visto&#10;Comprovante de matrícula"></textarea></label></fieldset><div class="actions"><button type="button" class="btn" onclick="$('#modal').close()">Cancelar</button><button class="btn primary">Salvar</button></div>`,
     (fd) => {
       const category = fd.get("category"),
         req = new Set(fd.getAll("req"));

@@ -239,7 +239,7 @@
     check(
       "E2 concluir avisa o que falta pagar",
       $("#toast").textContent.includes("Falta pagar") &&
-        [...$("#toast").querySelectorAll(".toastbtn")].some((x) => x.textContent === "Registrar pagamento"),
+        [...$("#toast").querySelectorAll(".toastbtn")].some((x) => x.textContent === "Já paguei"),
     );
     check(
       "E2 concluída oculta continua no total do topo",
@@ -275,7 +275,7 @@
     );
     check(
       "E2 'Marcar pago' na linha abre o pagamento",
-      (payButton.click(), $("#modal").open && $("#modal").textContent.includes("Registrar pagamento")),
+      (payButton.click(), $("#modal").open && $("#modal").textContent.includes("Já paguei")),
     );
     $("#modal").close();
     owe.status = "Pendente";
