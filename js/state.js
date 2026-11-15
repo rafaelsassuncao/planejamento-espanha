@@ -1,6 +1,6 @@
 // Constantes, dados iniciais, estado da aplicação, migração e utilitários
 const KEY = "espanha-assuncao-v1";
-const SCHEMA = 3;
+const SCHEMA = 4;
 const defaultCategories = [
   "Passagens e transporte",
   "Bagagens e acessórios",
@@ -10,7 +10,11 @@ const defaultCategories = [
   "Itens pessoais",
   "Outros",
 ];
-const defaultSources = ["Venda do apartamento", "Reserva pessoal", "Salário"];
+const defaultSources = ["Santander Consulado", "Salário"];
+// Reserva apresentada ao consulado: as antigas fontes do apartamento, do carro e a reserva pessoal viram uma só
+const CONSUL_SOURCE = "Santander Consulado",
+  CONSUL_MERGE = ["venda do apartamento", "venda do carro", "reserva pessoal", "reserva santander", "santander"],
+  CONSUL_GOAL = 113000;
 const FOLDER_CATEGORY = "Consulado";
 const FOLDER_DEADLINE = "2026-11-15";
 const STATUSES = ["Pendente", "Em andamento", "Concluído"];
@@ -73,6 +77,27 @@ function migrate(d) {
     if (i.sourceId === undefined) i.sourceId = i.origin?.trim() ? sourceByName(i.origin.trim()).id : "";
   });
   if (old === undefined) defaultSources.forEach(sourceByName);
+  d.sources.forEach((s) => (s.consulate = !!s.consulate));
+  if (!(old >= 4)) {
+    const target = sourceByName(CONSUL_SOURCE),
+      gone = new Set(
+        d.sources
+          .filter((s) => s !== target && CONSUL_MERGE.includes(s.name.trim().toLowerCase()))
+          .map((s) => s.id),
+      ),
+      swap = (v) => {
+        if (!v || typeof v !== "object") return;
+        if (Array.isArray(v)) return v.forEach(swap);
+        for (const [k, c] of Object.entries(v))
+          if (k === "sourceId" && gone.has(c)) v[k] = target.id;
+          else swap(c);
+      };
+    target.consulate = true;
+    swap(d.income);
+    swap(d.tasks);
+    d.sources = [target, ...d.sources.filter((s) => s !== target && !gone.has(s.id))];
+  }
+  d.consulGoal = Number(d.consulGoal) > 0 ? Number(d.consulGoal) : CONSUL_GOAL;
   d.folder ??= { category: FOLDER_CATEGORY, deadline: FOLDER_DEADLINE };
   d.categories = [
     ...new Set([...(d.categories || defaultCategories), ...d.tasks.map((t) => t.category).filter(Boolean)]),

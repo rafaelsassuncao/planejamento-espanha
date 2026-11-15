@@ -409,3 +409,49 @@ function removeCredit(taskId, creditId) {
   t.credits = t.credits.filter((x) => x.id !== creditId);
   saveOk(t, "Compra no crédito excluída");
 }
+// Marcar pago: pergunta só de onde saiu o dinheiro e registra o que falta, com a data de hoje
+function quickPay(id) {
+  const t = findTask(id);
+  if (!t) return;
+  const amount = uncoveredCur(t);
+  // Valor indefinido, compra no crédito ou já quitado: abre o formulário completo
+  if (forecast(t).unknown || amount < 0.005 || committedBRL(t) > 0.005) return editPayment(id);
+  const rate = t.currency === "EUR" ? data.rate : 1,
+    brl = round2(amount * rate),
+    planned = taskSources(t)[0],
+    choices = [...data.sources].sort((a, b) => (b.id === planned) - (a.id === planned) || b.consulate - a.consulate);
+  showForm(
+    `<h3>Marcar pago</h3><p class="sub">${esc(t.title)} · ${money(amount, t.currency)}${t.currency === "EUR" ? ` (${money(brl)})` : ""}</p><p class="paywho">Pagou com:</p><div class="paypick">${choices
+      .map(
+        (s) =>
+          `<button type="button" class="btn paysrc ${s.consulate ? "res" : "sal"}" data-src="${s.id}" onclick="confirmQuickPay('${t.id}','${s.id}')"><span>${esc(s.name)}</span><small>${s.consulate ? "reserva do consulado" : "não mexe na reserva"}</small></button>`,
+      )
+      .join(
+        "",
+      )}</div><button type="button" class="link" onclick="editPayment('${t.id}')">Outra forma (cartão, parcelas ou dividir entre fontes)</button><div class="actions"><button type="button" class="btn" onclick="$('#modal').close()">Cancelar</button></div>`,
+    () => {},
+  );
+}
+function confirmQuickPay(id, sourceId) {
+  const t = findTask(id),
+    amount = t ? uncoveredCur(t) : 0;
+  if (!t || amount < 0.005) return $("#modal").close();
+  const rate = t.currency === "EUR" ? data.rate : 1,
+    brl = round2(amount * rate);
+  t.payments.push({
+    id: uid(),
+    date: todayStr(),
+    amount: round2(amount),
+    rate,
+    brl,
+    split: [{ sourceId, brl }],
+    method: "",
+    accountId: "",
+    confirmed: true,
+    notes: "",
+  });
+  save();
+  $("#modal").close();
+  render();
+  toast(`Pago com ${sourceName(sourceId)}`);
+}

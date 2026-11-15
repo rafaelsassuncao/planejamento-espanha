@@ -35,7 +35,9 @@ Os scripts são carregados em ordem no `index.html` e compartilham variáveis gl
 ## Funcionalidades
 - Visão geral com entradas, custos e saldo.
 - Visual escuro com movimento; quem ativa “reduzir movimento” no aparelho vê tudo parado.
-- Pendências editáveis, pagamento, prazos e observações.
+- Pendências em lista enxuta por categoria: concluir, nome, próximo passo (com “✓ Feito”), fonte e valor; andamento, etapas e pagamentos no menu ⋯.
+- Duas fontes principais: **Salário** (gastos do mês) e **Santander Consulado** (reserva apresentada ao consulado). “Marcar pago” pergunta de qual saiu.
+- Meta do consulado (padrão R$ 113.000, editável em Ajustes): a visão geral avisa quando a reserva está ou vai ficar abaixo dela.
 - Menu com submenus (categorias em Pendências; Fontes, Entradas e Cartões em Entradas), recolhível no computador e com barra de abas embaixo no celular.
 - Pode ser instalado na tela inicial do celular (manifest.webmanifest e icons/).
 - Reordenação por arraste.

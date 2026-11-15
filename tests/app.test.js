@@ -32,15 +32,9 @@
   const T = (title) => data.tasks.find((t) => t.title === title);
   const S = (name) => data.sources.find((s) => s.name === name);
   const row = (t) => document.querySelector(`#rows tr[data-id="${t.id}"]`);
-  // Etapas visíveis da pendência: faixa abaixo da linha (computador) ou dentro do card (celular)
-  const stepsBox = (t) =>
-    [document.querySelector(`#rows [data-for="${t.id}"]`), row(t)].find(
-      (el) =>
-        el &&
-        el.querySelector(".stepbar, .stepsopen, .stepadd") &&
-        el.offsetParent !== null &&
-        [...el.querySelectorAll(".stepbar, .stepadd")].some((x) => x.offsetParent),
-    );
+  // Lista de etapas aberta logo abaixo da linha
+  const stepsBox = (t) => document.querySelector(`#rows [data-for="${t.id}"] .stepsopen`);
+  const act = (t, a) => row(t).querySelector(`.rowmenu [data-act="${a}"]`);
   const plus = (n) => isoDate(new Date(Date.now() + n * 864e5));
   const listTasks = () => {
     page = "tasks";
@@ -50,6 +44,7 @@
     costF = "Todos";
     search = "";
     sort = "manual";
+    srcF = "Todas";
     selected.clear();
     render();
   };
@@ -57,12 +52,17 @@
     // ---------- A. Migração dos dados antigos (vindos da nuvem) ----------
     const t1 = T("Passagens"),
       t3 = T("Seguro");
-    check("A schema atual", data.schema === 3);
+    check("A schema atual", data.schema === 4);
     check("A 'Já foi pago' antigo vira pagamento", t1.payments.length === 1 && t1.payments[0].brl === 9000);
     check("A valor 0 antigo fica 'a definir'", t3.kind === "cost" && !t3.priceKnown);
-    check("A entradas viram fontes", sourceName(data.income[0].sourceId) === "Venda do apartamento");
+    check("A entradas viram fontes", sourceName(data.income[0].sourceId) === "Santander Consulado");
+    check(
+      "A apartamento e reserva pessoal viram Santander Consulado",
+      !S("Venda do apartamento") && !S("Reserva pessoal") && S("Santander Consulado").consulate && !S("Salário").consulate,
+    );
+    check("A meta do consulado começa em R$ 113 mil", data.consulGoal === 113000);
     check("A pasta com prazo 15/11/2026", data.folder.deadline === "2026-11-15");
-    check("A migração gravou na nuvem com versão", __mock.server.schema === 3 && __mock.server.rev >= 1);
+    check("A migração gravou na nuvem com versão", __mock.server.schema === 4 && __mock.server.rev >= 1);
     data.rate = 6;
 
     // ---------- B. Pendência: criar, dinheiro formatado, editar, excluir ----------
@@ -88,15 +88,8 @@
     const at = () => T("Atestado médico");
     check("B pendência criada", at() && at().value === 50 && at().valueType === "estimado");
     listTasks();
-    check(
-      "B linha mostra valor e 'estimado'",
-      row(at()).querySelector(".c-val").textContent.includes("50,00") &&
-        row(at()).textContent.includes("estimado"),
-    );
-    check(
-      "B prazo próprio com data legível",
-      /\d+ [a-z]{3} \d{4}/.test(row(at()).querySelector(".c-due").textContent),
-    );
+    check("B linha mostra o valor", row(at()).querySelector(".c-val").textContent.includes("50,00"));
+    check("B linha sem coluna de prazo", !row(at()).querySelector(".c-due, .statussel, .draghandle, input.sel"));
     row(at()).querySelector('.rowmenu [data-act="edit"]').click();
     check("B 'Editar' abre o formulário", $("#modal").open && F().elements.title.value === "Atestado médico");
     set("notes", "levar ao cartório");
@@ -105,19 +98,16 @@
 
     // ---------- C. Andamento ----------
     listTasks();
-    const sel = (t, v) => {
-      const el = row(t).querySelector(".statussel");
-      el.value = v;
-      el.dispatchEvent(new Event("change"));
-    };
-    sel(at(), "Em andamento");
-    check("C muda andamento direto, sem janela", at().status === "Em andamento" && !$("#modal").open);
+    act(at(), "prog").click();
+    check("C 'Marcar em andamento' no menu, sem janela", at().status === "Em andamento" && !$("#modal").open);
+    check("C linha diz 'Em andamento'", row(at()).querySelector(".tnotes").textContent.includes("Em andamento"));
     filter = "Não concluídos";
     render();
-    sel(at(), "Concluído");
+    row(at()).querySelector(".donebtn").click();
+    await wait(800);
     check(
-      "C concluída some da lista e oferece desfazer",
-      !row(at()) && $("#toast").textContent.includes("ocultada"),
+      "C concluir some da lista e oferece desfazer",
+      at().status === "Concluído" && !row(at()) && $("#toast").textContent.includes("ocultada"),
     );
     $("#toast").querySelector(".toastbtn").click();
     check("C desfazer traz de volta", at().status === "Em andamento" && !!row(at()));
@@ -135,34 +125,26 @@
     listTasks();
     check("D etapas salvas", at().steps.length === 3 && at().steps[0].done);
     check(
-      "D linha mostra próxima etapa e bolinhas",
-      stepsBox(at()).querySelector(".stepbar").textContent.includes("Médico assinar") &&
-        stepsBox(at()).querySelectorAll(".dots i.on").length === 1,
+      "D linha mostra o próximo passo",
+      row(at()).querySelector(".nextstep").textContent.includes("Médico assinar") &&
+        row(at()).querySelector(".nextstep").textContent.includes("1/3"),
     );
-    stepsBox(at()).querySelector(".stepdo").click();
+    row(at()).querySelector(".stepdo").click();
     check(
-      "D '✓ Feito' conclui a próxima com um clique",
+      "D '✓ Feito' conclui o próximo passo",
       at().steps[1].done &&
-        stepsBox(at()).querySelector(".stepbar").textContent.includes("Reconhecer firma") &&
+        row(at()).querySelector(".nextstep").textContent.includes("Reconhecer firma") &&
         $("#toast").textContent.includes("Etapa feita"),
     );
     $("#toast").querySelector(".toastbtn").click();
     check("D desfazer a etapa", !at().steps[1].done);
-    stepsBox(at()).querySelector(".stepdo").click();
-    stepsBox(at()).querySelector(".stepdo").click();
-    check(
-      "D última etapa conclui a pendência",
-      at().status === "Concluído" && $("#toast").textContent.includes("etapas feitas"),
-    );
-    $("#toast").querySelector(".toastbtn").click();
-    check("D desfazer a conclusão", at().status === "Em andamento");
-    stepsBox(at()).querySelector(".steptoggle").click();
+    act(at(), "steps").click();
     check(
       "D etapas abrem na linha, sem janela",
       !$("#modal").open && stepsBox(at()).querySelectorAll(".steprowi").length === 3,
     );
-    stepsBox(at()).querySelectorAll(".steprowi input")[2].click();
-    check("D desmarcar direto na lista", !at().steps[2].done && !!stepsBox(at()).querySelector(".stepsopen"));
+    stepsBox(at()).querySelectorAll(".steprowi input")[0].click();
+    check("D desmarcar direto na lista", !at().steps[0].done && !!stepsBox(at()));
     const addIn = stepsBox(at()).querySelector(".stepadd [name=newStep]");
     addIn.value = "Levar para a pasta";
     addIn.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
@@ -174,13 +156,14 @@
     stepsBox(at()).querySelector(".steptoggle").click();
     check("D fechar a lista de etapas", !document.querySelector(`#rows .stepsopen`));
     const noSteps = data.tasks.find((t) => !t.steps.length && t.status !== "Concluído");
-    row(noSteps).querySelector(".addsteps").click();
+    act(noSteps, "steps").click();
     check(
       "D '+ etapas' abre o campo com cursor",
       document.activeElement === stepsBox(noSteps).querySelector(".stepadd [name=newStep]"),
     );
     stepsBox(noSteps).querySelector(".stepadd [name=newStep]").value = "Tirar cópia";
     stepsBox(noSteps).querySelector(".stepadd .btn").click();
+    toggleStepsOpen(noSteps.id);
     check(
       "D primeira etapa criada pela linha",
       noSteps.steps.length === 1 || T(noSteps.title).steps.length === 1,
@@ -195,10 +178,6 @@
     const folderItem = () =>
       data.tasks.find((t) => t.category === "Consulado" && !t.date && t.status !== "Concluído");
     listTasks();
-    check(
-      "E sem prazo próprio não repete o prazo da pasta",
-      !row(folderItem()).querySelector(".c-due .date"),
-    );
     check("E prazo da pasta vale por trás", dueDate(folderItem()) === "2026-11-15");
     const hf = document.querySelector('.morefilters [data-f="costf"]');
     hf.value = "Pago";
@@ -214,13 +193,6 @@
     setFilter("costf", "Todos");
     const sumText = () => document.querySelector("#sum .sumcard").textContent.replace(/\s/g, " ");
     check("E sem seleção soma tudo", sumText().includes(moneyFmt(totals(shown()).total)));
-    const pick = [T("Passagens"), at()];
-    pick.forEach((t) => row(t).querySelector("input.sel").click());
-    check(
-      "E soma só as marcadas",
-      sumText().includes(moneyFmt(totals(pick).total)) &&
-        document.querySelector(".sumnote").textContent.includes("2 de"),
-    );
     setFilter("cat", "Consulado");
     check(
       "E card da categoria aparece ao filtrar",
@@ -232,10 +204,8 @@
     const owe = data.tasks.find((t) => isCost(t) && !forecast(t).unknown && uncoveredCur(t) > 0 && t.status !== "Concluído");
     filter = "Não concluídos";
     render();
-    const before = totals(data.tasks.filter((t) => t.category === owe.category)).total;
-    const sel2 = row(owe).querySelector(".statussel");
-    sel2.value = "Concluído";
-    sel2.dispatchEvent(new Event("change"));
+    const before = totals(data.tasks.filter((t) => t.category === owe.category)).open;
+    setStatus(owe.id, "Concluído");
     check(
       "E2 concluir avisa o que falta pagar",
       $("#toast").textContent.includes("Falta pagar") &&
@@ -246,7 +216,7 @@
       !row(owe) && document.querySelector("#sum .sumcard").textContent.replace(/\s/g, " ").includes(moneyFmt(totals(data.tasks.filter((t) => cat === "Todas" || t.category === cat)).total)),
     );
     check(
-      "E2 categoria mostra pago de total",
+      "E2 categoria mostra quanto falta",
       [...document.querySelectorAll(".tghead")].some((h) => h.textContent.includes(owe.category) && h.textContent.replace(/\s/g, " ").includes(moneyFmt(before))),
     );
     setFilter("costf", "A pagar");
@@ -257,27 +227,24 @@
       !!row(owe) && [...document.querySelectorAll("#rows tbody tr[data-id]")].every((r) => outstandingBRL(data.tasks.find((t) => t.id === r.dataset.id)) > 0),
     );
     render();
-    const payState = row(owe).querySelector(".paystate"),
-      payButton = row(owe).querySelector(".paylink"),
-      payStateRect = payState.getBoundingClientRect(),
-      payButtonRect = payButton.getBoundingClientRect();
+    act(owe, "pay").click();
+    const picks = [...document.querySelectorAll("#modal .paysrc")].map((b) => b.textContent);
     check(
-      "E2 status e ação de pagamento têm hierarquia visual",
-      getComputedStyle(row(owe).querySelector(".c-pay")).display === "flex" &&
-        (payStateRect.right <= payButtonRect.left + 1 || payStateRect.bottom <= payButtonRect.top + 1) &&
-        !!payButton.getAttribute("aria-label"),
-      {
-        display: getComputedStyle(row(owe).querySelector(".c-pay")).display,
-        state: payStateRect.toJSON(),
-        button: payButtonRect.toJSON(),
-        label: payButton.getAttribute("aria-label"),
-      },
+      "E2 'Marcar pago' pergunta salário ou Santander",
+      $("#modal").open && picks.some((x) => x.includes("Salário")) && picks.some((x) => x.includes("Santander Consulado")),
+      picks,
     );
+    const consul = S("Santander Consulado"),
+      res0 = sourceStats()[consul.id].used;
+    document.querySelector(`#modal .paysrc[data-src="${consul.id}"]`).click();
     check(
-      "E2 'Marcar pago' na linha abre o pagamento",
-      (payButton.click(), $("#modal").open && $("#modal").textContent.includes("Já paguei")),
+      "E2 pago com a reserva sai do Santander",
+      payStatus(owe).label === "Pago" &&
+        owe.payments.at(-1).split[0].sourceId === consul.id &&
+        near(sourceStats()[consul.id].used - res0, owe.payments.at(-1).brl) &&
+        !$("#modal").open,
     );
-    $("#modal").close();
+    owe.payments.pop();
     owe.status = "Pendente";
     costF = "Todos";
     save();
@@ -300,7 +267,7 @@
         pp.payments[0].split[0].sourceId === sal.id &&
         payStatus(pp).label === "Pago",
     );
-    const venda = S("Venda do apartamento").id;
+    const venda = S("Santander Consulado").id;
     editTask();
     set("title", "Notebook");
     set("kind", "cost");
@@ -338,6 +305,14 @@
     check("F câmbio não altera o que já foi pago", paidBRL(eurT) === paidBefore);
     data.rate = 6;
     listTasks();
+    check("F etiqueta da fonte na linha", row(pp).querySelector(".srcpill.sal")?.textContent.includes("Salário"));
+    check("F etiqueta da reserva na linha", row(nb()).querySelector(".srcpill.res")?.textContent.includes("Santander"));
+    setFilter("src", "Salário");
+    check(
+      "F filtro Salário mostra só o salário",
+      !!row(pp) && !row(nb()) && [...document.querySelectorAll("#rows tr[data-id]")].every((r) => ["sal", "mix"].includes(bucket(data.tasks.find((t) => t.id === r.dataset.id)))),
+    );
+    setFilter("src", "Todas");
     check(
       "F coluna Pagamento separada do valor",
       row(nb()).querySelector(".c-pay").textContent.includes("parcelas") &&
@@ -371,6 +346,19 @@
     page = "overview";
     render();
     check("H visão geral sem bloco de abertura", !document.querySelector(".hero"));
+    const goal0 = data.consulGoal,
+      cur = consulInfo().current;
+    data.consulGoal = cur + 1000;
+    render();
+    check(
+      "H aviso quando a reserva está abaixo da meta",
+      document.querySelector(".consul .alert.late")?.textContent.includes("Abaixo da meta do consulado"),
+    );
+    data.consulGoal = Math.max(1, cur - consulInfo().reserved - 1000);
+    render();
+    check("H sem aviso quando está acima da meta", !!document.querySelector(".consul .alert.done"));
+    data.consulGoal = goal0;
+    render();
     const nx = [...document.querySelectorAll(".nextrow")];
     check("H até 5 próximas pendências", nx.length > 0 && nx.length <= 5);
     nx[0].click();
@@ -379,6 +367,8 @@
       page === "tasks" && !!document.querySelector("#rows tr.flash"),
     );
 
+    page = "overview";
+    render();
     const tp = document.querySelector(".tip");
     tp.click();
     check("H dica ⓘ abre ao tocar", getComputedStyle(tp.querySelector(".tiptext")).display === "block");

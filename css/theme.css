@@ -1048,6 +1048,288 @@ nav.subnav button.on small {
   }
 }
 
+/* Pendências enxutas: concluir, nome, observação, fonte, valor e ⋯ */
+.plist,
+.plist tbody {
+  display: block;
+  width: 100%;
+}
+.plist tr[data-id] {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto minmax(96px, auto) 44px;
+  grid-template-areas: "chk task src money act";
+  align-items: center;
+  gap: 4px 14px;
+  margin-bottom: 8px;
+  padding: 12px 8px 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--glass);
+  transition:
+    background 0.25s,
+    border-color 0.25s;
+}
+.plist tr[data-id]:hover {
+  border-color: var(--line-2);
+  background: var(--glass-2);
+}
+.plist td {
+  display: block;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+.plist .c-check {
+  grid-area: chk;
+}
+.plist .c-task {
+  grid-area: task;
+}
+.plist .c-src {
+  grid-area: src;
+}
+.plist .c-money {
+  grid-area: money;
+  text-align: right;
+}
+.plist .c-act {
+  grid-area: act;
+}
+.plist .donebtn {
+  width: 26px;
+  height: 26px;
+  margin: 0;
+  border-radius: 8px;
+}
+.plist .link.title {
+  display: block;
+  padding: 0;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: left;
+}
+.plist .tnotes {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.plist .nextstep {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-top: 6px;
+  font-size: 13px;
+}
+.plist .nextstep span {
+  min-width: 0;
+  color: var(--muted);
+}
+.plist .nextstep b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.plist .nextstep.alldone b {
+  color: var(--success);
+}
+.plist .nextstep .stepdo {
+  min-height: 32px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.plist tr.st-done .link.title {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.plist .amount-sm {
+  font-size: 15px;
+}
+.plist .c-pay small {
+  padding: 0;
+  background: none;
+  font-size: 12px;
+}
+.plist .rowmenu > summary {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+}
+.plist tr.subrow {
+  display: block;
+  margin: -4px 0 12px 46px;
+}
+.plist tr.subrow td {
+  display: block;
+  padding: 0;
+  border: 0;
+}
+.plist tr.flash {
+  border-color: var(--saffron);
+}
+.srcpill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.srcpill .dot,
+.chip .dot,
+.sumgrid .dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.srcpill.sal {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.srcpill.res,
+.srcpill.mix {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.chip.src-sal,
+.chip.src-res {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.chip.src-sal .dot {
+  color: var(--success);
+}
+.chip.src-res .dot {
+  color: var(--saffron);
+}
+.chip.on .dot {
+  color: inherit;
+}
+.chipsep {
+  width: 1px;
+  height: 24px;
+  align-self: center;
+  margin: 0 4px;
+  background: var(--line-2);
+}
+.tghead {
+  align-items: flex-end;
+  margin-top: 18px;
+}
+.tghead .eyebrow,
+.consul .eyebrow {
+  display: block;
+  color: var(--saffron);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.tghead h3 {
+  margin: 2px 0 6px;
+}
+.sumgrid .sal b {
+  color: var(--success);
+}
+.sumgrid .res b {
+  color: var(--warning);
+}
+.sumgrid .sal > small:first-child,
+.sumgrid .res > small:first-child {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sumgrid .sal .dot {
+  color: var(--success);
+}
+.sumgrid .res .dot {
+  color: var(--saffron);
+}
+.nextside {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Reserva do consulado na visão geral */
+.consul .paneltop {
+  align-items: flex-end;
+}
+.consul .amount {
+  margin-top: 4px;
+  font-size: clamp(28px, 3vw, 38px);
+  font-weight: 600;
+}
+.consul .goal {
+  display: grid;
+  text-align: right;
+}
+.consul .goal b {
+  font-family: var(--display);
+  font-size: 20px;
+}
+.consul .consulrow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  margin: 8px 0 14px;
+}
+.consul.done .bar span {
+  background: var(--success);
+}
+.consul.late .amount {
+  color: var(--danger);
+}
+
+/* Marcar pago: duas escolhas grandes */
+.paywho {
+  margin: 18px 0 10px;
+  font-weight: 600;
+}
+.paypick {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.btn.paysrc {
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+  min-height: 72px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  text-align: left;
+}
+.btn.paysrc span {
+  font-size: 16px;
+}
+.btn.paysrc small {
+  color: var(--muted);
+  font-weight: 500;
+}
+.btn.paysrc.sal {
+  border-color: rgba(94, 230, 160, 0.4);
+}
+.btn.paysrc.res {
+  border-color: rgba(245, 184, 65, 0.5);
+}
+
 /* Tela de login */
 .login {
   background: var(--bg);
@@ -1127,6 +1409,33 @@ nav.subnav button.on small {
   }
   .card.kpi {
     min-height: 0;
+  }
+  /* Pendência no celular: nome em cima; fonte e valor numa segunda linha */
+  .plist tr[data-id] {
+    grid-template-columns: 30px auto minmax(0, 1fr) 40px;
+    grid-template-areas:
+      "chk task task act"
+      ". src money money";
+    gap: 8px 10px;
+    padding: 12px 4px 12px 12px;
+  }
+  .plist .c-src:empty {
+    display: none;
+  }
+  .plist .c-money {
+    text-align: left;
+  }
+  .plist tr.subrow {
+    margin-left: 0;
+  }
+  .sumgrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sumgrid .open {
+    grid-column: 1 / -1;
+  }
+  .chipsep {
+    display: none;
   }
   /* Fontes no celular: nome e saldo livre em destaque, o resto numa linha pequena */
   .cardtable.sources tr {

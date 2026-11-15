@@ -61,7 +61,7 @@ document.addEventListener(
     e.stopPropagation();
     e.preventDefault();
     b.classList.add("popping");
-    b.closest(".checkrow, .nextrow")?.classList.add("leaving");
+    b.closest(".checkrow, .nextrow, tr[data-id]")?.classList.add("leaving");
     setTimeout(() => {
       b.dataset.animated = "1";
       b.click();

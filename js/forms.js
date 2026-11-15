@@ -61,7 +61,7 @@ const unpaid = (t) => {
     }
   },
   owed = (t) => (unpaid(t) > 0.005 ? `. Falta pagar ${money(unpaid(t), t.currency)}` : ""),
-  payAction = (t) => (unpaid(t) > 0.005 ? [{ label: "Já paguei", fn: () => editPayment(t.id) }] : []);
+  payAction = (t) => (unpaid(t) > 0.005 ? [{ label: "Já paguei", fn: () => quickPay(t.id) }] : []);
 // Etapas direto na lista: abrir/fechar, marcar, concluir a próxima e adicionar, sem janela
 const openSteps = new Set();
 // Redesenha a lista mantendo a posição da página e, se pedido, o foco no campo de nova etapa
@@ -94,10 +94,6 @@ function showSteps(id) {
   row?.scrollIntoView({ block: "center" });
   if (!t?.steps.length) visibleStepInput(id)?.focus();
 }
-function toggleStepsOpen(id) {
-  openSteps.has(id) ? openSteps.delete(id) : openSteps.add(id);
-  refreshSteps(id, openSteps.has(id) && !data.tasks.find((x) => x.id === id)?.steps.length);
-}
 // Conclui a próxima etapa com um clique, com opção de desfazer
 function doNextStep(id) {
   const t = data.tasks.find((x) => x.id === id),
@@ -118,6 +114,10 @@ function doNextStep(id) {
         refreshSteps(id);
       },
     });
+}
+function toggleStepsOpen(id) {
+  openSteps.has(id) ? openSteps.delete(id) : openSteps.add(id);
+  refreshSteps(id, openSteps.has(id) && !data.tasks.find((x) => x.id === id)?.steps.length);
 }
 function toggleStep(id, stepId, v) {
   const t = data.tasks.find((x) => x.id === id),

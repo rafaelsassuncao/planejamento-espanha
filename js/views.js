@@ -56,6 +56,19 @@ function cards() {
   return `<div class="cards">${card("green", "wallet", "Saldo atual", o.current, "", `Recebido ${money(o.received)} − pago ${money(o.paid)}`)}${card("amber", "file", "Custo total", o.total, `Pago ${money(o.paid)} · falta ${money(o.open)}${e ? `<br>${money(e, "EUR")} em euro` : ""}${o.unknown ? "<br>" + incomplete(o.unknown) : ""}`, est > 0.005 ? `${money(est)} em estimativas` : "")}${card("mint", "chart", "Saldo previsto", o.projected, `${o.expected ? `+ ${money(o.expected)} a receber` : ""}`, "Saldo atual menos o que falta pagar")}</div>`;
 }
 
+// Reserva do Santander apresentada ao consulado: saldo, meta e aviso quando fica abaixo
+function consulCard() {
+  const c = consulInfo(),
+    pct = Math.max(0, Math.min(100, Math.round((c.current / c.goal) * 100))),
+    gap = (v) => money(c.goal - v),
+    alert =
+      c.current < c.goal - 0.005
+        ? ["late", "alert", `Abaixo da meta do consulado: faltam ${gap(c.current)}.`]
+        : c.after < c.goal - 0.005
+          ? ["warn", "alert", `Pagando o que está previsto sair da reserva, ela fica ${gap(c.after)} abaixo da meta.`]
+          : ["done", "check", "Reserva acima da meta do consulado."];
+  return `<section class="panel consul ${alert[0]}"><div class="paneltop"><div><small class="eyebrow">Reserva do consulado · Santander</small><div class="amount">${money(c.current)}</div></div><div class="goal"><small>Meta</small><b>${money(c.goal)}</b></div></div><div class="bar"><span style="width:${pct}%"></span></div><div class="consulrow"><small>${pct}% da meta</small>${c.reserved > 0.005 ? `<small>Previsto sair da reserva: <b>${money(c.reserved)}</b> · fica ${money(c.after)}</small>` : ""}</div><div class="alert ${alert[0]}">${icon(alert[1])}<span>${alert[2]}</span></div></section>`;
+}
 function folderCard() {
   const f = folderInfo();
   if (!f) return "";
@@ -144,10 +157,10 @@ function nextTasks() {
     .slice(0, 5);
   return next.length
     ? `<div class="nextlist"><small>Próximas pendências</small>${next
-        .map((t) => {
-          const d = dueStatus(t);
-          return `<button type="button" class="nextrow ${statusRow(t.status)}" onclick="showTask('${t.id}')"><span><b>${esc(t.title)}</b><small>${esc(t.category)}${(t.steps || []).find((s) => !s.done) ? " · Próxima etapa: " + esc((t.steps || []).find((s) => !s.done).text) : ""}</small></span><span class="nextside">${d && ["late", "today", "near"].includes(d.key) ? badge(d.label, d.cls) : ""}<span class="badge ${statusCls(t.status)}">${esc(t.status)}</span></span></button>`;
-        })
+        .map(
+          (t) =>
+            `<button type="button" class="nextrow ${statusRow(t.status)}" onclick="showTask('${t.id}')"><span><b>${esc(t.title)}</b><small>${esc(t.category)}${t.status === "Em andamento" ? " · em andamento" : ""}</small></span><span class="nextside">${safe(() => srcPill(t))}${isCost(t) && forecast(t).known > 0 ? `<b class="amount-sm">${money(forecast(t).known, t.currency)}</b>` : ""}</span></button>`,
+        )
         .join("")}</div>`
     : "";
 }
@@ -249,11 +262,11 @@ function render() {
     pct = data.tasks.length ? Math.round((done / data.tasks.length) * 100) : 0;
   if (page === "overview") {
     $("#app").innerHTML =
-      `<header class="pagehead"><div><h1>${todayTitle()}</h1></div></header>${cards()}<section class="panel"><div class="paneltop"><h3>Progresso</h3><span class="badge done">${pct}%</span></div><div class="bar"><span style="width:${pct}%"></span></div><p class="muted">${data.tasks.length ? `${done} de ${data.tasks.length} concluídas` : "Adicione uma pendência para começar."}</p>${nextTasks()}${data.tasks.length ? `<button class="link" onclick="go('tasks')">Ver pendências →</button>` : `<button class="btn primary" onclick="editTask()">+ Criar pendência</button>`}</section>${folderCard()}`;
+      `<header class="pagehead"><div><h1>${todayTitle()}</h1></div></header>${cards()}${safe(consulCard)}<section class="panel"><div class="paneltop"><h3>Progresso</h3><span class="badge done">${pct}%</span></div><div class="bar"><span style="width:${pct}%"></span></div><p class="muted">${data.tasks.length ? `${done} de ${data.tasks.length} concluídas` : "Adicione uma pendência para começar."}</p>${nextTasks()}${data.tasks.length ? `<button class="link" onclick="go('tasks')">Ver pendências →</button>` : `<button class="btn primary" onclick="editTask()">+ Criar pendência</button>`}</section>${folderCard()}`;
   }
   if (page === "tasks") {
     $("#app").innerHTML =
-      `${subnav("tasks")}<div class="tpage"><div class="tphead"><div><h1>Pendências e custos</h1></div><div class="panelactions"><button class="btn" onclick="manageCategories()">Categorias</button><button class="btn primary big" onclick="editTask()">+ Nova pendência</button></div></div><div id="sum"></div><div class="tools2"><label class="searchbox">${icon("search")}<input id="search" type="search" aria-label="Buscar pendência" placeholder="Buscar pendência ou etapa" value="${esc(search)}"></label><details class="morefilters"><summary>Filtros<span id="morecount"></span></summary><div class="menu">${["due", "costf", "sort"].map((k) => `<label>${FILTERS[k].label}${filterSelect(k)}</label>`).join("")}</div></details><div id="chips" class="chips"></div></div><div id="rows"></div></div>`;
+      `${subnav("tasks")}<div class="tpage"><div class="tphead"><div><h1>Pendências e custos</h1></div><div class="panelactions"><button class="btn" onclick="manageCategories()">Categorias</button><button class="btn primary big" onclick="editTask()">+ Nova pendência</button></div></div><div id="sum"></div><div class="tools2"><label class="searchbox">${icon("search")}<input id="search" type="search" aria-label="Buscar pendência" placeholder="Buscar pendência ou etapa" value="${esc(search)}"></label><details class="morefilters"><summary>Filtros<span id="morecount"></span></summary><div class="menu">${["costf"].map((k) => `<label>${FILTERS[k].label}${filterSelect(k)}</label>`).join("")}</div></details><div id="chips" class="chips"></div></div><div id="rows"></div></div>`;
     updateRows();
     $("#search").oninput = (e) => {
       search = e.target.value;
@@ -271,7 +284,7 @@ function render() {
   }
   if (page === "settings")
     $("#app").innerHTML =
-      `<header class="pagehead compact"><div><h1>Ajustes</h1></div></header><div class="grid"><section class="panel"><h3>Cotação do euro</h3><label>1 euro = R$ <b>${fmtRate(data.rate)}</b></label><p class="notice">${rateInfo()}</p></section><section class="panel"><h3 style="margin-bottom:20px">Backup</h3><button class="btn primary" onclick="backup()">↓ Exportar backup</button> <button class="btn" onclick="$('#import').click()">↑ Importar backup</button><input hidden id="import" type="file" accept="application/json" onchange="restore(this)"></section><section class="panel"><h3>Cartões e contas</h3><button class="btn" onclick="manageAccounts()">Gerenciar cartões e contas</button></section><section class="panel"><h3>Conta</h3><p class="muted">${esc(window.currentEmail)}</p><button class="btn" onclick="if(confirm('Sair desta conta?'))logout()">Sair</button></section></div>`;
+      `<header class="pagehead compact"><div><h1>Ajustes</h1></div></header><div class="grid"><section class="panel"><h3>Cotação do euro</h3><label>1 euro = R$ <b>${fmtRate(data.rate)}</b></label><p class="notice">${rateInfo()}</p></section><section class="panel"><h3>Meta do consulado</h3><label>Valor que deve ficar na reserva do Santander<input type="number" min="1" step="1000" value="${data.consulGoal}" onchange="setGoal(this.value)"></label><p class="sub">Abaixo disso, a visão geral avisa.</p></section><section class="panel"><h3 style="margin-bottom:20px">Backup</h3><button class="btn primary" onclick="backup()">↓ Exportar backup</button> <button class="btn" onclick="$('#import').click()">↑ Importar backup</button><input hidden id="import" type="file" accept="application/json" onchange="restore(this)"></section><section class="panel"><h3>Cartões e contas</h3><button class="btn" onclick="manageAccounts()">Gerenciar cartões e contas</button></section><section class="panel"><h3>Conta</h3><p class="muted">${esc(window.currentEmail)}</p><button class="btn" onclick="if(confirm('Sair desta conta?'))logout()">Sair</button></section></div>`;
 }
 
 const byDue = (a, b) =>
@@ -355,6 +368,26 @@ const FILTERS = {
     set: (v) => (sort = v),
   },
 };
+// Filtro por fonte: salário ou reserva do consulado (Santander)
+let srcF = "Todas";
+FILTERS.src = {
+  label: "Fonte",
+  opts: () => [
+    ["Todas", "Todas"],
+    ["Salário", "Salário"],
+    ["Reserva", "Santander Consulado"],
+  ],
+  get: () => srcF,
+  set: (v) => (srcF = v),
+};
+const matchSrc = (t) => {
+  if (srcF === "Todas") return true;
+  try {
+    return (srcF === "Reserva" ? ["res", "mix"] : ["sal", "mix"]).includes(bucket(t));
+  } catch {
+    return false;
+  }
+};
 const filterSelect = (k, cls = "") =>
   `<select data-f="${k}" class="${cls}" aria-label="${FILTERS[k].label}" onchange="setFilter('${k}',this.value)">${selectOpts(FILTERS[k].opts(), FILTERS[k].get())}</select>`;
 // Ao trocar um filtro, a seleção começa de novo
@@ -363,16 +396,6 @@ function setFilter(k, v) {
   selected.clear();
   k === "sort" || k === "cat" ? render() : updateRows();
 }
-function toggleSelect(id) {
-  selected.has(id) ? selected.delete(id) : selected.add(id);
-  updateRows();
-}
-function selectAll(on) {
-  document
-    .querySelectorAll("#rows tr[data-id]")
-    .forEach((r) => (on ? selected.add(r.dataset.id) : selected.delete(r.dataset.id)));
-  updateRows();
-}
 function updateRows() {
   const text = (t) =>
       (cat === "Todas" || t.category === cat) &&
@@ -380,7 +403,7 @@ function updateRows() {
       (t.title + " " + t.notes + " " + (t.steps || []).map((s) => s.text).join(" "))
         .toLowerCase()
         .includes(search.toLowerCase()),
-    base = (t) => text(t) && matchCost(t),
+    base = (t) => text(t) && matchCost(t) && matchSrc(t),
     byStatus = (t, f = filter) =>
       f === "Todos" || (f === "Não concluídos" ? t.status !== "Concluído" : t.status === f),
     hiddenDone =
@@ -406,6 +429,7 @@ function updateRows() {
     }).length,
     chip = (label, n, on, fn, cls = "") =>
       `<button type="button" class="chip${on ? " on" : ""}${cls}" aria-pressed="${on}" onclick="${fn}">${label} <span>${n}</span></button>`;
+  const costLabel = Object.fromEntries(FILTERS.costf.opts())[costF];
   $("#chips").innerHTML =
     [
       ["Não concluídos", "Não concluídas"],
@@ -416,25 +440,20 @@ function updateRows() {
     ]
       .map(([f, label]) => chip(label, count(f), filter === f, `setFilter('filter','${f}')`))
       .join("") +
-    (toPay || costF === "A pagar"
-      ? chip(
-          "A pagar",
-          toPay,
-          costF === "A pagar",
-          `setFilter('costf','${costF === "A pagar" ? "Todos" : "A pagar"}')`,
-          " warn",
-        )
-      : "") +
-    (noValue || costF === "Sem valor"
-      ? chip(
-          "Falta o valor",
-          noValue,
-          costF === "Sem valor",
-          `setFilter('costf','${costF === "Sem valor" ? "Todos" : "Sem valor"}')`,
-          " warn",
-        )
+    '<span class="chipsep" aria-hidden="true"></span>' +
+    [
+      ["Salário", "Salário", " src-sal"],
+      ["Reserva", "Santander Consulado", " src-res"],
+    ]
+      .map(
+        ([v, label, cls]) =>
+          `<button type="button" class="chip${srcF === v ? " on" : ""}${cls}" aria-pressed="${srcF === v}" onclick="setFilter('src','${srcF === v ? "Todas" : v}')"><i class="dot"></i>${label}</button>`,
+      )
+      .join("") +
+    (costF !== "Todos"
+      ? `<button type="button" class="chip on warn" aria-label="Tirar o filtro ${esc(costLabel)}" onclick="setFilter('costf','Todos')">${esc(costLabel)} ✕</button>`
       : "");
-  const more = (due !== "Todos") + !["Todos", "Sem valor", "A pagar"].includes(costF) + (sort !== "manual");
+  const more = (costF !== "Todos") + (sort !== "manual");
   $("#morecount").textContent = more ? ` · ${more}` : "";
   $("#sum").innerHTML =
     (cat !== "Todas" && costF === "Todos" ? safe(() => categoryCard(cat)) : "") + safe(() => summary(scope, list));
@@ -446,7 +465,7 @@ function updateRows() {
       : [[cat, list]];
   $("#rows").innerHTML =
     (list.length
-      ? groups.map(([c, a]) => safe(() => taskGroup(c, a, cat === "Todas", scope))).join("")
+      ? groups.map(([c, a], i) => safe(() => taskGroup(c, a, cat === "Todas", scope, i + 1))).join("")
       : '<div class="empty">Nenhuma pendência por aqui.</div>') +
     (hiddenDone
       ? `<p class="donenote">${hiddenDone} ${hiddenDone === 1 ? "concluída oculta" : "concluídas ocultas"} · <button type="button" class="link" onclick="setFilter('filter','Todos')">mostrar</button></p>`
@@ -454,31 +473,23 @@ function updateRows() {
 }
 // Grupo de uma categoria: título com quantidade e quanto falta pagar, depois a lista
 // Os valores da categoria contam também as concluídas, mesmo que estejam ocultas na lista
-function taskGroup(c, a, head, scope = a) {
+function taskGroup(c, a, head, scope = a, n = 1) {
   let s = { paid: 0, open: 0, total: 0 };
+  const all = scope.filter((t) => t.category === c),
+    done = all.filter((t) => t.status === "Concluído").length;
   try {
-    s = totals(scope.filter((t) => t.category === c));
+    s = totals(all);
   } catch {}
-  const folder = data.folder && c === data.folder.category && data.folder.deadline,
-    info = [
-      folder ? "prazo da pasta " + fmtDate(data.folder.deadline).slice(0, 5) : "",
-      s.total > 0.005 ? `pago ${money(s.paid)} de ${money(s.total)}` : "",
-      s.open > 0.005 ? `<b class="owe">falta ${money(s.open)}</b>` : "",
-    ]
-      .filter(Boolean)
-      .join(" · ");
-  return `<section class="tgroup">${head ? `<div class="tghead"><h3><button type="button" class="link grouplink" onclick="pickCat(${jsArg(c)})">${esc(c)}</button> <small>· ${a.length} ${a.length === 1 ? "item" : "itens"}</small></h3>${info ? `<small>${info}</small>` : ""}</div>` : ""}${taskTable(a, sort === "manual", true)}</section>`;
+  return `<section class="tgroup">${head ? `<div class="tghead"><div><small class="eyebrow">Categoria ${String(n).padStart(2, "0")}</small><h3><button type="button" class="link grouplink" onclick="pickCat(${jsArg(c)})">${esc(c)}</button></h3></div><small>${done} de ${all.length} concluídas${s.open > 0.005 ? ` · <b class="owe">falta ${money(s.open)}</b>` : ""}</small></div>` : ""}${taskTable(a)}</section>`;
 }
 // Totais: as marcadas para somar ou, sem marcação, tudo da categoria/busca (inclusive as concluídas)
-function summary(scope, list = scope) {
-  const picked = list.filter((t) => selected.has(t.id)),
-    chosen = picked.length ? picked : scope,
-    s = totals(chosen),
-    e = eurLaunched(chosen),
-    pct = s.total > 0 ? Math.round((s.paid / s.total) * 100) : 0,
-    box = (label, v, cls, extra = "") =>
-      `<div class="${cls}"><small>${label}</small><b>${money(v)}</b>${extra}</div>`;
-  return `<section class="sumcard"><div class="sumgrid">${box(`Custo total${cat === "Todas" ? "" : " em " + esc(cat)}`, s.total, "", e ? `<small>${money(e, "EUR")} em euro</small>` : "")}${box("Já pago", s.paid, "paid")}${box("Falta pagar", s.open, "open")}</div><div class="sumbar"><div class="bar"><span style="width:${pct}%"></span></div><small>${pct}% pago</small></div>${picked.length ? `<p class="sumnote">${picked.length} de ${list.length} somadas <button type="button" class="link" onclick="selectAll(false)">limpar</button></p>` : ""}</section>`;
+function summary(scope) {
+  const s = totals(scope),
+    b = openByBucket(scope.filter(isCost)),
+    done = scope.filter((t) => t.status === "Concluído").length,
+    pct = scope.length ? Math.round((done / scope.length) * 100) : 0,
+    box = (cls, label, v, extra = "") => `<div class="${cls}"><small>${label}</small><b>${money(v)}</b>${extra}</div>`;
+  return `<section class="sumcard"><div class="sumgrid">${box("open", "Falta pagar", s.open, `<small>de ${money(s.total)}${b.none > 0.005 ? ` · ${money(b.none)} sem fonte` : ""}</small>`)}${box("sal", '<i class="dot"></i>Do salário', b.sal)}${box("res", '<i class="dot"></i>Da reserva Santander', b.res)}</div><div class="sumbar"><div class="bar"><span style="width:${pct}%"></span></div><small>${done} de ${scope.length} concluídas</small></div></section>`;
 }
 
 function qtyBlock(t) {
@@ -494,29 +505,6 @@ const MONTHS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "
     const [y, m, d] = s.split("-");
     return `${Number(d)} ${MONTHS[Number(m) - 1]} ${y}`;
   };
-// Prazo: data em destaque; "Dentro do prazo" discreto; atraso e vencimento próximo em selo
-function dueCell(t) {
-  const d = dueStatus(t),
-    urgent = d && ["late", "today", "near"].includes(d.key);
-  if (!t.date)
-    return urgent && inFolder(t)
-      ? `${badge(d.label, d.cls)}<small class="muted">prazo da pasta</small>`
-      : '<span class="muted small">—</span>';
-  return `<span class="date">${fmtDay(t.date)}</span>${urgent ? badge(d.label, d.cls) : d?.key === "ok" ? '<small class="ontime">no prazo</small>' : ""}`;
-}
-// Etapas na linha: bolinhas, próxima etapa e "✓ Feito"; a lista completa abre logo abaixo
-function stepsLine(t) {
-  const steps = t.steps || [],
-    open = openSteps.has(t.id),
-    next = steps.find((s) => !s.done),
-    d = steps.filter((s) => s.done).length;
-  if (!steps.length)
-    return isClosed(t) || open
-      ? ""
-      : `<button type="button" class="link addsteps" onclick="toggleStepsOpen('${t.id}')">+ etapas</button>`;
-  const dots = steps.map((s) => `<i class="${s.done ? "on" : s === next ? "next" : ""}"></i>`).join("");
-  return `<div class="stepbar${next ? "" : " alldone"}"><span class="dots" title="${d} de ${steps.length} etapas feitas">${dots}</span><span class="steptext">${next ? `<b>${esc(next.text)}</b>${next.date ? `<small>até ${fmtDay(next.date)}</small>` : ""}` : "<b>Etapas feitas ✓</b>"}</span>${next ? `<button type="button" class="stepdo" onclick="doNextStep('${t.id}')" title="Marcar “${esc(next.text)}” como feita">✓ Feito</button>` : ""}<button type="button" class="link steptoggle" aria-expanded="${open}" onclick="toggleStepsOpen('${t.id}')">${d}/${steps.length} ${open ? "▴" : "▾"}</button></div>`;
-}
 // Lista completa das etapas, para marcar, remover e adicionar
 function stepsList(t) {
   const steps = t.steps || [];
@@ -530,9 +518,42 @@ function stepsList(t) {
     )}<div class="stepadd"><input name="newStep" maxlength="160" placeholder="${steps.length ? "Nova etapa…" : "Primeira etapa, ex.: tirar cópia"}" aria-label="Nova etapa" onkeydown="if(event.key==='Enter'){event.preventDefault();addStepInline('${t.id}',this)}"><input name="newStepDate" type="date" aria-label="Prazo da etapa"><button type="button" class="btn small" onclick="addStepInline('${t.id}',this)">Adicionar</button><button type="button" class="link steptoggle" onclick="toggleStepsOpen('${t.id}')">${steps.length ? "fechar" : "cancelar"}</button></div></div>`;
 }
 const isClosed = (t) => t.status === "Concluído";
-// Situação do pagamento, em texto curto abaixo do valor
-function payCell(t) {
+function originText(t) {
+  if (!t.alloc.length) return "Fonte não definida";
+  return t.alloc
+    .map((a) => sourceName(a.sourceId) + (a.brl !== null && a.brl !== "" ? ` (${money(num(a.brl))})` : ""))
+    .join(" + ");
+}
+// Etiqueta da fonte de pagamento da pendência
+function srcPill(t) {
+  const k = bucket(t);
+  if (!k) return "";
+  const label = k === "mix" ? "Salário + Santander" : k === "res" ? "Santander Consulado" : taskSources(t).map(sourceName).join(" + ");
+  return `<span class="srcpill ${k}"><i class="dot"></i>${esc(label)}</span>`;
+}
+// Próximo passo da pendência, com "✓ Feito" para avançar sem abrir nada
+function nextStepLine(t) {
+  const steps = t.steps || [],
+    next = steps.find((s) => !s.done),
+    d = steps.filter((s) => s.done).length;
+  if (!steps.length) return "";
+  return `<div class="nextstep${next ? "" : " alldone"}"><span>${next ? `Próximo passo: <b>${esc(next.text)}</b>` : "<b>Etapas feitas ✓</b>"} <small>${d}/${steps.length}</small></span>${next ? `<button type="button" class="stepdo" onclick="doNextStep('${t.id}')" title="Marcar “${esc(next.text)}” como feita">✓ Feito</button>` : ""}</div>`;
+}
+// Linha cinza abaixo do nome: andamento, compras e observação
+function taskNote(t) {
+  const parts = [
+      t.status === "Em andamento" ? "Em andamento" : "",
+      isCost(t) && t.multi ? `${fmtQty(bought(t))} de ${fmtQty(t.qty)} ${esc(t.unit || "un.")}` : "",
+      esc(t.notes),
+    ].filter(Boolean);
+  return parts.length ? `<small class="tnotes">${parts.join(" · ")}</small>` : "";
+}
+// Valor e, só quando ajuda, o estado do pagamento em texto pequeno
+function moneyCell(t) {
   if (!isCost(t)) return "";
+  const f = forecast(t);
+  if (!(f.known > 0))
+    return `<div class="c-val"><button type="button" class="link novalue" onclick="editTask('${t.id}')">Falta o valor</button></div>`;
   const ps = payStatus(t),
     parts = [];
   t.credits.forEach((c) => {
@@ -540,43 +561,20 @@ function payCell(t) {
     if (p < c.installments.length) parts.push(`${p} de ${c.installments.length} parcelas`);
   });
   if (ps.label === "Parcialmente pago") parts.unshift(`pago ${money(paidBRL(t))}`);
-  if (!parts.length && ps.label !== "Valor a definir") parts.push(ps.label.toLowerCase());
-  const owe = !forecast(t).unknown && uncoveredCur(t) > 0.005;
-  return (
-    (parts.length ? `<small class="paystate ${ps.cls}">${parts.join(" · ")}</small>` : "") +
-    (owe
-      ? `<button type="button" class="link paylink${isClosed(t) ? " late" : ""}" aria-label="${coveredCur(t) > 0.005 ? "Pagar o restante" : "Registrar pagamento"}" onclick="editPayment('${t.id}')">${coveredCur(t) > 0.005 ? "Pagar restante" : "Marcar pago"}</button>`
-      : "")
-  );
+  if (!parts.length && ps.label === "Pago") parts.push("pago");
+  return `<div class="c-val"><b class="amount-sm">${money(f.known, t.currency)}</b></div>${parts.length ? `<div class="c-pay"><small class="paystate ${ps.cls}">${parts.join(" · ")}</small></div>` : ""}`;
 }
-// Valor na moeda em que foi lançado, com o tipo (estimado/confirmado) em texto pequeno
-function valueCell(t) {
-  if (!isCost(t)) return '<span class="muted small">Sem custo</span>';
-  const f = forecast(t);
-  if (!(f.known > 0)) return `<button type="button" class="link novalue" onclick="editTask('${t.id}')">Falta o valor</button>`;
-  const kind = t.valueType === "estimado" ? "estimado" : t.valueType === "confirmado" ? "confirmado" : "";
-  return `<b class="amount-sm">${money(f.known, t.currency)}</b>${f.unknown ? "<small>+ a definir</small>" : ""}${kind || t.valueNote ? `<small class="vtag2">${kind}${t.valueNote ? tip(t.valueNote) : ""}</small>` : ""}`;
-}
-// Progresso das compras em etapas com a quantidade real adquirida (0 de 3 = barra vazia)
-function qtyProgress(t) {
-  if (!isCost(t) || !t.multi) return "";
-  const b = bought(t),
-    pct = Math.max(0, Math.min(100, Math.round((b / t.qty) * 100)));
-  return `<div class="qtyprog"><div class="bar mini" role="progressbar" aria-valuemin="0" aria-valuemax="${t.qty}" aria-valuenow="${b}"><span style="width:${pct}%"></span></div><small>${fmtQty(b)} de ${fmtQty(t.qty)} ${esc(t.unit || "un.")} comprados</small></div>`;
-}
-function originText(t) {
-  if (!t.alloc.length) return "Fonte não definida";
-  return t.alloc
-    .map((a) => sourceName(a.sourceId) + (a.brl !== null && a.brl !== "" ? ` (${money(num(a.brl))})` : ""))
-    .join(" + ");
-}
-function taskTable(a, manual = true, sel = false) {
+function taskTable(a) {
   if (!a.length) return '<div class="empty">Nenhuma pendência por aqui.</div>';
-  return `<table class="tlist${selected.size ? " has-sel" : ""}"><tbody>${a
+  return `<table class="plist"><tbody>${a
     .map((t) => {
       try {
-        const open = openSteps.has(t.id);
-        return `<tr data-id="${t.id}" class="${statusRow(t.status)}${sel && selected.has(t.id) ? " picked" : ""}${open ? " has-sub" : ""}"><td class="c-task"><div class="taskcell">${sel ? `<input class="sel" type="checkbox" aria-label="Selecionar ${esc(t.title)} para somar" ${selected.has(t.id) ? "checked" : ""} onchange="toggleSelect('${t.id}')">` : ""}${manual ? '<span class="draghandle" tabindex="0" role="button" aria-label="Arrastar pendência" title="Segure e arraste para reordenar">⠿</span>' : ""}<span class="tinfo"><button type="button" class="link title" onclick="editTask('${t.id}')">${esc(t.title)}</button>${t.notes ? `<small class="tnotes">${esc(t.notes)}</small>` : ""}${stepsLine(t)}${qtyProgress(t)}</span></div></td><td class="c-status"><select class="statussel ${statusCls(t.status) || "pend"}" aria-label="Andamento de ${esc(t.title)}" onchange="setStatus('${t.id}', this.value)">${STATUSES.map((s) => `<option ${s === t.status ? "selected" : ""}>${s}</option>`).join("")}</select></td><td class="c-due${t.date || ["late", "today", "near"].includes(dueStatus(t)?.key) ? "" : " nodue"}"><div class="stack">${dueCell(t)}</div></td><td class="c-money"><div class="c-val">${valueCell(t)}</div><div class="c-pay">${payCell(t)}</div></td><td class="c-act"><details class="rowmenu"><summary aria-label="Mais ações de ${esc(t.title)}" title="Mais ações">⋯</summary><div class="menu"><button type="button" data-act="edit" onclick="this.closest('details').open=false;editTask('${t.id}')">${icon("edit")}<span>Editar</span></button>${isCost(t) ? `<button type="button" data-act="pay" onclick="this.closest('details').open=false;openTask('${t.id}')">${icon("card")}<span>Pagamento</span></button>` : ""}<button type="button" onclick="this.closest('details').open=false;showSteps('${t.id}')">${icon("check")}<span>${(t.steps || []).length ? "Ver etapas" : "Adicionar etapas"}</span></button><button type="button" class="danger" onclick="this.closest('details').open=false;deleteTask('${t.id}')">${icon("trash")}<span>Excluir pendência</span></button></div></details></td></tr>${open ? `<tr class="subrow ${statusRow(t.status)}" data-for="${t.id}"><td colspan="5">${stepsList(t)}</td></tr>` : ""}`;
+        const open = openSteps.has(t.id),
+          done = isClosed(t),
+          owes = isCost(t) && !forecast(t).unknown && uncoveredCur(t) > 0.005,
+          item = (act, ic, label, fn, cls = "") =>
+            `<button type="button" data-act="${act}"${cls ? ` class="${cls}"` : ""} onclick="this.closest('details').open=false;${fn}">${icon(ic)}<span>${label}</span></button>`;
+        return `<tr data-id="${t.id}" class="${statusRow(t.status)}${open ? " has-sub" : ""}"><td class="c-check"><button type="button" class="donebtn${done ? " on" : ""}" aria-label="${done ? "Reabrir" : "Concluir"} ${esc(t.title)}" title="${done ? "Reabrir" : "Concluir"}" onclick="toggle('${t.id}',${!done})">${icon("check")}</button></td><td class="c-task"><button type="button" class="link title" onclick="editTask('${t.id}')">${esc(t.title)}</button>${taskNote(t)}${nextStepLine(t)}</td><td class="c-src">${srcPill(t)}</td><td class="c-money">${moneyCell(t)}</td><td class="c-act"><details class="rowmenu"><summary aria-label="Mais ações de ${esc(t.title)}" title="Mais ações">⋯</summary><div class="menu">${owes ? item("pay", "wallet", "Marcar pago", `quickPay('${t.id}')`) : ""}${item("edit", "edit", "Editar", `editTask('${t.id}')`)}${done ? "" : item("prog", "chart", t.status === "Em andamento" ? "Voltar para pendente" : "Marcar em andamento", `setStatus('${t.id}','${t.status === "Em andamento" ? "Pendente" : "Em andamento"}')`)}${item("steps", "check", (t.steps || []).length ? "Etapas" : "Adicionar etapas", `toggleStepsOpen('${t.id}')`)}${isCost(t) ? item("detail", "card", "Pagamentos", `openTask('${t.id}')`) : ""}${item("delete", "trash", "Excluir pendência", `deleteTask('${t.id}')`, "danger")}</div></details></td></tr>${open ? `<tr class="subrow" data-for="${t.id}"><td colspan="5">${stepsList(t)}</td></tr>` : ""}`;
       } catch (err) {
         return badRow(t, err);
       }
@@ -637,4 +635,11 @@ function incomeTable() {
           .join("")}</tbody></table></div>`
       : '<div class="empty">Nenhuma entrada registrada.</div>'
   }</section>`;
+}
+
+function setGoal(v) {
+  if (!(Number(v) > 0)) return toast("Informe um valor maior que zero.");
+  data.consulGoal = Number(v);
+  save();
+  toast("Meta salva");
 }

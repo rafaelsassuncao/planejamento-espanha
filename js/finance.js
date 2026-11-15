@@ -9,7 +9,36 @@ const isCost = (t) => t.kind === "cost",
   accountName = (id) => data.accounts.find((a) => a.id === id)?.name || "",
   methodName = (m) => METHODS.find((x) => x[0] === m)?.[1] || "Forma não informada",
   isConfirmed = (p) => p.confirmed !== false,
-  eur = (brlValue) => money(brlValue / data.rate, "EUR");
+  eur = (brlValue) => money(brlValue / data.rate, "EUR"),
+  isConsul = (id) => !!data.sources.find((s) => s.id === id)?.consulate;
+// Fontes de uma pendência: as dos pagamentos feitos ou, se nada foi pago, as planejadas
+function taskSources(t) {
+  const paid = outflows(t).flatMap((o) => o.split.map((s) => s.sourceId));
+  return [...new Set((paid.length ? paid : t.alloc.map((a) => a.sourceId)).filter(Boolean))];
+}
+// Balde da pendência: "sal" (salário e outras fontes), "res" (reserva do consulado) ou "mix"
+function bucket(t) {
+  const ids = taskSources(t),
+    res = ids.some(isConsul),
+    sal = ids.some((id) => !isConsul(id));
+  return res && sal ? "mix" : res ? "res" : sal ? "sal" : "";
+}
+// O que ainda falta pagar, separado por balde (usa a reserva por fonte de cada pendência)
+function openByBucket(list = data.tasks) {
+  const out = { sal: 0, res: 0, none: 0 };
+  list.forEach((t) =>
+    Object.entries(reserves(t)).forEach(([id, v]) => (out[!id ? "none" : isConsul(id) ? "res" : "sal"] += v)),
+  );
+  return out;
+}
+// Reserva do consulado: saldo de hoje e o que sobra depois das pendências previstas para sair dela
+function consulInfo() {
+  const st = sourceStats(),
+    ids = data.sources.filter((s) => s.consulate).map((s) => s.id),
+    current = sum(ids.map((id) => st[id]?.current || 0)),
+    reserved = sum(ids.map((id) => st[id]?.reserved || 0));
+  return { current, reserved, after: current - reserved, goal: data.consulGoal };
+}
 
 // Previsão na moeda original: parte já conhecida e se ainda há valor a definir
 function forecast(t) {
