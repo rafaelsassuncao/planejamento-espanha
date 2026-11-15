@@ -41,6 +41,11 @@ const icon = (n) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${IC
 const statusCls = (s) => (s === "Concluído" ? "done" : s === "Em andamento" ? "prog" : ""),
   statusRow = (s) => (s === "Concluído" ? "st-done" : s === "Em andamento" ? "st-prog" : "");
 
+// Valor em euro convertido: o que já saiu em reais quando pago, senão pela cotação de hoje
+function brlHint(t) {
+  if (t.currency !== "EUR" || !(forecast(t).known > 0)) return "";
+  return payStatus(t).label === "Pago" ? money(paidBRL(t)) : "≈ " + money(toBRL(forecast(t).known, "EUR"));
+}
 // Lista que desce dentro do cartão: o que falta pagar e o que já foi pago com aquela fonte
 let openCard = "";
 function cardList(kind) {
@@ -48,7 +53,7 @@ function cardList(kind) {
     items = data.tasks.filter((t) => isCost(t) && safe(() => keep.includes(bucket(t))) === true),
     paid = (t) => payStatus(t).label === "Pago",
     row = (t) =>
-      `<button type="button" class="minirow" onclick="editTask('${t.id}')"><span><b>${esc(t.title)}</b><small>${esc(t.category)}</small></span><span class="minival"><b>${forecast(t).known > 0 ? money(forecast(t).known, t.currency) : "Falta o valor"}</b><small class="${paid(t) ? "ok" : "due"}">${paid(t) ? "pago" : "a pagar"}</small></span></button>`,
+      `<button type="button" class="minirow" onclick="editTask('${t.id}')"><span><b>${esc(t.title)}</b><small>${esc(t.category)}</small></span><span class="minival"><b>${forecast(t).known > 0 ? money(forecast(t).known, t.currency) : "Falta o valor"}</b><small>${brlHint(t) ? `<span class="brl">${brlHint(t)}</span> · ` : ""}<span class="${paid(t) ? "ok" : "due"}">${paid(t) ? "pago" : "a pagar"}</span></small></span></button>`,
     group = (title, list) =>
       list.length ? `<div class="minigroup"><small class="eyebrow">${title} · ${list.length}</small>${list.map(row).join("")}</div>` : "";
   const inner = items.length
@@ -566,6 +571,7 @@ function moneyCell(t) {
   });
   if (ps.label === "Parcialmente pago") parts.unshift(`pago ${money(paidBRL(t))}`);
   if (!parts.length && ps.label === "Pago") parts.push("pago");
+  if (brlHint(t)) parts.unshift(brlHint(t));
   return `<div class="c-val"><b class="amount-sm">${money(f.known, t.currency)}</b></div>${parts.length ? `<div class="c-pay"><small class="paystate ${ps.cls}">${parts.join(" · ")}</small></div>` : ""}`;
 }
 function taskTable(a) {

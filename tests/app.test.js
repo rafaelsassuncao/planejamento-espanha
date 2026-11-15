@@ -454,6 +454,12 @@
       "H abrir a do salário fecha a do Santander",
       $("#list-sal").classList.contains("open") && !$("#list-res").classList.contains("open") && listed("sal").every((t) => ["sal", "mix"].includes(bucket(t))),
     );
+    const eurOpen = listed("sal").concat(listed("res")).find((t) => t.currency === "EUR" && payStatus(t).label !== "Pago" && forecast(t).known > 0);
+    if (eurOpen)
+      check(
+        "H valor em euro mostra quanto dá em reais hoje",
+        document.querySelector(`.minirow[onclick*="${eurOpen.id}"] .brl`).textContent.replace(/\s/g, " ") === "≈ " + moneyFmt(toBRL(forecast(eurOpen).known, "EUR")),
+      );
     document.querySelector('[data-toggle="sal"]').click();
     check("H tocar de novo fecha a lista", !$("#list-sal").classList.contains("open"));
     const loose = data.tasks.find((t) => isCost(t) && (reserves(t)[""] || 0) > 0.005);
