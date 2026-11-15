@@ -15,7 +15,7 @@ render = function () {
   app.classList.add("entering");
   clearTimeout(app.enterTimer);
   app.enterTimer = setTimeout(() => app.classList.remove("entering"), 1700);
-  document.querySelectorAll(".card.kpi .amount").forEach(countUp);
+  document.querySelectorAll(".consulnums b, .salnums b").forEach(countUp);
 };
 
 // Conta de zero até o valor mostrado, mantendo o mesmo formato (R$ 1.234,56)

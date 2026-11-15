@@ -41,19 +41,11 @@ const icon = (n) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${IC
 const statusCls = (s) => (s === "Concluído" ? "done" : s === "Em andamento" ? "prog" : ""),
   statusRow = (s) => (s === "Concluído" ? "st-done" : s === "Em andamento" ? "st-prog" : "");
 
-// Total em euro só do que foi lançado em euro (valor original, sem conversão)
-const eurLaunched = (list = data.tasks) =>
-  sum(list.filter((t) => isCost(t) && t.currency === "EUR").map((t) => forecast(t).known));
-// Quanto do que falta pagar vem de valores marcados como estimativa
-const estimatedOpen = () =>
-  sum(data.tasks.filter((t) => isCost(t) && t.valueType === "estimado").map(outstandingBRL));
-function cards() {
-  const o = overall(),
-    e = eurLaunched(),
-    est = estimatedOpen(),
-    card = (cls, ic, label, v, sub, help = "") =>
-      `<div class="card kpi ${cls}"><span class="iconcircle">${icon(ic)}</span><div><label>${label} ${help ? tip(help) : ""}</label><div class="amount">${money(v)}</div><span class="sub">${sub}</span></div></div>`;
-  return `<div class="cards">${card("green", "wallet", "Saldo atual", o.current, "", `Recebido ${money(o.received)} − pago ${money(o.spent)}. O que é pago com o salário não entra.`)}${card("amber", "file", "Custo total", o.total, `Pago ${money(o.paid)} · falta ${money(o.open)}${e ? `<br>${money(e, "EUR")} em euro` : ""}${o.unknown ? "<br>" + incomplete(o.unknown) : ""}`, est > 0.005 ? `${money(est)} em estimativas` : "")}${card("mint", "chart", "Saldo previsto", o.projected, `${o.expected ? `+ ${money(o.expected)} a receber` : ""}`, "Saldo atual menos o que falta pagar fora do salário")}</div>`;
+// Custos pagos com o salário (não saem da reserva): total, já pago e o que falta
+function salaryCard() {
+  const c = salaryInfo(),
+    pct = c.total > 0 ? Math.round((c.paid / c.total) * 100) : 0;
+  return `<section class="panel salary"><small class="eyebrow">Custos pagos com o salário</small><div class="salnums"><div><small>Total</small><b>${money(c.total)}</b></div><div class="paid"><small>Já pago</small><b>${money(c.paid)}</b></div><div class="open"><small>Falta pagar</small><b>${money(c.open)}</b></div></div><div class="bar"><span style="width:${pct}%"></span></div><div class="salfoot"><small>${pct}% pago · não sai da reserva do Santander</small>${c.none > 0.005 ? `<small class="nosrc">${money(c.none)} ainda sem fonte · <button type="button" class="link" onclick="sourceLinks('')">Escolher fonte</button></small>` : ""}</div></section>`;
 }
 
 // Reserva do Santander apresentada ao consulado: quanto tem, quanto vai sair, quanto fica e o aviso da meta
@@ -229,7 +221,7 @@ function render() {
     pct = data.tasks.length ? Math.round((done / data.tasks.length) * 100) : 0;
   if (page === "overview") {
     $("#app").innerHTML =
-      `<header class="pagehead"><div><h1>${todayTitle()}</h1></div></header>${safe(consulCard)}${cards()}${data.tasks.length ? `<p class="overline"><span>${done} de ${data.tasks.length} pendências concluídas</span><button class="link" onclick="go('tasks')">Ver pendências →</button></p>` : `<button class="btn primary" onclick="editTask()">+ Criar pendência</button>`}`;
+      `<header class="pagehead"><div><h1>${todayTitle()}</h1></div></header>${safe(consulCard)}${safe(salaryCard)}${data.tasks.length ? `<p class="overline"><span>${done} de ${data.tasks.length} pendências concluídas</span><button class="link" onclick="go('tasks')">Ver pendências →</button></p>` : `<button class="btn primary" onclick="editTask()">+ Criar pendência</button>`}`;
   }
   if (page === "tasks") {
     $("#app").innerHTML =

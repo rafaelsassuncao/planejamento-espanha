@@ -261,6 +261,36 @@ function payBill(accountId, month) {
 }
 
 // Lista o que está ligado a uma fonte: entradas, reservas e pagamentos
+// Botões para dar uma fonte a quem ainda não tem, sem sair da lista
+const assignButtons = (t, ref = "") =>
+  `<span class="assignto">${data.sources
+    .filter((s) => s.flow || s.consulate)
+    .map(
+      (s) =>
+        `<button type="button" class="btn small paysrc ${s.consulate ? "res" : "sal"}" data-src="${s.id}" onclick="${ref ? `assignPaid('${t.id}','${ref}','${s.id}')` : `assignSource('${t.id}','${s.id}')`}">${esc(s.name)}</button>`,
+    )
+    .join("")}</span>`;
+// Pagamento já feito sem fonte: diz de onde saiu (pagamento à vista ou parcela paga)
+function assignPaid(taskId, ref, sourceId) {
+  const t = data.tasks.find((x) => x.id === taskId),
+    p =
+      t?.payments.find((x) => x.id === ref) ||
+      t?.credits.flatMap((c) => c.installments).find((i) => i.id === ref)?.payment;
+  if (!p) return;
+  if (p.split?.length) p.split.forEach((x) => !validSource(x.sourceId) && (x.sourceId = sourceId));
+  else p.split = [{ sourceId, brl: num(p.brl) }];
+  save();
+  sourceLinks("");
+  toast(`${t.title}: pago com ${sourceName(sourceId)}`);
+}
+function assignSource(taskId, sourceId) {
+  const t = data.tasks.find((x) => x.id === taskId);
+  if (!t) return;
+  t.alloc = [{ sourceId, brl: null }];
+  save();
+  sourceLinks("");
+  toast(`${t.title}: vai sair de ${sourceName(sourceId)}`);
+}
 function sourceLinks(id) {
   const name = id ? sourceName(id) : "Fonte não definida",
     incomes = data.income.filter((i) => validSource(i.sourceId) === id),
@@ -284,12 +314,15 @@ function sourceLinks(id) {
       ),
     )}${list(
       id ? "Reservas para despesas futuras" : "Despesas a pagar sem fonte definida",
-      reserved.map(([t, v]) => `<div class="statrow"><span>${open(t)}</span><b>${money(v)}</b></div>`),
+      reserved.map(
+        ([t, v]) =>
+          `<div class="statrow${id ? "" : " assign"}"><span>${open(t)}</span><b>${money(v)}</b>${id ? "" : assignButtons(t)}</div>`,
+      ),
     )}${list(
       "Pagamentos realizados",
       paid.map(
         ({ t, o, brl }) =>
-          `<div class="statrow"><span>${open(t)} <small>${fmtDate(o.date) || "sem data"} · ${esc(o.label)}</small></span><b>${money(brl)}</b></div>`,
+          `<div class="statrow${id ? "" : " assign"}"><span>${open(t)} <small>${fmtDate(o.date) || "sem data"} · ${esc(o.label)}</small></span><b>${money(brl)}</b>${id ? "" : assignButtons(t, o.ref)}</div>`,
       ),
     )}<div class="actions"><button type="button" class="btn" onclick="$('#modal').close()">Fechar</button></div>`,
     () => {},

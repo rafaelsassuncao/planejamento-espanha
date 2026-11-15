@@ -372,10 +372,6 @@
       "F salário não tem saldo nem fica negativo",
       S("Salário").flow && sourceStats()[salId].current === Infinity && pp.payments[0].split[0].sourceId === salId,
     );
-    check(
-      "F saldo da visão geral ignora o que foi pago com salário",
-      near(overall().current, sum(Object.values(sourceStats()).filter((s) => !s.flow).map((s) => s.received - s.used))),
-    );
     page = "income";
     incomePart = "fontes";
     render();
@@ -441,7 +437,30 @@
     document.querySelector(".overline .link").click();
     check("H 'Ver pendências' abre a lista", page === "tasks");
 
+    const salInfo = salaryInfo();
     page = "overview";
+    render();
+    check(
+      "H cartão de custos do salário com total, pago e falta",
+      document.querySelector(".salary .salnums").textContent.replace(/\s/g, " ").includes(moneyFmt(salInfo.total)) &&
+        near(salInfo.total, salInfo.paid + salInfo.open),
+    );
+    const loose = data.tasks.find((t) => isCost(t) && (reserves(t)[""] || 0) > 0.005);
+    sourceLinks("");
+    document.querySelector(`#modal .assign [onclick*="${loose.id}"][data-src="${S("Salário").id}"]`).click();
+    check(
+      "H item sem fonte recebe o salário direto na lista",
+      loose.alloc[0].sourceId === S("Salário").id && $("#modal").open && !$("#modal").innerHTML.includes(`'${loose.id}'`),
+    );
+    const paidLoose = data.tasks.find((t) => outflows(t).some((x) => x.split.some((y) => !validSource(y.sourceId))));
+    const ref = outflows(paidLoose).find((x) => x.split.some((y) => !validSource(y.sourceId))).ref;
+    document.querySelector(`#modal .assign [onclick*="${ref}"][data-src="${S("Santander Consulado").id}"]`).click();
+    check(
+      "H pagamento feito sem fonte recebe o Santander direto na lista",
+      outflows(paidLoose).find((x) => x.ref === ref).split.every((y) => y.sourceId === S("Santander Consulado").id),
+    );
+    $("#modal").close();
+    page = "settings";
     render();
     const tp = document.querySelector(".tip");
     tp.click();

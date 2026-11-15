@@ -199,21 +199,18 @@ function totals(list = data.tasks) {
     open = sum(costs.map(outstandingBRL));
   return { paid, open, total: paid + open, unknown: costs.filter((t) => forecast(t).unknown).length };
 }
-// Saldos da visão geral: só o dinheiro guardado; o que é pago com o salário não entra
-function overall() {
-  const t = totals(),
-    kept = Object.values(sourceStats()).filter((s) => !s.flow),
-    received = sum(kept.map((s) => s.received)),
-    spent = sum(kept.map((s) => s.used)),
-    expected = sum(data.income.filter((i) => !i.received).map((i) => num(i.value)));
-  return {
-    ...t,
-    received,
-    spent,
-    expected,
-    current: received - spent,
-    projected: received - spent - sum(kept.map((s) => s.reserved)),
-  };
+// Custos que não saem da reserva do consulado: pagos e a pagar com o salário (e outras fontes que não são o Santander)
+function salaryInfo() {
+  let paid = 0,
+    open = 0,
+    none = 0;
+  data.tasks.filter(isCost).forEach((t) => {
+    outflows(t).forEach((o) =>
+      o.split.forEach((s) => s.sourceId && !isConsul(s.sourceId) && (paid += num(s.brl))),
+    );
+    Object.entries(reserves(t)).forEach(([id, v]) => (!id ? (none += v) : !isConsul(id) && (open += v)));
+  });
+  return { paid, open, total: paid + open, none };
 }
 
 // Parcelas iguais (a última ajusta os centavos); mantém pagamentos das parcelas que continuam iguais
