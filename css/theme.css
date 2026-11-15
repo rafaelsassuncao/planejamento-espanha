@@ -1056,12 +1056,12 @@ nav.subnav button.on small {
 }
 .plist tr[data-id] {
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr) auto minmax(96px, auto) minmax(190px, 250px) 44px;
+  grid-template-columns: 32px minmax(0, 1fr) 210px 130px 260px 44px;
   grid-template-areas: "chk task src money step act";
   align-items: center;
-  gap: 4px 14px;
+  gap: 4px 0;
   margin-bottom: 8px;
-  padding: 12px 8px 12px 16px;
+  padding: 14px 8px 14px 16px;
   border: 1px solid var(--line);
   border-radius: 16px;
   background: var(--glass);
@@ -1084,19 +1084,83 @@ nav.subnav button.on small {
 }
 .plist .c-task {
   grid-area: task;
+  padding: 0 20px 0 14px;
+  overflow-wrap: anywhere;
 }
 .plist .c-src {
   grid-area: src;
+  padding: 0 16px;
 }
 .plist .c-money {
   grid-area: money;
+  padding: 0 16px;
   text-align: right;
+}
+.plist .c-src,
+.plist .c-money,
+.plist .c-step {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-left: 1px solid var(--line);
+}
+.plist .c-money {
+  align-items: flex-end;
+}
+.plist .c-src {
+  align-items: flex-start;
+}
+.plisthead {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) 210px 130px 260px 44px;
+  margin: 18px 0 -4px;
+  padding: 10px 9px 10px 17px;
+  border-radius: 12px;
+  background: rgba(11, 11, 16, 0.85);
+  backdrop-filter: blur(10px);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.plisthead span:nth-child(1) {
+  grid-column: 2;
+  padding-left: 14px;
+}
+.plisthead span:nth-child(2) {
+  padding-left: 16px;
+}
+.plisthead span:nth-child(3) {
+  padding-right: 16px;
+  text-align: right;
+}
+.plisthead span:nth-child(4) {
+  padding-left: 16px;
+}
+.plist .c-src .srcmenu > summary,
+.plist .c-src .srcpill {
+  max-width: 100%;
+}
+.plist .srcpill {
+  white-space: normal;
+  height: auto;
+  min-height: 26px;
+  padding: 3px 10px;
+}
+.plist .tnotes {
+  white-space: normal;
 }
 .plist .c-act {
   grid-area: act;
 }
 .plist .c-step {
   grid-area: step;
+  padding: 0 4px 0 16px;
 }
 .plist .c-pay .topay {
   color: var(--warning);
@@ -1130,8 +1194,6 @@ nav.subnav button.on small {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding-left: 14px;
-  border-left: 1px solid var(--line);
   font-size: 13px;
 }
 .plist .nextstep span {
@@ -1687,9 +1749,26 @@ nav.subnav button.on small {
   .plist .c-step:empty {
     display: none;
   }
+  .plisthead {
+    display: none;
+  }
+  .plist .c-task,
+  .plist .c-src,
+  .plist .c-money,
+  .plist .c-step {
+    padding: 0;
+    border-left: 0;
+  }
+  .plist .c-money {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: flex-start;
+  }
+  .plist .c-src {
+    align-items: flex-start;
+  }
   .plist .nextstep {
     padding: 8px 0 0;
-    border-left: 0;
     border-top: 1px solid var(--line);
   }
   .plist .c-money {

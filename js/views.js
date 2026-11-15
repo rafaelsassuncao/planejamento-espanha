@@ -432,7 +432,8 @@ function updateRows() {
       : [[cat, list]];
   $("#rows").innerHTML =
     (list.length
-      ? groups.map(([c, a], i) => safe(() => taskGroup(c, a, cat === "Todas", scope, i + 1))).join("")
+      ? '<div class="plisthead" aria-hidden="true"><span>Pendência</span><span>Fonte</span><span>Valor</span><span>Próximo passo</span></div>' +
+        groups.map(([c, a], i) => safe(() => taskGroup(c, a, cat === "Todas", scope, i + 1))).join("")
       : '<div class="empty">Nenhuma pendência por aqui.</div>') +
     (hiddenDone
       ? `<p class="donenote">${hiddenDone} ${hiddenDone === 1 ? "concluída oculta" : "concluídas ocultas"} · <button type="button" class="link" onclick="setFilter('filter','Todos')">mostrar</button></p>`
@@ -548,7 +549,6 @@ function moneyCell(t) {
   });
   if (ps.label === "Parcialmente pago") parts.unshift(`pago ${money(paidBRL(t))}`);
   if (!parts.length && ps.label === "Pago") parts.push("pago");
-  if (!parts.length && uncoveredCur(t) > 0.005) return `<div class="c-val"><b class="amount-sm">${money(f.known, t.currency)}</b></div><div class="c-pay"><small class="paystate topay">a pagar</small></div>`;
   return `<div class="c-val"><b class="amount-sm">${money(f.known, t.currency)}</b></div>${parts.length ? `<div class="c-pay"><small class="paystate ${ps.cls}">${parts.join(" · ")}</small></div>` : ""}`;
 }
 function taskTable(a) {

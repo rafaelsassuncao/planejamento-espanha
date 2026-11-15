@@ -416,7 +416,7 @@ function removeCredit(taskId, creditId) {
   saveOk(t, "Compra no crédito excluída");
 }
 // Marcar pago: Salário, Santander Consulado ou "Outra" (demais fontes ou uma nova); registra o que falta, com a data de hoje
-function quickPay(id, more = false) {
+function quickPay(id, more = false, asked = false) {
   const t = findTask(id);
   if (!t) return;
   const amount = uncoveredCur(t);
@@ -429,11 +429,11 @@ function quickPay(id, more = false) {
     pick = (s, cls, hint) =>
       `<button type="button" class="btn paysrc ${cls}" data-src="${s.id}" onclick="confirmQuickPay('${t.id}','${s.id}')"><span>${esc(s.name)}</span><small>${hint}</small></button>`;
   showForm(
-    `<h3>Marcar pago</h3><p class="sub">${esc(t.title)} · ${money(amount, t.currency)}${t.currency === "EUR" ? ` (${money(brl)})` : ""}</p><p class="paywho">Pagou com:</p><div class="paypick">${salary ? pick(salary, "sal", "não mexe na reserva") : ""}${consul ? pick(consul, "res", "reserva do consulado") : ""}<button type="button" class="btn paysrc other${more ? " on" : ""}" data-act="other" aria-expanded="${more}" onclick="quickPay('${t.id}',${!more})"><span>Outra</span><small>outra conta ou fonte</small></button></div>${
+    `<h3>${asked ? "Concluída! Você já pagou?" : "Marcar pago"}</h3><p class="sub">${esc(t.title)} · ${money(amount, t.currency)}${t.currency === "EUR" ? ` (${money(brl)})` : ""}</p><p class="paywho">Pagou com:</p><div class="paypick">${salary ? pick(salary, "sal", "não mexe na reserva") : ""}${consul ? pick(consul, "res", "reserva do consulado") : ""}<button type="button" class="btn paysrc other${more ? " on" : ""}" data-act="other" aria-expanded="${more}" onclick="quickPay('${t.id}',${!more},${asked})"><span>Outra</span><small>outra conta ou fonte</small></button></div>${
       more
         ? `<div class="payother">${others.map((s) => pick(s, "sal", "outra fonte")).join("")}<label>Cadastrar nova fonte<input name="newsource" maxlength="70" placeholder="Ex.: Conta Nubank"></label><button type="button" class="btn primary" onclick="quickPayNew('${t.id}')">Criar e marcar pago</button></div>`
         : ""
-    }<button type="button" class="link" onclick="editPayment('${t.id}')">Cartão, parcelas ou dividir entre fontes</button><div class="actions"><button type="button" class="btn" onclick="$('#modal').close()">Cancelar</button></div>`,
+    }<button type="button" class="link" onclick="editPayment('${t.id}')">Cartão, parcelas ou dividir entre fontes</button><div class="actions"><button type="button" class="btn" onclick="$('#modal').close()">${asked ? "Ainda não paguei" : "Cancelar"}</button></div>`,
     () => quickPayNew(t.id),
   );
   if (more) $("#form [name=newsource]").focus();

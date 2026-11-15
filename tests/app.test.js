@@ -141,6 +141,12 @@
       "C concluir some da lista e oferece desfazer",
       at().status === "Concluído" && !row(at()) && $("#toast").textContent.includes("ocultada"),
     );
+    check(
+      "C concluir algo com valor pergunta se já pagou",
+      $("#modal").open && $("#modal h3").textContent.includes("Você já pagou") && $("#modal").textContent.includes("Ainda não paguei"),
+    );
+    [...document.querySelectorAll("#modal .actions .btn")].find((b) => b.textContent === "Ainda não paguei").click();
+    check("C 'Ainda não paguei' fecha sem registrar", !$("#modal").open && !at().payments.length);
     $("#toast").querySelector(".toastbtn").click();
     check("C desfazer traz de volta", at().status === "Em andamento" && !!row(at()));
 
@@ -239,10 +245,10 @@
     const before = totals(data.tasks.filter((t) => t.category === owe.category)).open;
     setStatus(owe.id, "Concluído");
     check(
-      "E2 concluir avisa o que falta pagar",
-      $("#toast").textContent.includes("Falta pagar") &&
-        [...$("#toast").querySelectorAll(".toastbtn")].some((x) => x.textContent === "Já paguei"),
+      "E2 concluir pergunta se já pagou, com as fontes",
+      $("#modal").open && [...document.querySelectorAll("#modal .paysrc")].some((b) => b.textContent.includes("Santander Consulado")),
     );
+    $("#modal").close();
     check(
       "E2 concluída oculta continua no total do topo",
       !row(owe) && document.querySelector("#sum .sumcard").textContent.replace(/\s/g, " ").includes(moneyFmt(totals(data.tasks.filter((t) => cat === "Todas" || t.category === cat)).total)),

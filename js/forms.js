@@ -39,7 +39,7 @@ function applySteps(t) {
   else if (d > 0) t.status = "Em andamento";
   else if (prev === "Concluído") t.status = "Pendente";
   if (t.status === "Concluído" && prev !== "Concluído")
-    toast("Todas as etapas feitas: pendência concluída" + owed(t), [
+    toast("Todas as etapas feitas: pendência concluída", [
       {
         label: "Desfazer",
         fn: () => {
@@ -49,8 +49,8 @@ function applySteps(t) {
           render();
         },
       },
-      ...payAction(t),
     ]);
+  if (t.status === "Concluído" && prev !== "Concluído") setTimeout(() => askPaid(t.id));
 }
 // Ao concluir algo que tem custo ainda não pago, o aviso lembra e oferece registrar o pagamento
 const unpaid = (t) => {
@@ -60,8 +60,12 @@ const unpaid = (t) => {
       return 0;
     }
   },
-  owed = (t) => (unpaid(t) > 0.005 ? `. Falta pagar ${money(unpaid(t), t.currency)}` : ""),
-  payAction = (t) => (unpaid(t) > 0.005 ? [{ label: "Já paguei", fn: () => quickPay(t.id) }] : []);
+  // Ao concluir algo com valor ainda não pago, pergunta se já pagou e com qual fonte
+  askPaid = (id) => {
+    const t = data.tasks.find((x) => x.id === id);
+    if (t && isCost(t) && !forecast(t).unknown && uncoveredCur(t) > 0.005 && committedBRL(t) < 0.005)
+      quickPay(id, false, true);
+  };
 // Etapas direto na lista: abrir/fechar, marcar, concluir a próxima e adicionar, sem janela
 const openSteps = new Set();
 // Redesenha a lista mantendo a posição da página e, se pedido, o foco no campo de nova etapa
@@ -156,7 +160,7 @@ function setStatus(id, status) {
   render();
   if (status === "Concluído")
     toast(
-      (page === "tasks" && filter === "Não concluídos" ? "Concluída e ocultada da lista" : "Concluída") + owed(t),
+      page === "tasks" && filter === "Não concluídos" ? "Concluída e ocultada da lista" : "Concluída",
       [
         {
           label: "Desfazer",
@@ -167,9 +171,9 @@ function setStatus(id, status) {
             render();
           },
         },
-        ...payAction(t),
       ],
     );
+  if (status === "Concluído") askPaid(id);
 }
 const toggle = (id, v) => setStatus(id, v ? "Concluído" : "Pendente");
 const field = (label, name, val = "", type = "text", extra = "") =>
