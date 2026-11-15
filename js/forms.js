@@ -209,6 +209,9 @@ function showForm(html, onsubmit, sync = () => {}) {
   form.innerHTML = html;
   form.onsubmit = (e) => {
     e.preventDefault();
+    // Zeros a mais são fáceis de digitar: confirma valores acima de R$ 5 milhões
+    const big = [...form.querySelectorAll("input.money")].map((i) => Number(i.value)).find((v) => v > 5e6);
+    if (big && !confirm(`Valor muito alto: ${money(big)}. Está certo?`)) return;
     onsubmit(new FormData(form));
   };
   // Depois de cada atualização, prepara e reformata os campos de dinheiro

@@ -325,7 +325,7 @@ main {
 
 /* Cartões de resumo: o saldo atual é o destaque */
 .card.kpi {
-  min-height: 150px;
+  min-height: 0;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
 }
@@ -347,7 +347,7 @@ main {
 }
 .card.kpi .amount {
   color: var(--ink);
-  font-size: clamp(26px, 2.6vw, 36px);
+  font-size: clamp(20px, 1.9vw, 26px);
   font-weight: 600;
 }
 .card.kpi.green .amount {
@@ -1271,7 +1271,7 @@ nav.subnav button.on small {
 }
 .consul .amount {
   margin-top: 4px;
-  font-size: clamp(28px, 3vw, 38px);
+  font-size: clamp(22px, 2.2vw, 28px);
   font-weight: 600;
 }
 .consul .goal {
@@ -1409,6 +1409,20 @@ nav.subnav button.on small {
   }
   .card.kpi {
     min-height: 0;
+  }
+  .card.kpi .amount,
+  .consul .amount {
+    font-size: 22px;
+  }
+  .consul .goal {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    width: 100%;
+    text-align: left;
+  }
+  .consul .goal b {
+    font-size: 16px;
   }
   /* Pendência no celular: nome em cima; fonte e valor numa segunda linha */
   .plist tr[data-id] {
