@@ -1542,8 +1542,19 @@ nav.subnav button.on small {
 }
 .goalnote {
   display: block;
-  margin-top: 10px;
   color: var(--muted);
+}
+.cardfoot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 16px;
+  margin-top: 10px;
+}
+.cardfoot .link {
+  min-height: 44px;
+  font-weight: 600;
 }
 .goalnote b {
   color: var(--ink);

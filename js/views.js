@@ -42,10 +42,21 @@ const statusCls = (s) => (s === "Concluído" ? "done" : s === "Em andamento" ? "
   statusRow = (s) => (s === "Concluído" ? "st-done" : s === "Em andamento" ? "st-prog" : "");
 
 // Custos pagos com o salário (não saem da reserva): total, já pago e o que falta
+// Abre as pendências de uma fonte (pagas e a pagar), a partir dos cartões da visão geral
+function goSource(v) {
+  page = "tasks";
+  cat = "Todas";
+  filter = "Todos";
+  costF = "Todos";
+  search = "";
+  srcF = v;
+  render();
+  scrollTo(0, 0);
+}
 function salaryCard() {
   const c = salaryInfo(),
     pct = c.total > 0 ? Math.round((c.paid / c.total) * 100) : 0;
-  return `<section class="panel salary"><small class="eyebrow">Custos pagos com o salário</small><div class="salnums"><div><small>Total</small><b>${money(c.total)}</b></div><div class="paid"><small>Já pago</small><b>${money(c.paid)}</b></div><div class="open"><small>Falta pagar</small><b>${money(c.open)}</b></div></div><div class="bar"><span style="width:${pct}%"></span></div><div class="salfoot"><small>${pct}% pago · não sai da reserva do Santander</small>${c.none > 0.005 ? `<small class="nosrc">${money(c.none)} ainda sem fonte · <button type="button" class="link" onclick="sourceLinks('')">Escolher fonte</button></small>` : ""}</div></section>`;
+  return `<section class="panel salary"><small class="eyebrow">Custos pagos com o salário</small><div class="salnums"><div><small>Total</small><b>${money(c.total)}</b></div><div class="paid"><small>Já pago</small><b>${money(c.paid)}</b></div><div class="open"><small>Falta pagar</small><b>${money(c.open)}</b></div></div><div class="bar"><span style="width:${pct}%"></span></div><div class="salfoot cardfoot"><small>${pct}% pago · não sai da reserva do Santander</small>${c.none > 0.005 ? `<small class="nosrc">${money(c.none)} ainda sem fonte · <button type="button" class="link" onclick="sourceLinks('')">Escolher fonte</button></small>` : ""}<button type="button" class="link" data-go="Salário" onclick="goSource('Salário')">Ver o que é pago com o salário →</button></div></section>`;
 }
 
 // Reserva do Santander apresentada ao consulado: quanto tem, quanto vai sair, quanto fica e o aviso da meta
@@ -73,7 +84,7 @@ function consulCard() {
     st = consulState(c),
     scale = Math.max(c.current, c.goal) * 1.08 || 1,
     w = (v) => Math.max(0, Math.min(100, (v / scale) * 100)).toFixed(2) + "%";
-  return `<section class="panel consul ${st.cls}"><small class="eyebrow">Reserva do consulado · Santander</small><div class="consulnums"><div><small>Tenho no Santander</small><b>${money(c.current)}</b></div><span class="op" aria-hidden="true">−</span><div class="out"><small>Vai sair</small><b>${money(c.reserved)}</b></div><span class="op" aria-hidden="true">=</span><div class="left"><small>Vai ficar</small><b>${money(c.after)}</b></div><div class="consulstatus ${st.cls}" role="status">${icon(st.icon)}<span><b>${st.title}</b><small>${st.text}</small></span></div></div><div class="goalbar" aria-hidden="true"><span class="keep" style="width:${w(Math.max(0, c.after))}"></span><span class="leave" style="width:${w(Math.min(c.reserved, c.current))}"></span><i class="mark" style="left:${w(c.goal)}"></i></div><small class="goalnote">Meta mínima <b>${money(c.goal)}</b> · o consulado pede cerca de R$ 100 mil; a meta já inclui a folga</small></section>`;
+  return `<section class="panel consul ${st.cls}"><small class="eyebrow">Reserva do consulado · Santander</small><div class="consulnums"><div><small>Tenho no Santander</small><b>${money(c.current)}</b></div><span class="op" aria-hidden="true">−</span><div class="out"><small>Vai sair</small><b>${money(c.reserved)}</b></div><span class="op" aria-hidden="true">=</span><div class="left"><small>Vai ficar</small><b>${money(c.after)}</b></div><div class="consulstatus ${st.cls}" role="status">${icon(st.icon)}<span><b>${st.title}</b><small>${st.text}</small></span></div></div><div class="goalbar" aria-hidden="true"><span class="keep" style="width:${w(Math.max(0, c.after))}"></span><span class="leave" style="width:${w(Math.min(c.reserved, c.current))}"></span><i class="mark" style="left:${w(c.goal)}"></i></div><div class="cardfoot"><small class="goalnote">Meta mínima <b>${money(c.goal)}</b> · o consulado pede cerca de R$ 100 mil; a meta já inclui a folga</small><button type="button" class="link" data-go="Reserva" onclick="goSource('Reserva')">Ver o que sai do Santander →</button></div></section>`;
 }
 function folderCard() {
   const f = folderInfo();
