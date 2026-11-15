@@ -158,7 +158,7 @@
     check("D etapas salvas", at().steps.length === 3 && at().steps[0].done);
     check(
       "D linha mostra o próximo passo",
-      row(at()).querySelector(".nextstep").textContent.includes("Médico assinar") &&
+      row(at()).querySelector(".c-step .nextstep").textContent.includes("Médico assinar") &&
         row(at()).querySelector(".nextstep").textContent.includes("1/3"),
     );
     row(at()).querySelector(".stepdo").click();

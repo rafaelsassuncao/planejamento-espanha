@@ -523,7 +523,7 @@ function nextStepLine(t) {
     next = steps.find((s) => !s.done),
     d = steps.filter((s) => s.done).length;
   if (!steps.length) return "";
-  return `<div class="nextstep${next ? "" : " alldone"}"><span>${next ? `Próximo passo: <b>${esc(next.text)}</b>` : "<b>Etapas feitas ✓</b>"} <small>${d}/${steps.length}</small></span>${next ? `<button type="button" class="stepdo" onclick="doNextStep('${t.id}')" title="Marcar “${esc(next.text)}” como feita">✓ Feito</button>` : ""}</div>`;
+  return `<div class="nextstep${next ? "" : " alldone"}"><span><small>${next ? "Próximo passo" : "Etapas"} · ${d}/${steps.length}</small><b>${next ? esc(next.text) : "Todas feitas ✓"}</b></span>${next ? `<button type="button" class="stepdo" onclick="doNextStep('${t.id}')" title="Marcar “${esc(next.text)}” como feita">✓ Feito</button>` : ""}</div>`;
 }
 // Linha cinza abaixo do nome: andamento, compras e observação
 function taskNote(t) {
@@ -548,6 +548,7 @@ function moneyCell(t) {
   });
   if (ps.label === "Parcialmente pago") parts.unshift(`pago ${money(paidBRL(t))}`);
   if (!parts.length && ps.label === "Pago") parts.push("pago");
+  if (!parts.length && uncoveredCur(t) > 0.005) return `<div class="c-val"><b class="amount-sm">${money(f.known, t.currency)}</b></div><div class="c-pay"><small class="paystate topay">a pagar</small></div>`;
   return `<div class="c-val"><b class="amount-sm">${money(f.known, t.currency)}</b></div>${parts.length ? `<div class="c-pay"><small class="paystate ${ps.cls}">${parts.join(" · ")}</small></div>` : ""}`;
 }
 function taskTable(a) {
@@ -560,7 +561,7 @@ function taskTable(a) {
           owes = isCost(t) && !forecast(t).unknown && uncoveredCur(t) > 0.005,
           item = (act, ic, label, fn, cls = "") =>
             `<button type="button" data-act="${act}"${cls ? ` class="${cls}"` : ""} onclick="this.closest('details').open=false;${fn}">${icon(ic)}<span>${label}</span></button>`;
-        return `<tr data-id="${t.id}" class="${statusRow(t.status)}${open ? " has-sub" : ""}"><td class="c-check"><button type="button" class="donebtn${done ? " on" : ""}" aria-label="${done ? "Reabrir" : "Concluir"} ${esc(t.title)}" title="${done ? "Reabrir" : "Concluir"}" onclick="toggle('${t.id}',${!done})">${icon("check")}</button></td><td class="c-task"><button type="button" class="link title" onclick="editTask('${t.id}')">${esc(t.title)}</button>${taskNote(t)}${nextStepLine(t)}</td><td class="c-src">${srcPick(t)}</td><td class="c-money">${moneyCell(t)}</td><td class="c-act"><details class="rowmenu"><summary aria-label="Mais ações de ${esc(t.title)}" title="Mais ações">⋯</summary><div class="menu">${owes ? item("pay", "wallet", "Marcar pago", `quickPay('${t.id}')`) : ""}${item("edit", "edit", "Editar", `editTask('${t.id}')`)}${done ? "" : item("prog", "chart", t.status === "Em andamento" ? "Voltar para pendente" : "Marcar em andamento", `setStatus('${t.id}','${t.status === "Em andamento" ? "Pendente" : "Em andamento"}')`)}${item("steps", "check", (t.steps || []).length ? "Etapas" : "Adicionar etapas", `toggleStepsOpen('${t.id}')`)}${isCost(t) ? item("detail", "card", "Pagamentos", `openTask('${t.id}')`) : ""}${item("delete", "trash", "Excluir pendência", `deleteTask('${t.id}')`, "danger")}</div></details></td></tr>${open ? `<tr class="subrow" data-for="${t.id}"><td colspan="5">${stepsList(t)}</td></tr>` : ""}`;
+        return `<tr data-id="${t.id}" class="${statusRow(t.status)}${open ? " has-sub" : ""}"><td class="c-check"><button type="button" class="donebtn${done ? " on" : ""}" aria-label="${done ? "Reabrir" : "Concluir"} ${esc(t.title)}" title="${done ? "Reabrir" : "Concluir"}" onclick="toggle('${t.id}',${!done})">${icon("check")}</button></td><td class="c-task"><button type="button" class="link title" onclick="editTask('${t.id}')">${esc(t.title)}</button>${taskNote(t)}</td><td class="c-src">${srcPick(t)}</td><td class="c-money">${moneyCell(t)}</td><td class="c-step">${nextStepLine(t)}</td><td class="c-act"><details class="rowmenu"><summary aria-label="Mais ações de ${esc(t.title)}" title="Mais ações">⋯</summary><div class="menu">${owes ? item("pay", "wallet", "Marcar pago", `quickPay('${t.id}')`) : ""}${item("edit", "edit", "Editar", `editTask('${t.id}')`)}${done ? "" : item("prog", "chart", t.status === "Em andamento" ? "Voltar para pendente" : "Marcar em andamento", `setStatus('${t.id}','${t.status === "Em andamento" ? "Pendente" : "Em andamento"}')`)}${item("steps", "check", (t.steps || []).length ? "Etapas" : "Adicionar etapas", `toggleStepsOpen('${t.id}')`)}${isCost(t) ? item("detail", "card", "Pagamentos", `openTask('${t.id}')`) : ""}${item("delete", "trash", "Excluir pendência", `deleteTask('${t.id}')`, "danger")}</div></details></td></tr>${open ? `<tr class="subrow" data-for="${t.id}"><td colspan="6">${stepsList(t)}</td></tr>` : ""}`;
       } catch (err) {
         return badRow(t, err);
       }

@@ -1056,8 +1056,8 @@ nav.subnav button.on small {
 }
 .plist tr[data-id] {
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr) auto minmax(96px, auto) 44px;
-  grid-template-areas: "chk task src money act";
+  grid-template-columns: 32px minmax(0, 1fr) auto minmax(96px, auto) minmax(190px, 250px) 44px;
+  grid-template-areas: "chk task src money step act";
   align-items: center;
   gap: 4px 14px;
   margin-bottom: 8px;
@@ -1095,6 +1095,15 @@ nav.subnav button.on small {
 .plist .c-act {
   grid-area: act;
 }
+.plist .c-step {
+  grid-area: step;
+}
+.plist .c-pay .topay {
+  color: var(--warning);
+}
+.plist .c-pay .done {
+  color: var(--success);
+}
 .plist .donebtn {
   width: 26px;
   height: 26px;
@@ -1119,15 +1128,25 @@ nav.subnav button.on small {
 }
 .plist .nextstep {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 6px 10px;
-  margin-top: 6px;
+  gap: 10px;
+  padding-left: 14px;
+  border-left: 1px solid var(--line);
   font-size: 13px;
 }
 .plist .nextstep span {
+  display: grid;
+  flex: 1;
   min-width: 0;
   color: var(--muted);
+}
+.plist .nextstep small {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.plist .nextstep b {
+  overflow-wrap: anywhere;
 }
 .plist .nextstep b {
   color: var(--ink);
@@ -1655,17 +1674,37 @@ nav.subnav button.on small {
   }
   /* Pendência no celular: nome em cima; fonte e valor numa segunda linha */
   .plist tr[data-id] {
-    grid-template-columns: 30px auto minmax(0, 1fr) 40px;
+    grid-template-columns: 30px minmax(0, 1fr) 40px;
     grid-template-areas:
-      "chk task task act"
-      ". src money money";
+      "chk task act"
+      ". src src"
+      ". money money"
+      ". step step";
     gap: 8px 10px;
     padding: 12px 4px 12px 12px;
   }
-  .plist .c-src:empty {
+  .plist .c-src:empty,
+  .plist .c-step:empty {
     display: none;
   }
+  .plist .nextstep {
+    padding: 8px 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
   .plist .c-money {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 10px;
+    text-align: left;
+  }
+  .plist .c-money:not(:has(*)) {
+    display: none;
+  }
+  .plist .c-val,
+  .plist .c-pay {
+    margin: 0;
     text-align: left;
   }
   .plist tr.subrow {
