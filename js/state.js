@@ -1,6 +1,6 @@
 // Constantes, dados iniciais, estado da aplicação, migração e utilitários
 const KEY = "espanha-assuncao-v1";
-const SCHEMA = 5;
+const SCHEMA = 6;
 const defaultCategories = [
   "Passagens e transporte",
   "Bagagens e acessórios",
@@ -85,27 +85,41 @@ function migrate(d) {
     if (i.sourceId === undefined) i.sourceId = i.origin?.trim() ? sourceByName(i.origin.trim()).id : "";
   });
   if (old === undefined) defaultSources.forEach(sourceByName);
-  d.sources.forEach((s) => (s.consulate = !!s.consulate));
-  if (!(old >= 5)) {
+  // Junta fontes repetidas em uma só, levando junto entradas, reservas e pagamentos
+  const plain = (n) =>
+      n
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .toLowerCase(),
+    mergeInto = (target, names) => {
+      const gone = new Set(d.sources.filter((s) => s !== target && names.includes(plain(s.name))).map((s) => s.id)),
+        swap = (v) => {
+          if (!v || typeof v !== "object") return;
+          if (Array.isArray(v)) return v.forEach(swap);
+          for (const [k, c] of Object.entries(v))
+            if (k === "sourceId" && gone.has(c)) v[k] = target.id;
+            else swap(c);
+        };
+      swap(d.income);
+      swap(d.tasks);
+      d.sources = d.sources.filter((s) => !gone.has(s.id));
+    };
+  if (!(old >= 6)) {
     const target = sourceByName(CONSUL_SOURCE),
-      salary = sourceByName("Salário"),
-      gone = new Set(
-        d.sources
-          .filter((s) => s !== target && CONSUL_MERGE.includes(s.name.trim().toLowerCase()))
-          .map((s) => s.id),
-      ),
-      swap = (v) => {
-        if (!v || typeof v !== "object") return;
-        if (Array.isArray(v)) return v.forEach(swap);
-        for (const [k, c] of Object.entries(v))
-          if (k === "sourceId" && gone.has(c)) v[k] = target.id;
-          else swap(c);
-      };
+      salary = d.sources.find((s) => s.name === "Salário") || d.sources.find((s) => plain(s.name) === "salario") || sourceByName("Salário");
+    mergeInto(target, CONSUL_MERGE.map(plain));
+    mergeInto(salary, ["salario"]);
     target.consulate = true;
-    swap(d.income);
-    swap(d.tasks);
-    d.sources = [salary, target, ...d.sources.filter((s) => s !== target && s !== salary && !gone.has(s.id))];
+    salary.name = "Salário";
+    salary.flow = true;
+    d.sources = [salary, target, ...d.sources.filter((s) => s !== target && s !== salary)];
   }
+  d.sources.forEach((s) => {
+    s.consulate = !!s.consulate;
+    // Fonte "sem saldo" (salário): só indica quem paga, sem entradas nem saldo próprio
+    s.flow = !!s.flow;
+  });
   d.consulGoal = Number(d.consulGoal) > 0 ? Number(d.consulGoal) : CONSUL_GOAL;
   d.folder ??= { category: FOLDER_CATEGORY, deadline: FOLDER_DEADLINE };
   d.categories = [

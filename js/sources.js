@@ -12,7 +12,7 @@ function addSource(name) {
   if (!v || v.length > 70) return null;
   const existing = data.sources.find((s) => s.name.toLowerCase() === v.toLowerCase());
   if (existing) return existing;
-  const s = { id: uid(), name: v, consulate: false };
+  const s = { id: uid(), name: v, consulate: false, flow: false };
   data.sources.push(s);
   save();
   toast("Fonte criada");

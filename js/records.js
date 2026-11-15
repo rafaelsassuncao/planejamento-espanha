@@ -13,7 +13,7 @@ const methodOptions = (v, allow = () => true, empty = "Não informada") =>
 // Salário e Santander Consulado primeiro; as demais fontes ficam agrupadas em "Outra"
 const sourceOptions = (v, empty = "Fonte não definida") => {
   const opt = (s) => `<option value="${s.id}" ${s.id === v ? "selected" : ""}>${esc(s.name)}</option>`,
-    main = (s) => s.consulate || s.name.trim().toLowerCase() === "salário",
+    main = (s) => s.consulate || s.flow,
     others = data.sources.filter((s) => !main(s));
   return (
     `<option value="">${empty}</option>` +
@@ -423,7 +423,7 @@ function quickPay(id, more = false) {
   // Valor indefinido, compra no crédito ou já quitado: abre o formulário completo
   if (forecast(t).unknown || amount < 0.005 || committedBRL(t) > 0.005) return editPayment(id);
   const brl = round2(amount * (t.currency === "EUR" ? data.rate : 1)),
-    salary = data.sources.find((s) => s.name.trim().toLowerCase() === "salário"),
+    salary = data.sources.find((s) => s.flow),
     consul = data.sources.find((s) => s.consulate),
     others = data.sources.filter((s) => s !== salary && s !== consul),
     pick = (s, cls, hint) =>

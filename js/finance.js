@@ -186,6 +186,10 @@ function sourceStats(skipTask, skipRef) {
     s.current = s.received - s.used;
     s.free = s.current - s.reserved;
   });
+  // Salário não tem saldo: nunca falta dinheiro nele
+  data.sources
+    .filter((s) => s.flow)
+    .forEach((s) => Object.assign(st[s.id], { flow: true, current: Infinity, free: Infinity }));
   return st;
 }
 
@@ -195,11 +199,21 @@ function totals(list = data.tasks) {
     open = sum(costs.map(outstandingBRL));
   return { paid, open, total: paid + open, unknown: costs.filter((t) => forecast(t).unknown).length };
 }
+// Saldos da visão geral: só o dinheiro guardado; o que é pago com o salário não entra
 function overall() {
   const t = totals(),
-    received = sum(data.income.filter((i) => i.received).map((i) => num(i.value))),
+    kept = Object.values(sourceStats()).filter((s) => !s.flow),
+    received = sum(kept.map((s) => s.received)),
+    spent = sum(kept.map((s) => s.used)),
     expected = sum(data.income.filter((i) => !i.received).map((i) => num(i.value)));
-  return { ...t, received, expected, current: received - t.paid, projected: received - t.paid - t.open };
+  return {
+    ...t,
+    received,
+    spent,
+    expected,
+    current: received - spent,
+    projected: received - spent - sum(kept.map((s) => s.reserved)),
+  };
 }
 
 // Parcelas iguais (a última ajusta os centavos); mantém pagamentos das parcelas que continuam iguais

@@ -52,7 +52,7 @@
     // ---------- A. Migração dos dados antigos (vindos da nuvem) ----------
     const t1 = T("Passagens"),
       t3 = T("Seguro");
-    check("A schema atual", data.schema === 5);
+    check("A schema atual", data.schema === 6);
     check("A 'Já foi pago' antigo vira pagamento", t1.payments.length === 1 && t1.payments[0].brl === 9000);
     check("A valor 0 antigo fica 'a definir'", t3.kind === "cost" && !t3.priceKnown);
     check("A entradas viram fontes", sourceName(data.income[0].sourceId) === "Santander Consulado");
@@ -77,8 +77,24 @@
       v4.sources.map((x) => x.name).join("|") === "Salário|Santander Consulado" && v4.income[0].sourceId === "s1" && v4.income[0].value === 143300,
       v4.sources.map((x) => x.name),
     );
+    const v5 = {
+      schema: 5,
+      sources: [
+        { id: "a1", name: "Salário", consulate: false },
+        { id: "a2", name: "Santander Consulado", consulate: true },
+        { id: "a3", name: "Salario", consulate: false },
+      ],
+      income: [],
+      tasks: [{ id: "x1", title: "Foto", alloc: [{ sourceId: "a3", brl: null }], payments: [] }],
+    };
+    migrate(v5);
+    check(
+      "A 'Salario' sem acento se junta ao 'Salário', que fica sem saldo",
+      v5.sources.length === 2 && v5.sources[0].flow && v5.tasks[0].alloc[0].sourceId === "a1",
+      v5.sources,
+    );
     check("A pasta com prazo 15/11/2026", data.folder.deadline === "2026-11-15");
-    check("A migração gravou na nuvem com versão", __mock.server.schema === 5 && __mock.server.rev >= 1);
+    check("A migração gravou na nuvem com versão", __mock.server.schema === 6 && __mock.server.rev >= 1);
     data.rate = 6;
 
     // ---------- B. Pendência: criar, dinheiro formatado, editar, excluir ----------
@@ -345,6 +361,23 @@
     );
     row(sw).querySelector(`.srcmenu [data-src="${S("Salário").id}"]`).click();
     check("F atalho volta para o salário", sw.alloc[0].sourceId === S("Salário").id && !!row(sw).querySelector(".srcpill.sal"));
+    const salId = S("Salário").id;
+    check(
+      "F salário não tem saldo nem fica negativo",
+      S("Salário").flow && sourceStats()[salId].current === Infinity && pp.payments[0].split[0].sourceId === salId,
+    );
+    check(
+      "F saldo da visão geral ignora o que foi pago com salário",
+      near(overall().current, sum(Object.values(sourceStats()).filter((s) => !s.flow).map((s) => s.received - s.used))),
+    );
+    page = "income";
+    incomePart = "fontes";
+    render();
+    check(
+      "F tabela de fontes mostra salário sem saldo negativo",
+      !!document.querySelector(".flowrow") && !document.querySelector(".flowrow .neg") && !document.querySelector("nav.subnav").textContent.includes("Cartões"),
+    );
+    listTasks();
     setFilter("src", "Salário");
     check(
       "F filtro Salário mostra só o salário",

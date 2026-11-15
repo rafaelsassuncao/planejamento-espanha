@@ -53,7 +53,7 @@ function cards() {
     est = estimatedOpen(),
     card = (cls, ic, label, v, sub, help = "") =>
       `<div class="card kpi ${cls}"><span class="iconcircle">${icon(ic)}</span><div><label>${label} ${help ? tip(help) : ""}</label><div class="amount">${money(v)}</div><span class="sub">${sub}</span></div></div>`;
-  return `<div class="cards">${card("green", "wallet", "Saldo atual", o.current, "", `Recebido ${money(o.received)} − pago ${money(o.paid)}`)}${card("amber", "file", "Custo total", o.total, `Pago ${money(o.paid)} · falta ${money(o.open)}${e ? `<br>${money(e, "EUR")} em euro` : ""}${o.unknown ? "<br>" + incomplete(o.unknown) : ""}`, est > 0.005 ? `${money(est)} em estimativas` : "")}${card("mint", "chart", "Saldo previsto", o.projected, `${o.expected ? `+ ${money(o.expected)} a receber` : ""}`, "Saldo atual menos o que falta pagar")}</div>`;
+  return `<div class="cards">${card("green", "wallet", "Saldo atual", o.current, "", `Recebido ${money(o.received)} − pago ${money(o.spent)}. O que é pago com o salário não entra.`)}${card("amber", "file", "Custo total", o.total, `Pago ${money(o.paid)} · falta ${money(o.open)}${e ? `<br>${money(e, "EUR")} em euro` : ""}${o.unknown ? "<br>" + incomplete(o.unknown) : ""}`, est > 0.005 ? `${money(est)} em estimativas` : "")}${card("mint", "chart", "Saldo previsto", o.projected, `${o.expected ? `+ ${money(o.expected)} a receber` : ""}`, "Saldo atual menos o que falta pagar fora do salário")}</div>`;
 }
 
 // Reserva do Santander apresentada ao consulado: quanto tem, quanto vai sair, quanto fica e o aviso da meta
@@ -210,7 +210,6 @@ const PARTS = {
     [
       ["fontes", "De onde vem"],
       ["entradas", "Entradas"],
-      ["cartoes", "Cartões e faturas"],
     ].map(([k, label]) => ({
       label,
       on: incomePart === k,
@@ -289,12 +288,12 @@ function render() {
     };
   }
   if (page === "income") {
-    const titles = { fontes: "De onde vem o dinheiro", entradas: "Entradas", cartoes: "Cartões e faturas" },
+    const titles = { fontes: "De onde vem o dinheiro", entradas: "Entradas" },
       title = titles[incomePart] || titles.fontes;
     $("#app").innerHTML =
       subnav("income") +
       `<header class="pagehead compact"><div><h1>${title}</h1></div></header>` +
-      (incomePart === "entradas" ? incomeTable() : incomePart === "cartoes" ? cardsPanel() : sourcesPanel());
+      (incomePart === "entradas" ? incomeTable() : sourcesPanel());
   }
   if (page === "settings")
     $("#app").innerHTML =
@@ -543,7 +542,7 @@ function srcPick(t) {
   if (!isCost(t)) return "";
   if (outflows(t).length || committedBRL(t) > 0.005) return srcPill(t);
   const cur = t.alloc.length === 1 ? t.alloc[0].sourceId : "",
-    salary = data.sources.find((s) => s.name.trim().toLowerCase() === "salário"),
+    salary = data.sources.find((s) => s.flow),
     consul = data.sources.find((s) => s.consulate),
     item = (s, cls) =>
       `<button type="button" data-src="${s.id}" class="${cls}${s.id === cur ? " on" : ""}" onclick="this.closest('details').open=false;setPlanned('${t.id}','${s.id}')"><i class="dot"></i><span>${esc(s.name)}</span></button>`;
@@ -636,26 +635,14 @@ function sourcesPanel() {
     );
   return `<section class="panel"><div class="paneltop"><div><h3>Fontes</h3><p class="sub">Saldo livre = recebido − usado − reservado para pendências.</p></div><div class="panelactions"><button class="btn" onclick="manageSources()">Editar fontes</button><button class="btn primary" onclick="editIncome()">+ Entrada</button></div></div><div class="tablewrap"><table class="cardtable sources"><thead><tr><th>Fonte</th><th>Recebido</th><th>Utilizado</th><th>Saldo atual</th><th>Reservado</th><th>Saldo livre</th><th></th></tr></thead><tbody>${rows
     .map(([id, name]) => {
-      const s = st[id],
-        noBalance = !id && !s.received && !s.expected,
+      const s = st[id];
+      if (s.flow)
+        return `<tr class="flowrow"><td data-label="Fonte"><div><b>${esc(name)}</b><br><small>sem saldo · só indica o que é pago com o salário</small></div></td><td data-label="Recebido"><div class="muted">—</div></td><td data-label="Pago com ele"><div>${money(s.used)}</div></td><td data-label="Saldo atual"><div class="muted">—</div></td><td data-label="A pagar com ele"><div>${money(s.reserved)}</div></td><td data-label="Saldo livre"><div class="muted">—</div></td><td class="rowactions"><button class="link" onclick="sourceLinks('${id}')">Ver detalhes</button></td></tr>`;
+      const noBalance = !id && !s.received && !s.expected,
         bal = (v) => (noBalance ? "—" : `<b>${money(v)}</b>`);
       return `<tr><td data-label="Fonte"><div><b>${esc(name)}</b>${s.expected ? `<br><small>+ ${money(s.expected)} previsto</small>` : ""}</div></td><td data-label="Recebido"><div>${money(s.received)}</div></td><td data-label="Utilizado"><div>${money(s.used)}</div></td><td data-label="Saldo atual"${noBalance ? "" : neg(s.current)}><div>${bal(s.current)}</div></td><td data-label="${id ? "Reservado" : "A pagar sem fonte"}"><div>${money(s.reserved)}</div></td><td data-label="Saldo livre"${noBalance ? "" : neg(s.free)}><div>${bal(s.free)}${!noBalance && s.free < -0.005 ? "<br><small>⚠ reservas acima do saldo</small>" : ""}</div></td><td class="rowactions"><button class="link" onclick="sourceLinks('${id}')">Ver detalhes</button></td></tr>`;
     })
     .join("")}</tbody></table></div></section>`;
-}
-// Faturas em aberto por cartão; pagar a fatura quita as parcelas vinculadas
-function cardsPanel() {
-  const bills = openBills();
-  return `<section class="panel"><div class="paneltop"><div class="titleicon"><span class="iconcircle small">${icon("card")}</span><h3>Cartões e faturas</h3></div><button class="btn" onclick="manageAccounts()">Editar cartões</button></div>${
-    bills.length
-      ? `${bills
-          .map(
-            (b) =>
-              `<div class="statrow"><span><b>${esc(accountName(b.accountId) || "Cartão")}</b> · fatura de ${monthName(b.month)}<br><small>vence ${fmtDate(b.due)} · ${b.items.map(({ t, c, i }) => `${esc(t.title)} ${i.n}/${c.installments.length}`).join(", ")}</small></span><span class="nowrap"><b>${money(b.total)}</b> <button class="btn small" onclick="payBill(${jsArg(b.accountId)},${jsArg(b.month)})">Pagar fatura</button></span></div>`,
-          )
-          .join("")}`
-      : (data.accounts.length ? '<p class="sub">Nenhuma fatura para pagar.</p>' : '<button class="btn" onclick="manageAccounts()">+ Adicionar cartão</button>')
-  }</section>`;
 }
 function incomeTable() {
   return `<section class="panel"><div class="paneltop"><h3>Entradas</h3><button class="btn primary" onclick="editIncome()">+ Nova entrada</button></div>${

@@ -1670,6 +1670,14 @@ nav.subnav button.on small {
   .chipsep {
     display: none;
   }
+  .cardtable.sources tr.flowrow td[data-label="Recebido"],
+  .cardtable.sources tr.flowrow td[data-label="Saldo atual"],
+  .cardtable.sources tr.flowrow td[data-label="Saldo livre"] {
+    display: none;
+  }
+  .cardtable.sources tr.flowrow td:first-child {
+    flex-basis: 100%;
+  }
   /* Fontes no celular: nome e saldo livre em destaque, o resto numa linha pequena */
   .cardtable.sources tr {
     display: flex;

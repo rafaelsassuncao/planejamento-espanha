@@ -12,7 +12,7 @@ try {
   if (s && Date.now() - s.at < 30 * 60 * 1000 && ["overview", "tasks", "income", "settings"].includes(s.page)) {
     page = s.page;
     if (categories.includes(s.cat)) cat = s.cat;
-    if (["fontes", "entradas", "cartoes"].includes(s.incomePart)) incomePart = s.incomePart;
+    if (["fontes", "entradas"].includes(s.incomePart)) incomePart = s.incomePart;
   }
 } catch {}
 addEventListener("pagehide", () => {
