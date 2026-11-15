@@ -111,7 +111,7 @@ const task = (id, title, value) => ({
 });
 // Documento já no formato atual, com número de versão, para os testes de sincronização
 export const current = (rev, values) => ({
-  schema: 4,
+  schema: 5,
   rev,
   consulGoal: 113000,
   rate: 6,

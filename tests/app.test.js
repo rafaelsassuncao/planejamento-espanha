@@ -52,7 +52,7 @@
     // ---------- A. Migração dos dados antigos (vindos da nuvem) ----------
     const t1 = T("Passagens"),
       t3 = T("Seguro");
-    check("A schema atual", data.schema === 4);
+    check("A schema atual", data.schema === 5);
     check("A 'Já foi pago' antigo vira pagamento", t1.payments.length === 1 && t1.payments[0].brl === 9000);
     check("A valor 0 antigo fica 'a definir'", t3.kind === "cost" && !t3.priceKnown);
     check("A entradas viram fontes", sourceName(data.income[0].sourceId) === "Santander Consulado");
@@ -61,8 +61,24 @@
       !S("Venda do apartamento") && !S("Reserva pessoal") && S("Santander Consulado").consulate && !S("Salário").consulate,
     );
     check("A meta do consulado começa em R$ 113 mil", data.consulGoal === 113000);
+    const v4 = {
+      schema: 4,
+      sources: [
+        { id: "s1", name: "Santander Consulado", consulate: true },
+        { id: "s2", name: "Venda Ap" },
+        { id: "s3", name: "Reserva Carro" },
+      ],
+      income: [{ id: "i9", value: 143300, sourceId: "s2", received: true }],
+      tasks: [],
+    };
+    migrate(v4);
+    check(
+      "A 'Venda Ap' e 'Reserva Carro' entram no Santander e Salário existe",
+      v4.sources.map((x) => x.name).join("|") === "Salário|Santander Consulado" && v4.income[0].sourceId === "s1" && v4.income[0].value === 143300,
+      v4.sources.map((x) => x.name),
+    );
     check("A pasta com prazo 15/11/2026", data.folder.deadline === "2026-11-15");
-    check("A migração gravou na nuvem com versão", __mock.server.schema === 4 && __mock.server.rev >= 1);
+    check("A migração gravou na nuvem com versão", __mock.server.schema === 5 && __mock.server.rev >= 1);
     data.rate = 6;
 
     // ---------- B. Pendência: criar, dinheiro formatado, editar, excluir ----------
@@ -245,6 +261,20 @@
         !$("#modal").open,
     );
     owe.payments.pop();
+    quickPay(owe.id);
+    check(
+      "E2 só três opções: Salário, Santander e Outra",
+      [...document.querySelectorAll("#modal .paypick .paysrc")].map((b) => b.querySelector("span").textContent).join("|") ===
+        "Salário|Santander Consulado|Outra",
+    );
+    document.querySelector('#modal [data-act="other"]').click();
+    $("#form [name=newsource]").value = "Conta Nubank";
+    [...document.querySelectorAll("#modal .payother .btn")].at(-1).click();
+    check(
+      "E2 'Outra' cadastra fonte nova e marca pago",
+      !!S("Conta Nubank") && owe.payments.at(-1).split[0].sourceId === S("Conta Nubank").id && !$("#modal").open,
+    );
+    owe.payments.pop();
     owe.status = "Pendente";
     costF = "Todos";
     save();
@@ -307,6 +337,14 @@
     listTasks();
     check("F etiqueta da fonte na linha", row(pp).querySelector(".srcpill.sal")?.textContent.includes("Salário"));
     check("F etiqueta da reserva na linha", row(nb()).querySelector(".srcpill.res")?.textContent.includes("Santander"));
+    const sw = data.tasks.find((t) => isCost(t) && !outflows(t).length && !committedBRL(t) && t.status !== "Concluído");
+    row(sw).querySelector(`.srcmenu [data-src="${S("Santander Consulado").id}"]`).click();
+    check(
+      "F atalho na linha troca a fonte para o Santander",
+      sw.alloc.length === 1 && sw.alloc[0].sourceId === S("Santander Consulado").id && !!row(sw).querySelector(".srcpill.res"),
+    );
+    row(sw).querySelector(`.srcmenu [data-src="${S("Salário").id}"]`).click();
+    check("F atalho volta para o salário", sw.alloc[0].sourceId === S("Salário").id && !!row(sw).querySelector(".srcpill.sal"));
     setFilter("src", "Salário");
     check(
       "F filtro Salário mostra só o salário",

@@ -1183,6 +1183,82 @@ nav.subnav button.on small {
   font-weight: 600;
   white-space: nowrap;
 }
+.plist td,
+.plist tr.st-prog > td,
+.plist tr.st-done > td {
+  background: none;
+  box-shadow: none;
+}
+.srcmenu {
+  position: relative;
+}
+.srcmenu > summary {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  cursor: pointer;
+  list-style: none;
+}
+.srcmenu > summary::-webkit-details-marker {
+  display: none;
+}
+.srcmenu > summary .srcpill {
+  transition: transform 0.2s, filter 0.2s;
+}
+.srcmenu > summary:hover .srcpill {
+  filter: brightness(1.15);
+}
+.srcpill.none {
+  border: 1px dashed var(--line-2);
+  background: transparent;
+  color: var(--muted);
+}
+.srcmenu .menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 30;
+  display: grid;
+  min-width: 220px;
+  padding: 8px;
+  border: 1px solid var(--line-2);
+  border-radius: 16px;
+  background: var(--solid-2);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+  animation: popin 0.28s var(--spring) both;
+  transform-origin: top right;
+}
+.srcmenu .menu small {
+  padding: 4px 10px 6px;
+  color: var(--muted);
+}
+.srcmenu .menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--ink);
+  font-weight: 600;
+  text-align: left;
+}
+.srcmenu .menu button:hover,
+.srcmenu .menu button.on {
+  background: var(--glass-2);
+}
+.srcmenu .menu .sal .dot {
+  color: var(--success);
+}
+.srcmenu .menu .res .dot {
+  color: var(--saffron);
+}
+.srcmenu .menu [data-src="other"] .dot {
+  color: var(--muted);
+}
+.srcmenu .dot,
 .srcpill .dot,
 .chip .dot,
 .sumgrid .dot {
@@ -1322,6 +1398,26 @@ nav.subnav button.on small {
 .btn.paysrc small {
   color: var(--muted);
   font-weight: 500;
+}
+.paypick {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.btn.paysrc.other.on {
+  border-color: var(--ink);
+}
+.payother {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--glass);
+}
+@media (max-width: 700px) {
+  .paypick {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 .btn.paysrc.sal {
   border-color: rgba(94, 230, 160, 0.4);

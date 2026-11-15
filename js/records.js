@@ -10,11 +10,17 @@ const methodOptions = (v, allow = () => true, empty = "Não informada") =>
   METHODS.filter(([k]) => allow(k))
     .map(([k, l]) => `<option value="${k}" ${k === v ? "selected" : ""}>${l}</option>`)
     .join("");
-const sourceOptions = (v, empty = "Fonte não definida") =>
-  `<option value="">${empty}</option>` +
-  data.sources
-    .map((s) => `<option value="${s.id}" ${s.id === v ? "selected" : ""}>${esc(s.name)}</option>`)
-    .join("");
+// Salário e Santander Consulado primeiro; as demais fontes ficam agrupadas em "Outra"
+const sourceOptions = (v, empty = "Fonte não definida") => {
+  const opt = (s) => `<option value="${s.id}" ${s.id === v ? "selected" : ""}>${esc(s.name)}</option>`,
+    main = (s) => s.consulate || s.name.trim().toLowerCase() === "salário",
+    others = data.sources.filter((s) => !main(s));
+  return (
+    `<option value="">${empty}</option>` +
+    data.sources.filter(main).map(opt).join("") +
+    (others.length ? `<optgroup label="Outra">${others.map(opt).join("")}</optgroup>` : "")
+  );
+};
 const splitText = (p) =>
   paySplit(p)
     .map((s) => `${esc(sourceName(validSource(s.sourceId)))} ${money(num(s.brl))}`)
@@ -409,28 +415,34 @@ function removeCredit(taskId, creditId) {
   t.credits = t.credits.filter((x) => x.id !== creditId);
   saveOk(t, "Compra no crédito excluída");
 }
-// Marcar pago: pergunta só de onde saiu o dinheiro e registra o que falta, com a data de hoje
-function quickPay(id) {
+// Marcar pago: Salário, Santander Consulado ou "Outra" (demais fontes ou uma nova); registra o que falta, com a data de hoje
+function quickPay(id, more = false) {
   const t = findTask(id);
   if (!t) return;
   const amount = uncoveredCur(t);
   // Valor indefinido, compra no crédito ou já quitado: abre o formulário completo
   if (forecast(t).unknown || amount < 0.005 || committedBRL(t) > 0.005) return editPayment(id);
-  const rate = t.currency === "EUR" ? data.rate : 1,
-    brl = round2(amount * rate),
-    planned = taskSources(t)[0],
-    choices = [...data.sources].sort((a, b) => (b.id === planned) - (a.id === planned) || b.consulate - a.consulate);
+  const brl = round2(amount * (t.currency === "EUR" ? data.rate : 1)),
+    salary = data.sources.find((s) => s.name.trim().toLowerCase() === "salário"),
+    consul = data.sources.find((s) => s.consulate),
+    others = data.sources.filter((s) => s !== salary && s !== consul),
+    pick = (s, cls, hint) =>
+      `<button type="button" class="btn paysrc ${cls}" data-src="${s.id}" onclick="confirmQuickPay('${t.id}','${s.id}')"><span>${esc(s.name)}</span><small>${hint}</small></button>`;
   showForm(
-    `<h3>Marcar pago</h3><p class="sub">${esc(t.title)} · ${money(amount, t.currency)}${t.currency === "EUR" ? ` (${money(brl)})` : ""}</p><p class="paywho">Pagou com:</p><div class="paypick">${choices
-      .map(
-        (s) =>
-          `<button type="button" class="btn paysrc ${s.consulate ? "res" : "sal"}" data-src="${s.id}" onclick="confirmQuickPay('${t.id}','${s.id}')"><span>${esc(s.name)}</span><small>${s.consulate ? "reserva do consulado" : "não mexe na reserva"}</small></button>`,
-      )
-      .join(
-        "",
-      )}</div><button type="button" class="link" onclick="editPayment('${t.id}')">Outra forma (cartão, parcelas ou dividir entre fontes)</button><div class="actions"><button type="button" class="btn" onclick="$('#modal').close()">Cancelar</button></div>`,
-    () => {},
+    `<h3>Marcar pago</h3><p class="sub">${esc(t.title)} · ${money(amount, t.currency)}${t.currency === "EUR" ? ` (${money(brl)})` : ""}</p><p class="paywho">Pagou com:</p><div class="paypick">${salary ? pick(salary, "sal", "não mexe na reserva") : ""}${consul ? pick(consul, "res", "reserva do consulado") : ""}<button type="button" class="btn paysrc other${more ? " on" : ""}" data-act="other" aria-expanded="${more}" onclick="quickPay('${t.id}',${!more})"><span>Outra</span><small>outra conta ou fonte</small></button></div>${
+      more
+        ? `<div class="payother">${others.map((s) => pick(s, "sal", "outra fonte")).join("")}<label>Cadastrar nova fonte<input name="newsource" maxlength="70" placeholder="Ex.: Conta Nubank"></label><button type="button" class="btn primary" onclick="quickPayNew('${t.id}')">Criar e marcar pago</button></div>`
+        : ""
+    }<button type="button" class="link" onclick="editPayment('${t.id}')">Cartão, parcelas ou dividir entre fontes</button><div class="actions"><button type="button" class="btn" onclick="$('#modal').close()">Cancelar</button></div>`,
+    () => quickPayNew(t.id),
   );
+  if (more) $("#form [name=newsource]").focus();
+}
+function quickPayNew(id) {
+  const name = $("#form [name=newsource]")?.value.trim();
+  if (!name) return toast("Escreva o nome da nova fonte.");
+  const s = addSource(name);
+  if (s) confirmQuickPay(id, s.id);
 }
 function confirmQuickPay(id, sourceId) {
   const t = findTask(id),

@@ -524,6 +524,25 @@ function originText(t) {
     .map((a) => sourceName(a.sourceId) + (a.brl !== null && a.brl !== "" ? ` (${money(num(a.brl))})` : ""))
     .join(" + ");
 }
+// Atalho na linha: tocar na fonte troca de onde o dinheiro vai sair (enquanto nada foi pago)
+function srcPick(t) {
+  if (!isCost(t)) return "";
+  if (outflows(t).length || committedBRL(t) > 0.005) return srcPill(t);
+  const cur = t.alloc.length === 1 ? t.alloc[0].sourceId : "",
+    salary = data.sources.find((s) => s.name.trim().toLowerCase() === "salário"),
+    consul = data.sources.find((s) => s.consulate),
+    item = (s, cls) =>
+      `<button type="button" data-src="${s.id}" class="${cls}${s.id === cur ? " on" : ""}" onclick="this.closest('details').open=false;setPlanned('${t.id}','${s.id}')"><i class="dot"></i><span>${esc(s.name)}</span></button>`;
+  return `<details class="srcmenu"><summary aria-label="Trocar a fonte de ${esc(t.title)}" title="Trocar de onde sai o dinheiro">${srcPill(t) || '<span class="srcpill none"><i class="dot"></i>Escolher fonte</span>'}</summary><div class="menu"><small>Vai sair de:</small>${salary ? item(salary, "sal") : ""}${consul ? item(consul, "res") : ""}<button type="button" data-src="other" onclick="this.closest('details').open=false;editTask('${t.id}')"><i class="dot"></i><span>Outra…</span></button></div></details>`;
+}
+function setPlanned(id, sourceId) {
+  const t = data.tasks.find((x) => x.id === id);
+  if (!t) return;
+  t.alloc = [{ sourceId, brl: null }];
+  save();
+  updateRows();
+  toast(`Vai sair de ${sourceName(sourceId)}`);
+}
 // Etiqueta da fonte de pagamento da pendência
 function srcPill(t) {
   const k = bucket(t);
@@ -574,7 +593,7 @@ function taskTable(a) {
           owes = isCost(t) && !forecast(t).unknown && uncoveredCur(t) > 0.005,
           item = (act, ic, label, fn, cls = "") =>
             `<button type="button" data-act="${act}"${cls ? ` class="${cls}"` : ""} onclick="this.closest('details').open=false;${fn}">${icon(ic)}<span>${label}</span></button>`;
-        return `<tr data-id="${t.id}" class="${statusRow(t.status)}${open ? " has-sub" : ""}"><td class="c-check"><button type="button" class="donebtn${done ? " on" : ""}" aria-label="${done ? "Reabrir" : "Concluir"} ${esc(t.title)}" title="${done ? "Reabrir" : "Concluir"}" onclick="toggle('${t.id}',${!done})">${icon("check")}</button></td><td class="c-task"><button type="button" class="link title" onclick="editTask('${t.id}')">${esc(t.title)}</button>${taskNote(t)}${nextStepLine(t)}</td><td class="c-src">${srcPill(t)}</td><td class="c-money">${moneyCell(t)}</td><td class="c-act"><details class="rowmenu"><summary aria-label="Mais ações de ${esc(t.title)}" title="Mais ações">⋯</summary><div class="menu">${owes ? item("pay", "wallet", "Marcar pago", `quickPay('${t.id}')`) : ""}${item("edit", "edit", "Editar", `editTask('${t.id}')`)}${done ? "" : item("prog", "chart", t.status === "Em andamento" ? "Voltar para pendente" : "Marcar em andamento", `setStatus('${t.id}','${t.status === "Em andamento" ? "Pendente" : "Em andamento"}')`)}${item("steps", "check", (t.steps || []).length ? "Etapas" : "Adicionar etapas", `toggleStepsOpen('${t.id}')`)}${isCost(t) ? item("detail", "card", "Pagamentos", `openTask('${t.id}')`) : ""}${item("delete", "trash", "Excluir pendência", `deleteTask('${t.id}')`, "danger")}</div></details></td></tr>${open ? `<tr class="subrow" data-for="${t.id}"><td colspan="5">${stepsList(t)}</td></tr>` : ""}`;
+        return `<tr data-id="${t.id}" class="${statusRow(t.status)}${open ? " has-sub" : ""}"><td class="c-check"><button type="button" class="donebtn${done ? " on" : ""}" aria-label="${done ? "Reabrir" : "Concluir"} ${esc(t.title)}" title="${done ? "Reabrir" : "Concluir"}" onclick="toggle('${t.id}',${!done})">${icon("check")}</button></td><td class="c-task"><button type="button" class="link title" onclick="editTask('${t.id}')">${esc(t.title)}</button>${taskNote(t)}${nextStepLine(t)}</td><td class="c-src">${srcPick(t)}</td><td class="c-money">${moneyCell(t)}</td><td class="c-act"><details class="rowmenu"><summary aria-label="Mais ações de ${esc(t.title)}" title="Mais ações">⋯</summary><div class="menu">${owes ? item("pay", "wallet", "Marcar pago", `quickPay('${t.id}')`) : ""}${item("edit", "edit", "Editar", `editTask('${t.id}')`)}${done ? "" : item("prog", "chart", t.status === "Em andamento" ? "Voltar para pendente" : "Marcar em andamento", `setStatus('${t.id}','${t.status === "Em andamento" ? "Pendente" : "Em andamento"}')`)}${item("steps", "check", (t.steps || []).length ? "Etapas" : "Adicionar etapas", `toggleStepsOpen('${t.id}')`)}${isCost(t) ? item("detail", "card", "Pagamentos", `openTask('${t.id}')`) : ""}${item("delete", "trash", "Excluir pendência", `deleteTask('${t.id}')`, "danger")}</div></details></td></tr>${open ? `<tr class="subrow" data-for="${t.id}"><td colspan="5">${stepsList(t)}</td></tr>` : ""}`;
       } catch (err) {
         return badRow(t, err);
       }
