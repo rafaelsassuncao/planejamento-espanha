@@ -443,22 +443,19 @@
       document.querySelector(".salary .salnums").textContent.replace(/\s/g, " ").includes(moneyFmt(salInfo.total)) &&
         near(salInfo.total, salInfo.paid + salInfo.open),
     );
-    document.querySelector('.consul [data-go="Reserva"]').click();
-    const shownIds = () => [...document.querySelectorAll("#rows tr[data-id]")].map((r) => data.tasks.find((t) => t.id === r.dataset.id));
+    const listed = (k) => [...document.querySelectorAll(`#list-${k} .minirow`)].map((b) => data.tasks.find((t) => b.getAttribute("onclick").includes(t.id)));
+    document.querySelector('[data-toggle="res"]').click();
     check(
-      "H botão do Santander mostra só o que sai da reserva",
-      page === "tasks" && filter === "Todos" && shownIds().length > 0 && shownIds().every((t) => ["res", "mix"].includes(bucket(t))),
+      "H Santander abre a lista no próprio cartão, só com o que sai da reserva",
+      page === "overview" && $("#list-res").classList.contains("open") && listed("res").length > 0 && listed("res").every((t) => ["res", "mix"].includes(bucket(t))),
     );
-    page = "overview";
-    render();
-    document.querySelector('.salary [data-go="Salário"]').click();
+    document.querySelector('[data-toggle="sal"]').click();
     check(
-      "H botão do salário mostra pagas e a pagar com o salário",
-      page === "tasks" && shownIds().length > 0 && shownIds().every((t) => ["sal", "mix"].includes(bucket(t))),
+      "H abrir a do salário fecha a do Santander",
+      $("#list-sal").classList.contains("open") && !$("#list-res").classList.contains("open") && listed("sal").every((t) => ["sal", "mix"].includes(bucket(t))),
     );
-    srcF = "Todas";
-    page = "overview";
-    render();
+    document.querySelector('[data-toggle="sal"]').click();
+    check("H tocar de novo fecha a lista", !$("#list-sal").classList.contains("open"));
     const loose = data.tasks.find((t) => isCost(t) && (reserves(t)[""] || 0) > 0.005);
     sourceLinks("");
     document.querySelector(`#modal .assign [onclick*="${loose.id}"][data-src="${S("Salário").id}"]`).click();

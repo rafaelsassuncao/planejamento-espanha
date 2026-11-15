@@ -1711,6 +1711,103 @@ nav.subnav button.on small {
   }
 }
 
+/* Lista que desce dentro dos cartões da visão geral (uma aberta por vez) */
+.cardtoggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.cardtoggle .ic {
+  width: 18px;
+  height: 18px;
+  transition: transform 0.35s var(--spring);
+}
+.cardtoggle[aria-expanded="true"] .ic {
+  transform: rotate(180deg);
+}
+.cardlist {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.5s var(--sheet);
+}
+.cardlist.open {
+  grid-template-rows: 1fr;
+}
+.cardlist > div {
+  overflow: hidden;
+}
+.cardlistin {
+  display: grid;
+  gap: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  margin-top: 6px;
+}
+.cardlist.open .minirow {
+  animation: rise 0.45s var(--ease-out) both;
+}
+.cardlist.open .minirow:nth-child(2) { animation-delay: 40ms; }
+.cardlist.open .minirow:nth-child(3) { animation-delay: 80ms; }
+.cardlist.open .minirow:nth-child(4) { animation-delay: 120ms; }
+.cardlist.open .minirow:nth-child(n + 5) { animation-delay: 160ms; }
+.minigroup {
+  display: grid;
+  gap: 6px;
+}
+.minigroup .eyebrow {
+  margin-bottom: 2px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.minirow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 52px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--glass);
+  color: var(--ink);
+  text-align: left;
+  transition: background 0.2s, border-color 0.2s;
+}
+.minirow:hover {
+  border-color: var(--line-2);
+  background: var(--glass-2);
+}
+.minirow > span {
+  display: grid;
+  min-width: 0;
+}
+.minirow small {
+  color: var(--muted);
+}
+.minival {
+  flex: none;
+  text-align: right;
+}
+.minival b {
+  font-family: var(--display);
+  font-variant-numeric: tabular-nums;
+}
+.minival .ok {
+  color: var(--success);
+}
+.minival .due {
+  color: var(--warning);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cardlist,
+  .cardtoggle .ic {
+    transition: none;
+  }
+}
+
 /* Tela de login */
 .login {
   background: var(--bg);
