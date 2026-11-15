@@ -390,11 +390,14 @@
     render();
     check(
       "H aviso quando a reserva está abaixo da meta",
-      document.querySelector(".consul .alert.late")?.textContent.includes("Abaixo da meta do consulado"),
+      document.querySelector(".consulstatus.late")?.textContent.includes("Abaixo da meta"),
     );
-    data.consulGoal = Math.max(1, cur - consulInfo().reserved - 1000);
+    data.consulGoal = Math.max(1, (cur - consulInfo().reserved) / 1.2);
     render();
-    check("H sem aviso quando está acima da meta", !!document.querySelector(".consul .alert.done"));
+    check("H acima da meta com folga", !!document.querySelector(".consulstatus.done"));
+    data.consulGoal = Math.max(1, (cur - consulInfo().reserved) / 1.02);
+    render();
+    check("H 'quase no limite' quando sobra menos de 5%", document.querySelector(".consulstatus.warn")?.textContent.includes("Quase no limite"));
     data.consulGoal = goal0;
     render();
     const nx = [...document.querySelectorAll(".nextrow")];

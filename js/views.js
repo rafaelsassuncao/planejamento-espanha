@@ -56,18 +56,32 @@ function cards() {
   return `<div class="cards">${card("green", "wallet", "Saldo atual", o.current, "", `Recebido ${money(o.received)} − pago ${money(o.paid)}`)}${card("amber", "file", "Custo total", o.total, `Pago ${money(o.paid)} · falta ${money(o.open)}${e ? `<br>${money(e, "EUR")} em euro` : ""}${o.unknown ? "<br>" + incomplete(o.unknown) : ""}`, est > 0.005 ? `${money(est)} em estimativas` : "")}${card("mint", "chart", "Saldo previsto", o.projected, `${o.expected ? `+ ${money(o.expected)} a receber` : ""}`, "Saldo atual menos o que falta pagar")}</div>`;
 }
 
-// Reserva do Santander apresentada ao consulado: saldo, meta e aviso quando fica abaixo
+// Reserva do Santander apresentada ao consulado: quanto tem, quanto vai sair, quanto fica e o aviso da meta
+const NEAR_GOAL = 0.05; // até 5% acima da meta: "quase no limite"
+function consulState(c = consulInfo()) {
+  const low = Math.min(c.current, c.after);
+  if (low < c.goal - 0.005)
+    return {
+      cls: "late",
+      icon: "alert",
+      title: "Abaixo da meta",
+      text: `Faltam ${money(c.goal - low)} para os ${money(c.goal)}.`,
+    };
+  if (low < c.goal * (1 + NEAR_GOAL))
+    return {
+      cls: "warn",
+      icon: "alert",
+      title: "Quase no limite, cuidado",
+      text: `Só ${money(low - c.goal)} acima da meta.`,
+    };
+  return { cls: "done", icon: "check", title: "Acima da meta", text: `Sobram ${money(low - c.goal)} de folga.` };
+}
 function consulCard() {
   const c = consulInfo(),
-    pct = Math.max(0, Math.min(100, Math.round((c.current / c.goal) * 100))),
-    gap = (v) => money(c.goal - v),
-    alert =
-      c.current < c.goal - 0.005
-        ? ["late", "alert", `Abaixo da meta do consulado: faltam ${gap(c.current)}.`]
-        : c.after < c.goal - 0.005
-          ? ["warn", "alert", `Pagando o que está previsto sair da reserva, ela fica ${gap(c.after)} abaixo da meta.`]
-          : ["done", "check", "Reserva acima da meta do consulado."];
-  return `<section class="panel consul ${alert[0]}"><div class="paneltop"><div><small class="eyebrow">Reserva do consulado · Santander</small><div class="amount">${money(c.current)}</div></div><div class="goal"><small>Meta</small><b>${money(c.goal)}</b></div></div><div class="bar"><span style="width:${pct}%"></span></div><div class="consulrow"><small>${pct}% da meta</small>${c.reserved > 0.005 ? `<small>Previsto sair da reserva: <b>${money(c.reserved)}</b> · fica ${money(c.after)}</small>` : ""}</div><div class="alert ${alert[0]}">${icon(alert[1])}<span>${alert[2]}</span></div></section>`;
+    st = consulState(c),
+    scale = Math.max(c.current, c.goal) * 1.08 || 1,
+    w = (v) => Math.max(0, Math.min(100, (v / scale) * 100)).toFixed(2) + "%";
+  return `<section class="panel consul ${st.cls}"><small class="eyebrow">Reserva do consulado · Santander</small><div class="consulnums"><div><small>Tenho no Santander</small><b>${money(c.current)}</b></div><span class="op" aria-hidden="true">−</span><div class="out"><small>Vai sair</small><b>${money(c.reserved)}</b></div><span class="op" aria-hidden="true">=</span><div class="left"><small>Vai ficar</small><b>${money(c.after)}</b></div><div class="consulstatus ${st.cls}" role="status">${icon(st.icon)}<span><b>${st.title}</b><small>${st.text}</small></span></div></div><div class="goalbar" aria-hidden="true"><span class="keep" style="width:${w(Math.max(0, c.after))}"></span><span class="leave" style="width:${w(Math.min(c.reserved, c.current))}"></span><i class="mark" style="left:${w(c.goal)}"></i></div><small class="goalnote">Meta mínima <b>${money(c.goal)}</b> · o consulado pede cerca de R$ 100 mil; a meta já inclui a folga</small></section>`;
 }
 function folderCard() {
   const f = folderInfo();
@@ -262,7 +276,7 @@ function render() {
     pct = data.tasks.length ? Math.round((done / data.tasks.length) * 100) : 0;
   if (page === "overview") {
     $("#app").innerHTML =
-      `<header class="pagehead"><div><h1>${todayTitle()}</h1></div></header>${cards()}${safe(consulCard)}<section class="panel"><div class="paneltop"><h3>Progresso</h3><span class="badge done">${pct}%</span></div><div class="bar"><span style="width:${pct}%"></span></div><p class="muted">${data.tasks.length ? `${done} de ${data.tasks.length} concluídas` : "Adicione uma pendência para começar."}</p>${nextTasks()}${data.tasks.length ? `<button class="link" onclick="go('tasks')">Ver pendências →</button>` : `<button class="btn primary" onclick="editTask()">+ Criar pendência</button>`}</section>${folderCard()}`;
+      `<header class="pagehead"><div><h1>${todayTitle()}</h1></div></header>${safe(consulCard)}${cards()}<section class="panel"><div class="paneltop"><h3>Progresso</h3><span class="badge done">${pct}%</span></div><div class="bar"><span style="width:${pct}%"></span></div><p class="muted">${data.tasks.length ? `${done} de ${data.tasks.length} concluídas` : "Adicione uma pendência para começar."}</p>${nextTasks()}${data.tasks.length ? `<button class="link" onclick="go('tasks')">Ver pendências →</button>` : `<button class="btn primary" onclick="editTask()">+ Criar pendência</button>`}</section>${folderCard()}`;
   }
   if (page === "tasks") {
     $("#app").innerHTML =

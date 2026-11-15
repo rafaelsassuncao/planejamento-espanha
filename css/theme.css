@@ -1341,35 +1341,158 @@ nav.subnav button.on small {
   gap: 10px;
 }
 
-/* Reserva do consulado na visão geral */
-.consul .paneltop {
-  align-items: flex-end;
+/* Reserva do consulado no topo da visão geral: tenho − vai sair = vai ficar, com aviso da meta */
+.consul {
+  margin-bottom: 18px;
 }
-.consul .amount {
-  margin-top: 4px;
-  font-size: clamp(22px, 2.2vw, 28px);
-  font-weight: 600;
-}
-.consul .goal {
-  display: grid;
-  text-align: right;
-}
-.consul .goal b {
-  font-family: var(--display);
-  font-size: 20px;
-}
-.consul .consulrow {
+.consulnums {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 4px 16px;
-  margin: 8px 0 14px;
+  align-items: flex-end;
+  gap: 14px 22px;
+  margin: 12px 0 18px;
 }
-.consul.done .bar span {
+.consulnums > div:not(.consulstatus) {
+  display: grid;
+  gap: 2px;
+}
+.consulnums small {
+  color: var(--muted);
+}
+.consulnums b {
+  font-family: var(--display);
+  font-size: clamp(22px, 2.3vw, 30px);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.consulnums .out b {
+  color: #ff9a76;
+}
+.consulnums .op {
+  padding-bottom: 4px;
+  color: var(--muted);
+  font-size: 22px;
+}
+.consul.done .left b {
+  color: var(--success);
+}
+.consul.warn .left b {
+  color: var(--warning);
+}
+.consul.late .left b {
+  color: var(--danger);
+}
+.consulstatus {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  padding: 12px 16px;
+  border: 1px solid;
+  border-radius: 16px;
+}
+.consulstatus .ic {
+  width: 22px;
+  height: 22px;
+}
+.consulstatus span {
+  display: grid;
+}
+.consulstatus b {
+  font-family: inherit;
+  font-size: 15px;
+  letter-spacing: 0;
+}
+.consulstatus small {
+  color: inherit;
+  opacity: 0.85;
+}
+.consulstatus.done {
+  border-color: rgba(94, 230, 160, 0.35);
+  background: var(--success-soft);
+  color: #a9f5cc;
+}
+.consulstatus.warn {
+  border-color: rgba(245, 184, 65, 0.4);
+  background: var(--warning-soft);
+  color: #ffdf9e;
+  animation: nudge 2.4s ease-in-out infinite;
+}
+.consulstatus.late {
+  border-color: rgba(255, 107, 107, 0.4);
+  background: var(--danger-soft);
+  color: #ffb4ad;
+}
+@keyframes nudge {
+  50% {
+    box-shadow: 0 0 0 6px rgba(245, 184, 65, 0.12);
+  }
+}
+.goalbar {
+  position: relative;
+  display: flex;
+  height: 12px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.07);
+}
+.goalbar .keep {
+  border-radius: 99px 0 0 99px;
   background: var(--success);
 }
-.consul.late .amount {
-  color: var(--danger);
+.consul.warn .goalbar .keep {
+  background: var(--saffron);
+}
+.consul.late .goalbar .keep {
+  background: var(--danger);
+}
+.goalbar .leave {
+  border-radius: 0 99px 99px 0;
+  background: repeating-linear-gradient(135deg, rgba(255, 154, 118, 0.55) 0 6px, rgba(255, 154, 118, 0.2) 6px 12px);
+}
+.goalbar .mark {
+  position: absolute;
+  top: -5px;
+  bottom: -5px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--ink);
+}
+.goalnote {
+  display: block;
+  margin-top: 10px;
+  color: var(--muted);
+}
+.goalnote b {
+  color: var(--ink);
+}
+@media (max-width: 700px) {
+  .consulnums {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px 12px;
+  }
+  .consulnums .op {
+    display: none;
+  }
+  .consulnums > div:not(.consulstatus) {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  .consulnums b {
+    font-size: 20px;
+  }
+  .consulstatus {
+    grid-column: 1 / -1;
+    margin-left: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .consulstatus.warn {
+    animation: none;
+  }
 }
 
 /* Marcar pago: duas escolhas grandes */
