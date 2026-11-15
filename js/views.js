@@ -108,25 +108,13 @@ function folderCard() {
           )
           .join("")}${moreButton(f.category, open.length, 6)}</div>`
       : ""
-  }<div class="folderactions">${page === "overview" ? `<button class="btn" onclick="showFolderItems()">Ver pendências do ${esc(f.category)}</button>` : ""}${doneLink(f.done)}<button class="link" onclick="editFolder()">Configurar pasta</button></div></section>`;
+  }<div class="folderactions">${doneLink(f.done)}<button class="link" onclick="editFolder()">Configurar pasta</button></div></section>`;
 }
 // Ao filtrar uma categoria, mostra um card de "pasta" com o progresso e o que falta
 const doneLink = (done) =>
   page === "tasks" && done
     ? `<button type="button" class="link" onclick="setFilter('filter','${filter === "Concluído" ? "Não concluídos" : "Concluído"}')">${filter === "Concluído" ? "Voltar às não concluídas" : `Ver ${done} ${done === 1 ? "concluída" : "concluídas"}`}</button>`
     : "";
-// Abre a lista de pendências filtrada pela pasta
-function showFolderItems() {
-  page = "tasks";
-  cat = data.folder.category;
-  filter = "Não concluídos";
-  due = "Todos";
-  costF = "Todos";
-  search = "";
-  selected.clear();
-  render();
-  scrollTo(0, 0);
-}
 function categoryCard(c) {
   if (data.folder && c === data.folder.category) return folderCard();
   const items = data.tasks.filter((t) => t.category === c);
@@ -163,40 +151,6 @@ function toggleExpand(c) {
   render();
 }
 
-// Próximas 5 pendências não concluídas, pela ordem de prazo
-function nextTasks() {
-  const next = data.tasks
-    .filter((t) => t.status !== "Concluído")
-    .sort(byDue)
-    .slice(0, 5);
-  return next.length
-    ? `<div class="nextlist"><small>Próximas pendências</small>${next
-        .map(
-          (t) =>
-            `<button type="button" class="nextrow ${statusRow(t.status)}" onclick="showTask('${t.id}')"><span><b>${esc(t.title)}</b><small>${esc(t.category)}${t.status === "Em andamento" ? " · em andamento" : ""}</small></span><span class="nextside">${safe(() => srcPill(t))}${isCost(t) && forecast(t).known > 0 ? `<b class="amount-sm">${money(forecast(t).known, t.currency)}</b>` : ""}</span></button>`,
-        )
-        .join("")}</div>`
-    : "";
-}
-// Leva até a pendência na aba de pendências e a destaca
-function showTask(id) {
-  const t = data.tasks.find((x) => x.id === id);
-  if (!t) return;
-  page = "tasks";
-  cat = "Todas";
-  filter = t.status === "Concluído" ? "Todos" : "Não concluídos";
-  due = "Todos";
-  costF = "Todos";
-  search = "";
-  selected.clear();
-  render();
-  const row = document.querySelector(`#rows tr[data-id="${id}"]`);
-  if (row) {
-    row.scrollIntoView({ block: "center" });
-    row.classList.add("flash");
-    setTimeout(() => row.classList.remove("flash"), 2200);
-  }
-}
 // Partes de cada página: viram submenu no menu lateral e botões no topo da página no celular
 const PARTS = {
   tasks: () => {
@@ -275,7 +229,7 @@ function render() {
     pct = data.tasks.length ? Math.round((done / data.tasks.length) * 100) : 0;
   if (page === "overview") {
     $("#app").innerHTML =
-      `<header class="pagehead"><div><h1>${todayTitle()}</h1></div></header>${safe(consulCard)}${cards()}<section class="panel"><div class="paneltop"><h3>Progresso</h3><span class="badge done">${pct}%</span></div><div class="bar"><span style="width:${pct}%"></span></div><p class="muted">${data.tasks.length ? `${done} de ${data.tasks.length} concluídas` : "Adicione uma pendência para começar."}</p>${nextTasks()}${data.tasks.length ? `<button class="link" onclick="go('tasks')">Ver pendências →</button>` : `<button class="btn primary" onclick="editTask()">+ Criar pendência</button>`}</section>${folderCard()}`;
+      `<header class="pagehead"><div><h1>${todayTitle()}</h1></div></header>${safe(consulCard)}${cards()}${data.tasks.length ? `<p class="overline"><span>${done} de ${data.tasks.length} pendências concluídas</span><button class="link" onclick="go('tasks')">Ver pendências →</button></p>` : `<button class="btn primary" onclick="editTask()">+ Criar pendência</button>`}`;
   }
   if (page === "tasks") {
     $("#app").innerHTML =

@@ -1549,6 +1549,16 @@ nav.subnav button.on small {
   border-color: rgba(245, 184, 65, 0.5);
 }
 
+.overline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 16px;
+  margin: 18px 4px 0;
+  color: var(--muted);
+}
+
 /* Tela de login */
 .login {
   background: var(--bg);

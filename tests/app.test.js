@@ -405,13 +405,12 @@
     page = "overview";
     render();
     check(
-      "G card da pasta na visão geral, sem lista",
-      !!document.querySelector(".folder .barrow") && !document.querySelector(".folder .checkrow"),
+      "G visão geral sem painel de progresso e sem pasta",
+      !document.querySelector(".folder, .nextrow") && document.querySelector(".overline").textContent.includes("pendências concluídas"),
     );
-    [...document.querySelectorAll(".folder button")]
-      .find((b) => b.textContent.startsWith("Ver pendências"))
-      .click();
-    check("G atalho abre as pendências da pasta", page === "tasks" && cat === "Consulado");
+    listTasks();
+    setFilter("cat", "Consulado");
+    check("G pasta aparece nas pendências do Consulado", !!document.querySelector("#sum .folder .barrow"));
 
     // ---------- H. Visão geral ----------
     page = "overview";
@@ -433,13 +432,8 @@
     check("H 'quase no limite' quando sobra menos de 5%", document.querySelector(".consulstatus.warn")?.textContent.includes("Quase no limite"));
     data.consulGoal = goal0;
     render();
-    const nx = [...document.querySelectorAll(".nextrow")];
-    check("H até 5 próximas pendências", nx.length > 0 && nx.length <= 5);
-    nx[0].click();
-    check(
-      "H clicar leva para pendências e destaca",
-      page === "tasks" && !!document.querySelector("#rows tr.flash"),
-    );
+    document.querySelector(".overline .link").click();
+    check("H 'Ver pendências' abre a lista", page === "tasks");
 
     page = "overview";
     render();
