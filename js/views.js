@@ -228,11 +228,9 @@ document.fonts?.ready.then(placePill);
 const subnav = (p) => `<nav class="subnav" aria-label="Partes da página">${partButtons(p)}</nav>`;
 function render() {
   renderNav();
-  const done = data.tasks.filter((t) => t.status === "Concluído").length,
-    pct = data.tasks.length ? Math.round((done / data.tasks.length) * 100) : 0;
   if (page === "overview") {
     $("#app").innerHTML =
-      `<header class="pagehead"><div><h1>${todayTitle()}</h1></div></header>${safe(consulCard)}${safe(salaryCard)}${data.tasks.length ? `<p class="overline"><span>${done} de ${data.tasks.length} pendências concluídas</span><button class="link" onclick="go('tasks')">Ver pendências →</button></p>` : `<button class="btn primary" onclick="editTask()">+ Criar pendência</button>`}`;
+      `<header class="pagehead"><div><h1>${todayTitle()}</h1></div></header>${safe(consulCard)}${safe(salaryCard)}${data.tasks.length ? "" : `<button class="btn primary" onclick="editTask()">+ Criar pendência</button>`}`;
   }
   if (page === "tasks") {
     $("#app").innerHTML =

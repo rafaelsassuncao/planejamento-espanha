@@ -408,7 +408,7 @@
     render();
     check(
       "G visão geral sem painel de progresso e sem pasta",
-      !document.querySelector(".folder, .nextrow") && document.querySelector(".overline").textContent.includes("pendências concluídas"),
+      !document.querySelector(".folder, .nextrow, .overline"),
     );
     listTasks();
     setFilter("cat", "Consulado");
@@ -434,8 +434,6 @@
     check("H 'quase no limite' quando sobra menos de 5%", document.querySelector(".consulstatus.warn")?.textContent.includes("Quase no limite"));
     data.consulGoal = goal0;
     render();
-    document.querySelector(".overline .link").click();
-    check("H 'Ver pendências' abre a lista", page === "tasks");
 
     const salInfo = salaryInfo();
     page = "overview";
