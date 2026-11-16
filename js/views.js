@@ -454,8 +454,7 @@ function updateRows() {
       : [[cat, list]];
   $("#rows").innerHTML =
     (list.length
-      ? '<div class="plisthead" aria-hidden="true"><span>Pendência</span><span>Fonte</span><span>Valor</span><span>Próximo passo</span></div>' +
-        groups.map(([c, a], i) => safe(() => taskGroup(c, a, cat === "Todas", scope, i + 1))).join("")
+      ? groups.map(([c, a], i) => safe(() => taskGroup(c, a, cat === "Todas", scope, i + 1))).join("")
       : '<div class="empty">Nenhuma pendência por aqui.</div>') +
     (hiddenDone
       ? `<p class="donenote">${hiddenDone} ${hiddenDone === 1 ? "concluída oculta" : "concluídas ocultas"} · <button type="button" class="link" onclick="setFilter('filter','Todos')">mostrar</button></p>`
@@ -470,7 +469,7 @@ function taskGroup(c, a, head, scope = a, n = 1) {
   try {
     s = totals(all);
   } catch {}
-  return `<section class="tgroup">${head ? `<div class="tghead"><div><small class="eyebrow">Categoria ${String(n).padStart(2, "0")}</small><h3><button type="button" class="link grouplink" onclick="pickCat(${jsArg(c)})">${esc(c)}</button></h3></div><small>${done} de ${all.length} concluídas${s.open > 0.005 ? ` · <b class="owe">falta ${money(s.open)}</b>` : ""}</small></div>` : ""}${taskTable(a)}</section>`;
+  return `<section class="tgroup">${head ? `<div class="tghead"><div><small class="eyebrow">Categoria ${String(n).padStart(2, "0")}</small><h3><button type="button" class="link grouplink" onclick="pickCat(${jsArg(c)})">${esc(c)}</button></h3></div><small>${done} de ${all.length} concluídas${s.open > 0.005 ? ` · <b class="owe">falta ${money(s.open)}</b>` : ""}</small></div>` : ""}<div class="plisthead" aria-hidden="true"><span>Pendência</span><span>Fonte</span><span>Valor</span><span>Próximo passo</span></div>${taskTable(a)}</section>`;
 }
 // Totais: as marcadas para somar ou, sem marcação, tudo da categoria/busca (inclusive as concluídas)
 function summary(scope) {
@@ -546,7 +545,7 @@ function nextStepLine(t) {
     next = steps.find((s) => !s.done),
     d = steps.filter((s) => s.done).length;
   if (!steps.length) return "";
-  return `<div class="nextstep${next ? "" : " alldone"}"><span><small>${next ? "Próximo passo" : "Etapas"} · ${d}/${steps.length}</small><b>${next ? esc(next.text) : "Todas feitas ✓"}</b></span>${next ? `<button type="button" class="stepdo" onclick="doNextStep('${t.id}')" title="Marcar “${esc(next.text)}” como feita">✓ Feito</button>` : ""}</div>`;
+  return `<div class="nextstep${next ? "" : " alldone"}"><span><small>${d}/${steps.length} etapas</small><b>${next ? esc(next.text) : "Todas feitas ✓"}</b></span>${next ? `<button type="button" class="stepdo" onclick="doNextStep('${t.id}')" title="Marcar “${esc(next.text)}” como feita">✓ Feito</button>` : ""}</div>`;
 }
 // Linha cinza abaixo do nome: andamento, compras e observação
 function taskNote(t) {

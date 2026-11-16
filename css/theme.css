@@ -1112,16 +1112,11 @@ nav.subnav button.on small {
   align-items: flex-start;
 }
 .plisthead {
-  position: sticky;
-  top: 0;
-  z-index: 5;
   display: grid;
   grid-template-columns: 32px minmax(0, 1fr) 210px 130px 260px 44px;
-  margin: 18px 0 -4px;
-  padding: 10px 9px 10px 17px;
-  border-radius: 12px;
-  background: rgba(11, 11, 16, 0.85);
-  backdrop-filter: blur(10px);
+  margin: 6px 0 -2px;
+  padding: 0 9px 8px 17px;
+  border-bottom: 1px solid var(--line-2);
   color: var(--muted);
   font-size: 11px;
   font-weight: 600;
@@ -1203,9 +1198,7 @@ nav.subnav button.on small {
   color: var(--muted);
 }
 .plist .nextstep small {
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: 12px;
 }
 .plist .nextstep b {
   overflow-wrap: anywhere;
@@ -1395,7 +1388,7 @@ nav.subnav button.on small {
   text-transform: uppercase;
 }
 .tghead h3 {
-  margin: 2px 0 6px;
+  margin: 2px 0 0;
 }
 .sumgrid .sal b {
   color: var(--success);
